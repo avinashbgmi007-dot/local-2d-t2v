@@ -166,8 +166,12 @@ def main():
     s.add_argument('--note', default='')
     c = sub.add_parser('check'); c.add_argument('--project', required=True)
     a = ap.parse_args()
-    {'verify': cmd_verify, 'snapshot': cmd_snapshot, 'check': cmd_check}[a.cmd](a)
+    # Propagate the subcommand's return code. Without this the process always
+    # exited 0, so `verify` returning 2 for "no lock" was invisible to any caller
+    # — generate.py's exit-2 branch was dead code.
+    rc = {'verify': cmd_verify, 'snapshot': cmd_snapshot, 'check': cmd_check}[a.cmd](a)
+    return rc or 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

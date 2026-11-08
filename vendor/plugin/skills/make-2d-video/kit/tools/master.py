@@ -293,8 +293,14 @@ def main():
 
     vsrc, vnote = pick_video(P, video)
     print("  picture  : %s" % vnote)
+    # cap at the VIDEO length, not the audio length. Fall back to the delivered
+    # file's duration if ffprobe fails, otherwise `-t` is silently omitted and the
+    # output is uncapped.
+    dur = duration_of(vsrc) or duration_of(video)
+    if not dur:
+        print("  WARNING  : could not read a duration — output is NOT length-capped")
     tmp = video + ".mastering.mp4"
-    remux(vsrc, master_wav, tmp, duration_of(vsrc))
+    remux(vsrc, master_wav, tmp, dur)
     os.replace(tmp, video)
 
     # Verify the video stream survived untouched, and measure the file that
@@ -310,7 +316,7 @@ def main():
     shipped = measure(video)
     err = abs(target - shipped["i"])
     ok = err <= TOL_HARD and shipped["tp"] <= a.tp + 0.10
-    before_v = vinfo(video)
+    shipped_v = vinfo(video)   # stats of the file that ships (video is copied, so equal)
     report = {
         "project": os.path.basename(P),
         "file": os.path.basename(video),
@@ -324,9 +330,9 @@ def main():
                        "filter": best["af"]},
         "error_lu": round(shipped["i"] - target, 3),
         "passed": ok,
-        "video": before_v.get("streams", [{}])[0] if before_v.get("streams") else {},
+        "video": shipped_v.get("streams", [{}])[0] if shipped_v.get("streams") else {},
         "video_source": vnote,
-        "duration": float(before_v.get("format", {}).get("duration") or 0),
+        "duration": float(shipped_v.get("format", {}).get("duration") or 0),
         "note": ("loudness measured on the DELIVERED mp4 (ffmpeg loudnorm, BS.1770); "
                  "video stream copied, not re-encoded"),
     }

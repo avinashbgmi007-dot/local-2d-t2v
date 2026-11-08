@@ -114,5 +114,5 @@ export function kitchen(g, t, cam = {}, o = {}) {
     FX.pool(g, lx, GY, V(340, 260), V(60, 46), WARM, 0.22);
   });
 
-  return { GY, M, counterY: COUNTER_Y(), lamp: [lx, ly], doorX: FRIDGE_X() };
+  return { GY, M, seats: { left: E.W * 0.30, right: E.W * 0.70 }, counterY: COUNTER_Y(), lamp: [lx, ly], doorX: FRIDGE_X() };
 }

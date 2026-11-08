@@ -116,7 +116,7 @@ export function holdProp(g, spec, o) {
     // strap: shoulder (top, near side) down to the far hip
     g.strokeStyle = shade(col, -0.25); g.lineWidth = 8 * k; g.lineCap = 'round';
     g.beginPath();
-    g.moveTo(cx - f * 20 * k, base - 212 * k);
+    g.moveTo(cx - f * 20 * k, base - 178 * k);   // shoulder, not the skull (head centre is -208)
     g.lineTo(cx + f * 26 * k, base - 96 * k);
     g.stroke();
     // bag body at the hip

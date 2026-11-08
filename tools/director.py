@@ -175,7 +175,7 @@ export function holdProp(g, spec, o) {
     // strap: shoulder (top, near side) down to the far hip
     g.strokeStyle = shade(col, -0.25); g.lineWidth = 8 * k; g.lineCap = 'round';
     g.beginPath();
-    g.moveTo(cx - f * 20 * k, base - 212 * k);
+    g.moveTo(cx - f * 20 * k, base - 178 * k);   // shoulder, not the skull (head centre is -208)
     g.lineTo(cx + f * 26 * k, base - 96 * k);
     g.stroke();
     // bag body at the hip
@@ -447,7 +447,7 @@ export function kitchen(g, t, cam = {}, o = {}) {
     FX.pool(g, lx, GY, V(340, 260), V(60, 46), WARM, 0.22);
   });
 
-  return { GY, M, counterY: COUNTER_Y(), lamp: [lx, ly], doorX: FRIDGE_X() };
+  return { GY, M, seats: { left: E.W * 0.30, right: E.W * 0.70 }, counterY: COUNTER_Y(), lamp: [lx, ly], doorX: FRIDGE_X() };
 }
 """
 
@@ -480,6 +480,14 @@ registerShot('__ID__', { draw(g, t, info) {
       : (p.freeze.u != null ? p.freeze.u * D
         : (p.freeze.at != null ? p.freeze.at : null)));
   const tv = fz != null ? Math.min(t, fz) : t;
+  // speak() keys the mouth off info.globalT, not off t: it computes
+  // g0 = globalT - t and opens the lips when globalT falls inside [g0+from, g0+to].
+  // Clamping t alone leaves g0 growing 1:1 with globalT, so the window slides with
+  // the clock and the mouth keeps animating — a still with a talking mouth. Pin
+  // globalT to the same instant as the visual clock instead.
+  const SINFO = fz != null
+    ? Object.assign({}, info, { globalT: ((info.shot && info.shot.start) || 0) + tv })
+    : info;
   const u = clamp(tv / D, 0, 1), e = ease.inOut(u);
   const who = p.who || Object.keys(CAST)[0];
   // a shot can override the project's location
@@ -577,7 +585,7 @@ registerShot('__ID__', { draw(g, t, info) {
 
     if (INKBEAN) {
       const F = faceAt(tv, at, p.expr || 'neutral', p.exprTo);
-      const tk = speak(info, tv, 0.05, D - 0.12);
+      const tk = speak(SINFO, tv, 0.05, D - 0.12);
       if (tk > 0.05) F.mouthOpen = Math.max(F.mouthOpen, tk * 0.85);
       beanFace(g, cx, cy, R, {
         moodName: p.bg || 'midnight', rimSide: side, shoulders: true,
@@ -609,7 +617,7 @@ registerShot('__ID__', { draw(g, t, info) {
     g.restore();
 
     circle(g, 0, 0, R, ink);
-    face(g, 0, 0, R, { expr: ex, talk: speak(info, tv, 0.05, D - 0.12), blink: blink,
+    face(g, 0, 0, R, { expr: ex, talk: speak(SINFO, tv, 0.05, D - 0.12), blink: blink,
                        look: p.look || [0, 0], front: true });
 
     // catchlights: the single thing that makes a face read as alive, not printed
@@ -627,10 +635,11 @@ registerShot('__ID__', { draw(g, t, info) {
   const { GY } = SET(g, tv, cam, { moodName: p.bg || 'midnight' });
   const FS = (SIZE === 'med' ? S_MED() : S_WIDE()) * (p.scale || 1);
   const W1 = p.walk ? walkAt(tv, p.walk, D, FS, p.pose) : null;
-  const talk = speak(info, tv, 0.05, D - 0.12);
+  const talk = speak(SINFO, tv, 0.05, D - 0.12);
   const F1 = faceAt(tv, at, p.expr || 'neutral', p.exprTo);
   const F2 = faceAt(tv, at, p.expr2 || 'neutral', p.exprTo2);
   const F3 = faceAt(tv, at, p.expr3 || 'neutral', p.exprTo3);
+  if (talk > 0.05 && p.talk3) F3.mouthOpen = Math.max(F3.mouthOpen, talk * 0.85);
   if (talk > 0.05) F1.mouthOpen = Math.max(F1.mouthOpen, talk * 0.85);
   if (talk > 0.05 && p.talk2) F2.mouthOpen = Math.max(F2.mouthOpen, talk * 0.85);
 
@@ -908,6 +917,10 @@ def compile_project(story, out):
         "loudness": -14,
     }
     json.dump(cfg, open(os.path.join(out, "config.json"), "w", encoding="utf-8"), indent=2)
+
+    if str(story.get("set", "room")) not in ("room", "kitchen"):
+        print("  WARN set %r is not implemented -> falling back to room"
+              % story.get("set"))
 
     for i, rec in enumerate(shots):
         js = (SHOT_JS.replace("__ID__", rec["id"])

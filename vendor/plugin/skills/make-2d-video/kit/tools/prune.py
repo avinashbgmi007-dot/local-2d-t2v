@@ -79,8 +79,10 @@ def collect(projects):
                     out["debug"].append((os.path.join(b, d), True))
             for f in sorted(os.listdir(b)):
                 fp = os.path.join(b, f)
+                # video_silent.mp4 is deliberately KEPT: master.py needs it to
+                # recover the frame that mix.py's -shortest drops. Pruning it would
+                # silently disable that recovery.
                 if os.path.isfile(fp) and (f.lower().endswith(INTERMEDIATE_EXT)
-                                           or f == "video_silent.mp4"
                                            or f.endswith(".json")):
                     out["intermediates"].append((fp, False))
         if os.path.isdir(o):
@@ -148,6 +150,12 @@ def main():
             sys.exit("prune: refusing to delete deliverables without --keep <slug>. "
                      "Name the project whose mp4s must survive.")
         keepdir = os.path.join(projects, a.keep, "out")
+        # A typo in --keep would match nothing and delete EVERY deliverable, which
+        # is precisely what --keep exists to prevent.
+        if not os.path.isdir(keepdir):
+            sys.exit("prune: --keep %r has no out/ directory (projects/%s/out). "
+                     "Refusing to delete deliverables — check the slug."
+                     % (a.keep, a.keep))
         targets += [(p, d) for p, d in cat["products"]
                     if os.path.realpath(os.path.dirname(p)) != os.path.realpath(keepdir)]
 
