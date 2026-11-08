@@ -1,0 +1,21 @@
+{
+  "title": "Prop Kind Test",
+  "aspect": "9:16",
+  "resolution": "1080p",
+  "fps": 24,
+  "style": "midnight",
+  "duration": 3.0,
+  "captions": false,
+  "bars": "none",
+  "fadeIn": 0.4,
+  "fadeOut": 0.7,
+  "music": {
+    "enabled": true,
+    "gainDb": -17
+  },
+  "sfx": {
+    "enabled": true,
+    "gainDb": -6
+  },
+  "loudness": -14
+}

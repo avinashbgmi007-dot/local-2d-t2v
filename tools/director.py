@@ -157,6 +157,58 @@ export function walkAt(t, w, D, s, base) {
   };
 }
 
+// A prop held in a hand.
+// The hand point is read from the SAME pose object the figure was drawn with, so
+// the prop cannot drift from the hand during a walk or a gesture — no second copy
+// of the pose to fall out of sync.
+export function holdProp(g, spec, o) {
+  if (!spec) return;
+  const kind = spec.kind || 'mug';
+  const po = o.pose || pose('stand');
+  const h = po[spec.hand === 'back' ? 'hB' : 'hF'] || [0, -100];
+  const f = o.facing || 1, s = o.s || 1, k = s * (spec.scale || 1);
+  // Offset outward along the facing direction. A prop drawn dead-centre on the
+  // hand covers the mitten and the limb appears to end in an object — the same
+  // failure that made a `cheer` gesture look like the hand had vanished.
+  const x = o.x + h[0] * f * s + f * 18 * k;
+  const y = o.y + h[1] * s - 2 * k;
+  const ink = 'rgba(8,8,12,.85)';
+  g.save();
+  g.translate(x, y);
+  g.rotate((spec.tilt || 0) * f);
+  if (kind === 'mug') {
+    const w = 18 * k, hh = 22 * k;
+    g.fillStyle = spec.color || '#efe7d8';
+    g.beginPath(); g.rect(-w / 2, -hh / 2, w, hh); g.fill();
+    g.strokeStyle = ink; g.lineWidth = 2.6 * k; g.stroke();
+    g.beginPath(); g.arc(w / 2, 0, 6.5 * k, -Math.PI / 2, Math.PI / 2);
+    g.lineWidth = 3.2 * k; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.20)';
+    g.fillRect(-w / 2, -hh / 2, w, 4 * k);
+  } else if (kind === 'book') {
+    const w = 24 * k, hh = 17 * k;
+    g.fillStyle = spec.color || '#b8452f';
+    g.beginPath(); g.rect(-w / 2, -hh / 2, w, hh); g.fill();
+    g.strokeStyle = ink; g.lineWidth = 2.4 * k; g.stroke();
+    g.fillStyle = 'rgba(245,240,228,.9)';
+    g.fillRect(-w / 2 + 2.5 * k, -hh / 2 + 2.5 * k, w - 5 * k, hh - 5 * k);
+  } else if (kind === 'phone') {
+    const w = 12 * k, hh = 21 * k;
+    g.fillStyle = '#15161d';
+    g.beginPath(); g.rect(-w / 2, -hh / 2, w, hh); g.fill();
+    g.strokeStyle = ink; g.lineWidth = 2.2 * k; g.stroke();
+    g.fillStyle = spec.color || 'rgba(150,200,255,.85)';
+    g.fillRect(-w / 2 + 2 * k, -hh / 2 + 2.5 * k, w - 4 * k, hh - 5 * k);
+  } else {
+    // Unknown kind: draw something WRONG on purpose. A prop that silently draws
+    // nothing is invisible in review; a magenta box is not.
+    const w = 16 * k, hh = 16 * k;
+    g.fillStyle = '#ff00aa';
+    g.beginPath(); g.rect(-w / 2, -hh / 2, w, hh); g.fill();
+  }
+  g.restore();
+}
+
 // Vertical: a 1080x1920 frame has 78% more height than 1920x1080, so landscape
 // scales make a head unreadably small on a phone. These restore it.
 export const S_WIDE = () => V(1.45, 2.20);
@@ -259,7 +311,7 @@ import { face, EXPR, breathe, pose } from '/engine/rig2d.js';
 import { beanFace } from '/chars/inkbean.js';
 import * as FX from '/engine/fx2d.js';
 import { CAST } from '../cast.js';
-import { person, speak, blinkAt, exprAt, faceAt, wordAt, poseAt, walkAt, outfitOf, INKBEAN, S_WIDE, S_MED } from '../blocking.js';
+import { person, speak, blinkAt, exprAt, faceAt, wordAt, poseAt, walkAt, holdProp, outfitOf, INKBEAN, S_WIDE, S_MED } from '../blocking.js';
 import { room } from '../sets/room.js';
 
 const SIZE = '__SIZE__';
@@ -418,14 +470,19 @@ registerShot('__ID__', { draw(g, t, info) {
   if (talk > 0.05) F1.mouthOpen = Math.max(F1.mouthOpen, talk * 0.85);
   if (talk > 0.05 && p.talk2) F2.mouthOpen = Math.max(F2.mouthOpen, talk * 0.85);
 
+  // one pose object, shared by the figure and its prop, so they cannot disagree
+  const P1 = breathe(W1 ? W1.pose
+                        : poseAt(t, p.pose || 'stand', gAt, p.gesture && p.gesture.pose,
+                                 (p.gesture && p.gesture.blend) || 0.28), t, 1, 1);
+  const X1 = E.W * ((W1 ? W1.x : (p.x ?? 0.40)) + gdx);
+  const FC1 = W1 ? W1.facing : (p.facing ?? 1);
+
   layer(g, cam, 1, (g) => {
     person(g, who, {
-      x: E.W * ((W1 ? W1.x : (p.x ?? 0.40)) + gdx), y: GY + gdy, s: FS, face: F1, seedBase: 1,
+      x: X1, y: GY + gdy, s: FS, face: F1, seedBase: 1,
       moodName: p.bg || 'midnight',
-      facing: W1 ? W1.facing : (p.facing ?? 1),
-      pose: breathe(W1 ? W1.pose
-                       : poseAt(t, p.pose || 'stand', gAt, p.gesture && p.gesture.pose,
-                                (p.gesture && p.gesture.blend) || 0.28), t, 1, 1),
+      facing: FC1,
+      pose: P1,
       expr: exprAt(t, at, p.expr || 'neutral', p.exprTo),
       talk: talk,
       blink: blinkAt(t, at),
@@ -433,6 +490,7 @@ registerShot('__ID__', { draw(g, t, info) {
       rim: { color: '#ffd9a8', dir: [0.7, -0.6], w: 6 },
       shadow: true,
     });
+    if (p.prop) holdProp(g, p.prop, { x: X1, y: GY + gdy, s: FS, facing: FC1, pose: P1 });
     if (p.who2) person(g, p.who2, {
       x: E.W * ((p.x2 ?? 0.66) + gdx2), y: GY + gdy2, s: FS * (p.scale2 || 1), face: F2, seedBase: 2,
       moodName: p.bg || 'midnight',
@@ -489,7 +547,7 @@ PARAM_KEYS = (
     "who", "who2", "x", "x2", "y", "pose", "pose2", "expr", "exprTo", "expr2",
     "exprTo2", "at", "look", "look2", "facing", "facing2", "scale", "scale2",
     "talk2", "bg", "camZ0", "camZ1", "camX0", "camX1", "camY0", "camY1",
-    "atWord", "gesture", "gesture2", "walk",
+    "atWord", "gesture", "gesture2", "walk", "prop",
 )
 
 DEMO_STORY = {
@@ -509,6 +567,7 @@ DEMO_STORY = {
         {"id": "s001", "size": "wide", "line": "Three in the morning.", "hold": 0.5,
          "who": "MAX", "x": 0.36, "pose": "walk", "expr": "neutral", "facing": 1,
          "walk": {"from": 0.13, "to": 0.40, "stride": 34, "lift": 26, "bob": 8, "u0": 0.04, "u1": 0.96},
+         "prop": {"kind": "mug"},
          "who2": "JAKE", "x2": 0.68, "pose2": "stand", "expr2": "sleepy", "facing2": -1,
          "camZ0": 1.0, "camZ1": 1.05, "bg": "midnight",
          "in": {"type": "fade", "dur": 0.5},
@@ -632,6 +691,11 @@ def compile_project(story, out):
         elif str(s.get("pose", "")).lower() in ("walk", "run"):
             print("  WARN %s pose=%r but no 'walk' spec -> the figure will stand still"
                   % (s.get("id"), s.get("pose")))
+
+        pr = s.get("prop")
+        if isinstance(pr, dict) and pr.get("kind") not in (None, "mug", "book", "phone"):
+            print("  WARN %s prop kind %r is not implemented -> a magenta box will render"
+                  % (s.get("id"), pr.get("kind")))
 
         params = {k: s[k] for k in PARAM_KEYS if k in s}
         if params:

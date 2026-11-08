@@ -1,0 +1,54 @@
+{
+ "title": "Prop Kind Test",
+ "aspect": "9:16",
+ "resolution": "1080p",
+ "fps": 24,
+ "style": "midnight",
+ "set": "room",
+ "chars": "inkbean",
+ "cast": {
+  "MAX": {
+   "color": "#c2553d",
+   "top": "trench",
+   "legs": "#2a2433",
+   "head": "none"
+  },
+  "JAKE": {
+   "color": "#2f9e8f",
+   "top": "tshirt",
+   "legs": "#242a38",
+   "head": "cap"
+  }
+ },
+ "shots": [
+  {
+   "id": "g001",
+   "size": "med",
+   "line": "",
+   "hold": 1.8,
+   "who": "MAX",
+   "x": 0.34,
+   "pose": "stand",
+   "expr": "neutral",
+   "facing": 1,
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "stand",
+   "expr2": "neutral",
+   "facing2": -1,
+   "gesture2": {
+    "at": 0.7,
+    "pose": "point",
+    "blend": 0.2
+   },
+   "in": {
+    "type": "fade",
+    "dur": 0.2
+   },
+   "notes": "isolated proof that gesture2 drives who2 \u2014 JAKE raises both arms at 0.7s while MAX does not move",
+   "prop": {
+    "kind": "sword"
+   }
+  }
+ ]
+}

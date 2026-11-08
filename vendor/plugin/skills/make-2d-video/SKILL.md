@@ -81,15 +81,13 @@ Minimal story JSON:
   bound it. Set `pose: "walk"` as well — that is what makes `sound_design.py` add footsteps,
   and `director.py` resolves the exact plant times so each step lands on a foot. Defaults
   (`stride` 26, `lift` 12) are a shuffle; raise `stride`/`lift` for a readable stride.
-  **On the ink-bean rig the head is drawn AFTER the arm**, so any pose whose hand lands
-  above or behind the head (`cheer`, `pointUp`, `wave`, `handsOnHead`) has the hand swallowed
-  by the skull — it reads as the hand disappearing, not as a raised arm. Prefer `point`,
-  `explain`, `shrug`, `talk`, `crossArms` for gestures you actually want seen.
-- **`walk`** moves a character across frame with feet that plant instead of skating:/n  `{"from": 0.13, "to": 0.40, "stride": 34, "lift": 26, "bob": 8}`. Phase is driven by
-  DISTANCE travelled, so the walk survives shot retiming; `u0`/`u1` (fractions of the shot)
-  bound it. Set `pose: "walk"` as well — that is what makes `sound_design.py` add footsteps,
-  and `director.py` resolves the exact plant times so each step lands on a foot. Defaults
-  (`stride` 26, `lift` 12) are a shuffle; raise `stride`/`lift` for a readable stride.
+- **`prop`** puts an object in a hand: `{"kind": "mug"}` — `mug` | `book` | `phone`, plus
+  optional `hand: "back"`, `scale`, `tilt`, `color`. The hand point is read from the SAME
+  pose the figure is drawn with, so the prop follows a walk or a gesture instead of drifting
+  out of the hand. It is offset outward so the mitten hand still reads — a prop drawn
+  dead-centre covers the hand and the limb looks like it ends in an object. An unknown
+  `kind` warns at compile time AND draws a magenta box, so a typo cannot pass review as
+  "no prop was asked for".
 - `hold`: seconds of air after the line. A shot with an empty `line` is a designed silent beat.
 - `sfx` names come from `python audio/sfx.py --list`; `amb` takes a loopable bed.
 - `chars`: `inkbean` (hand-drawn, continuous faces) or `stick` (rig2d stick figures).
