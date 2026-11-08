@@ -25,7 +25,10 @@ Render `node render.mjs --project projects/<slug> --from 0 --to 30 --scale 0.5` 
 
 ## 3. Final render
 - To change resolution or aspect, edit `projects/<slug>/config.json` (`resolution`, `aspect`). Switching aspect needs a fresh sheet review, because 9:16 framing differs.
-- Run `node render.mjs --project projects/<slug> [--workers N] [--format jpeg]` and run it in the background for anything over a minute or two: `nohup node render.mjs --project projects/<slug> > build/render.log 2>&1 &`. Poll the log and report progress and ETA at sensible intervals.
+- Run `python tools/render_gate.py --project projects/<slug> [-- --workers N --format jpeg]` rather than a bare
+  `node render.mjs`: `render.mjs` prints shot errors but **exits 0**, so an unattended render reports success on a
+  broken video. The gate scrapes `shot error(s):`, `[pageerror]`, `Player failed to boot` and `RENDER FAILED:` and exits non-zero.
+- Run it in the background for anything over a minute or two: `nohup node render.mjs --project projects/<slug> > build/render.log 2>&1 &`. Poll the log and report progress and ETA at sensible intervals.
 - Use fewer workers if memory is tight (about 1–1.5 GB each at 1080p, more at 4K). With no GPU, add `--gl swiftshader` (already the Linux default).
 - Output: `build/video_silent.mp4`. The end of the log lists any shot errors. Fix them and re-render if there are any.
 

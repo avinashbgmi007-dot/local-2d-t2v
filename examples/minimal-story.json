@@ -1,0 +1,45 @@
+{
+ "title": "Three In The Morning",
+ "aspect": "9:16",
+ "style": "midnight",
+ "chars": "inkbean",
+ "cast": {
+  "MAX": {
+   "color": "#c2553d",
+   "top": "trench"
+  },
+  "JAKE": {
+   "color": "#2f9e8f",
+   "top": "tshirt",
+   "head": "cap"
+  }
+ },
+ "shots": [
+  {
+   "id": "s001",
+   "size": "wide",
+   "line": "Three in the morning.",
+   "hold": 0.5,
+   "who": "MAX",
+   "x": 0.36,
+   "expr": "neutral",
+   "exprTo": "worried",
+   "at": 1.05,
+   "who2": "JAKE",
+   "x2": 0.68,
+   "expr2": "sleepy",
+   "facing2": -1,
+   "in": {
+    "type": "fade",
+    "dur": 0.5
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ]
+  }
+ ]
+}

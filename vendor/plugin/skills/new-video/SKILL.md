@@ -13,11 +13,29 @@ metadata:
 
 # /new-video: intake → install → timeline → story breakdown
 
+## Check the compiled path first
+
+If the film fits the compiler — one parametric set, one or two characters, wide / med / close /
+insert shots — do **not** run stages 1–4. Write a story JSON and run:
+
+```bash
+python tools/generate.py --story story.json --out projects/<slug> --audio
+```
+
+That one command compiles the shots, synthesises narration from each shot's `line`, retimes every shot
+to its measured speech, adds foley, renders through a hard-fail gate, mixes and reports. See
+"Two ways to drive this" in `../make-2d-video/SKILL.md` for the schema.
+
+The stages below are the **hand-written** path. It is still the right choice when the film needs props
+in hand, a walk cycle, more than two characters, or a bespoke set.
+
+---
+
 This command covers stages 1–4 of the aiTrends 2D Studio pipeline. Shared references live in the sibling skill folder `../make-2d-video/references/` (relative to this skill's base directory), and the studio kit lives in `../make-2d-video/kit/`.
 
 ## 1. Intake
 Ask once (AskUserQuestion when available), skipping anything the user already said:
-- **Voiceover file** (required).
+- **Voiceover file** (required on the hand-written path; the compiled path synthesises it).
 - **Script:** timestamped (SRT, VTT, JSON, or TXT with `[mm:ss]`), plain text, or none.
 - **Aspect:** 16:9 or 9:16.
 - **Resolution:** 720p / 1080p / 1440p / 2160p.
