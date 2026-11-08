@@ -61,6 +61,16 @@ Minimal story JSON:
 ```
 - `size`: `wide | med | close | insert` — each carries its own eased camera move.
 - `expr` / `exprTo` blend **continuously** across `at` seconds; the mouth is driven by real word timings.
+- **`atWord`** anchors a beat to a *spoken word* instead of a guessed second: `"atWord": "me"`
+  makes the expression turn as "me" is said. Keep a numeric `at` beside it as the fallback —
+  `narrate.py` prints `WARN ... did not resolve` if the word is missing, so a typo is caught,
+  not silently ignored. A hand-tuned `at` is typically 150–600 ms off the real word.
+- **`gesture`** fires a pose change on a word: `{"word": "fly", "pose": "point", "blend": 0.24}`.
+  Add `"dx": 0.075` to make the *body travel* — a pose swap reads as a gesture, a body that
+  moves reads as an action (a lunge, a recoil). `gesture2` does the same for `who2`.
+  Gestures only exist on `wide` / `med` shots; a `close` is a face with no body.
+- Pose names come from `POSES` in `engine/rig2d.js` (`stand`, `point`, `pointUp`, `shrug`,
+  `crossArms`, `cheer`, `think`, `talk`, `ready`, …); an unknown name falls back to `stand`.
 - `hold`: seconds of air after the line. A shot with an empty `line` is a designed silent beat.
 - `sfx` names come from `python audio/sfx.py --list`; `amb` takes a loopable bed.
 - `chars`: `inkbean` (hand-drawn, continuous faces) or `stick` (rig2d stick figures).

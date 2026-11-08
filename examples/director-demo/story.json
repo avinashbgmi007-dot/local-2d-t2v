@@ -61,6 +61,7 @@
    "pose": "stand",
    "expr": "neutral",
    "exprTo": "worried",
+   "atWord": "me",
    "at": 1.05,
    "look": [
     0.5,
@@ -111,6 +112,7 @@
    "who": "MAX",
    "expr": "worried",
    "exprTo": "determined",
+   "atWord": "move",
    "at": 0.55,
    "look": [
     0.35,
@@ -145,6 +147,11 @@
    "pose2": "stand",
    "expr2": "angry",
    "facing2": 1,
+   "gesture": {
+    "word": "fly",
+    "pose": "point",
+    "blend": 0.24
+   },
    "in": {
     "type": "cut"
    },
@@ -173,6 +180,12 @@
    "pose2": "stand",
    "expr2": "shocked",
    "facing2": -1,
+   "gesture": {
+    "at": 0.45,
+    "pose": "point",
+    "dx": 0.075,
+    "blend": 0.2
+   },
    "in": {
     "type": "cut"
    },
@@ -204,6 +217,7 @@
    "who": "MAX",
    "expr": "determined",
    "exprTo": "happy",
+   "atWord": "got",
    "at": 0.6,
    "look": [
     0,

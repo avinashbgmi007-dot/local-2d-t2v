@@ -188,6 +188,42 @@ def main():
             print("  %s @%5.2f  shot %4.2fs  SILENT beat          %s"
                   % (s["id"], start, dur, s["size"]))
     print("  words: %d -> timeline/words.json" % len(words))
+
+    # ── verify word-anchored beats resolve INSIDE their own shot ────────────
+    # A shot may declare atWord / gesture.word. If that word is missing, the
+    # template falls back and the beat simply never fires — a silent failure that
+    # no render check can see. Timings only exist here, so this is the one place
+    # that can catch it. A miss is reported, never guessed at.
+    def norm(t):
+        return re.sub(r"[^\w']", "", t.lower())
+
+    anchors, misses = 0, []
+    for s_ in st["shots"]:
+        pr = s_.get("params") or {}
+        want = []
+        aw = pr.get("atWord") or s_.get("atWord")
+        if aw:
+            want.append(("atWord", aw))
+        for gk in ("gesture", "gesture2"):
+            g = pr.get(gk) or s_.get(gk)
+            if isinstance(g, dict) and g.get("word"):
+                want.append((gk + ".word", g["word"]))
+        for label, word in want:
+            anchors += 1
+            m = norm(str(word))
+            hit = next((w for w in words
+                        if w["start"] >= s_["start"] - 0.05
+                        and norm(w["word"]).startswith(m)), None)
+            if hit is None or hit["start"] > s_["end"]:
+                misses.append((s_["id"], label, word))
+    if anchors:
+        if misses:
+            for sid, label, word in misses:
+                print("  WARN %s %s %r did not resolve inside the shot -> beat will NOT fire"
+                      % (sid, label, word))
+            print("  word anchors: %d declared, %d MISSED" % (anchors, len(misses)))
+        else:
+            print("  word anchors: %d declared, all resolved inside their shot" % anchors)
     print("  speech: %.2fs / %.2fs = %.0f%% of runtime" %
           (sum(p[1] for p in plan), total, 100.0 * sum(p[1] for p in plan) / total))
 
