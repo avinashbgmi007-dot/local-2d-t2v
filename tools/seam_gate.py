@@ -56,7 +56,10 @@ PROP_FUNCS = {
     'keys', 'keyshand', 'wornbag', 'heldbag', 'bag', 'latch',
     'phone', 'cup', 'paper', 'ball', 'pointer', 'tablet', 'flashlight', 'nail', 'meter',
 }
-DECLARED = ('reverse', 'match', 'intentional', 'declared')  # cut_intent values -> INFO under --auto
+# cut_intent values -> INFO under --auto. `eyeline` belongs here: a face -> what it sees ->
+# reaction carries the GAZE, which no scan of the source can find, so it has to be declared
+# or a legitimate cut is reported dead.
+DECLARED = ('reverse', 'match', 'intentional', 'declared', 'eyeline')
 # Helper names that draw the same thing under different spellings; keep the report readable.
 CANON = {'wornbag': 'bag', 'heldbag': 'bag', 'keyshand': 'keys'}
 

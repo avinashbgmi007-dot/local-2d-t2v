@@ -92,6 +92,19 @@ def main():
     if a.strict and sg:
         sys.exit("GENERATE: seam_gate failed — a cut carries no shared subject")
 
+    # 5b. style lock. An INVALID lock is always fatal: it means an approved
+    #     reference no longer matches, so the look has drifted from what a human
+    #     signed off. A MISSING lock only warns — approval is a human act and
+    #     cannot be generated here.
+    sl = run([py, os.path.join(here, "style_lock.py"), "verify", "--project", out], studio)
+    if sl == 1:
+        sys.exit("GENERATE: style lock INVALID — the approved look has drifted")
+    if sl == 2:
+        print("GENERATE: no style lock for this project, so style drift cannot be "
+              "detected. After accepting frames, create one:\n"
+              "  python tools/style_lock.py snapshot --project %s --frames 1.0,4.2 "
+              '--character inkbean --approved-by "<your words>"' % out)
+
     print("\nGENERATE: DONE ->", out)
     print("  video :", os.path.join(out, "build", "video_silent.mp4"))
     if a.audio and cfg.get("voiceover"):

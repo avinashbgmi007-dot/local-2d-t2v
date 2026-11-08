@@ -38,6 +38,7 @@
     "stride": 34,
     "lift": 26,
     "bob": 8,
+    "arm": 46,
     "u0": 0.04,
     "u1": 0.96
    },
@@ -198,6 +199,9 @@
     "dx": 0.075,
     "blend": 0.2
    },
+   "freeze": {
+    "at": 0.58
+   },
    "in": {
     "type": "cut"
    },
@@ -219,7 +223,7 @@
     }
    ],
    "acting": "the lunge is a physical action, not a pose change",
-   "notes": "silence beat paid for by movement and foley, never by a still frame"
+   "notes": "the lunge is real travel; the picture freezes ON the hit at 0.58s, which is a punctuation device, not filler for the silence"
   },
   {
    "id": "s007",

@@ -43,6 +43,7 @@ USAGE
     python tools/master.py --project projects/foo --report-only
 """
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -124,14 +125,70 @@ def video_of(project):
     return max(mp4s, key=os.path.getmtime)
 
 
-def remux(video, audio_wav, dst):
-    """Swap the audio, copy the video bit-for-bit. One AAC generation."""
-    subprocess.run(["ffmpeg", "-y", "-v", "error",
-                    "-i", video, "-i", audio_wav,
-                    "-map", "0:v:0", "-map", "1:a:0",
-                    "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-                    "-ar", "48000", "-shortest", "-movflags", "+faststart",
-                    dst], check=True)
+def duration_of(path):
+    p = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                        "-of", "csv=p=0", path], capture_output=True, text=True)
+    try:
+        return float((p.stdout or "").strip().split(",")[0])
+    except Exception:
+        return 0.0
+
+
+def frames_of(path):
+    p = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
+                        "-show_entries", "stream=nb_frames", "-of", "csv=p=0", path],
+                       capture_output=True, text=True)
+    try:
+        return int((p.stdout or "").strip().split(",")[0])
+    except Exception:
+        return 0
+
+
+def first_frame_hash(path):
+    """Pixel hash of frame 0 — proves two files came from the same render."""
+    p = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-frames:v", "1",
+                        "-map", "0:v:0", "-f", "rawvideo", "-pix_fmt", "yuv420p", "-"],
+                       capture_output=True)
+    return hashlib.sha256(p.stdout or b"").hexdigest()
+
+
+def pick_video(P, delivered):
+    """Prefer the renderer's own output when it holds MORE frames than the delivery.
+
+    mix.py muxes with `-shortest`, so it trims the video to the audio length and
+    drops the renderer's final frame (measured: 259 -> 258, 42 ms). mix.py is
+    pinned by verify_kit, so this recovers the frame here instead.
+
+    The guard is strict: only ever ADD frames back, and only when frame 0 is
+    pixel-identical — which proves it is the same render and not a stale file.
+    """
+    cand = os.path.join(P, "build", "video_silent.mp4")
+    if not os.path.exists(cand):
+        return delivered, "delivered file (no render to recover from)"
+    fc, fd = frames_of(cand), frames_of(delivered)
+    if fc <= fd:
+        return delivered, "delivered file (%d frames; render had %d)" % (fd, fc)
+    if first_frame_hash(cand) != first_frame_hash(delivered):
+        return delivered, "delivered file (render frame 0 differs — not the same take)"
+    return cand, "render output (%d frames, recovering %d dropped by -shortest)" % (fc, fc - fd)
+
+
+def remux(video, audio_wav, dst, dur=None):
+    """Swap the audio, copy the video bit-for-bit. One AAC generation.
+
+    No `-shortest`: that is what truncated the video in the first place. `-t` caps
+    the output at the VIDEO length instead, so a shorter audio track simply ends
+    early rather than shortening the picture.
+    """
+    cmd = ["ffmpeg", "-y", "-v", "error",
+           "-i", video, "-i", audio_wav,
+           "-map", "0:v:0", "-map", "1:a:0",
+           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+           "-ar", "48000"]
+    if dur:
+        cmd += ["-t", "%.6f" % dur]
+    cmd += ["-movflags", "+faststart", dst]
+    subprocess.run(cmd, check=True)
 
 
 def has_audio(path):
@@ -234,8 +291,10 @@ def main():
         master_wav = os.path.join(build, "master.wav")
         shutil.copyfile(best["path"], master_wav)
 
+    vsrc, vnote = pick_video(P, video)
+    print("  picture  : %s" % vnote)
     tmp = video + ".mastering.mp4"
-    remux(video, master_wav, tmp)
+    remux(vsrc, master_wav, tmp, duration_of(vsrc))
     os.replace(tmp, video)
 
     # Verify the video stream survived untouched, and measure the file that
@@ -266,6 +325,7 @@ def main():
         "error_lu": round(shipped["i"] - target, 3),
         "passed": ok,
         "video": before_v.get("streams", [{}])[0] if before_v.get("streams") else {},
+        "video_source": vnote,
         "duration": float(before_v.get("format", {}).get("duration") or 0),
         "note": ("loudness measured on the DELIVERED mp4 (ffmpeg loudnorm, BS.1770); "
                  "video stream copied, not re-encoded"),

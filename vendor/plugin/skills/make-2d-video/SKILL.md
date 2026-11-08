@@ -88,6 +88,23 @@ Minimal story JSON:
   dead-centre covers the hand and the limb looks like it ends in an object. An unknown
   `kind` warns at compile time AND draws a magenta box, so a typo cannot pass review as
   "no prop was asked for".
+- **`prop: {"worn": true, ...}`** wears it instead of holding it: a strap over one shoulder and a
+  bag at the opposite hip. It ignores the pose entirely, so it stays on the body through a walk or
+  a gesture. `holdProp` draws it on the torso, so it will cover a hand that crosses it.
+- **`freeze: {"u": 0.72}`** freezes the PICTURE at that fraction of the shot (`{"at": 0.58}` for
+  shot-local seconds) and holds to the cut. The visual clock is clamped, so set, camera, figure,
+  dust, blink and the mouth all stop together; the audio keeps running, because a freeze is a
+  picture device. The engine's karaoke caption overlay still advances — it is drawn by `player.js`
+  after the shot, so it cannot be frozen from shot code. Animated film grain also keeps cycling
+  (4 tiles, `frame % 4`), so two frames inside a freeze are never byte-identical — judge a freeze
+  by scene motion, not by a pixel hash.
+- **`who3` / `pose3` / `expr3` / `x3` / `facing3` / `scale3`** add a third figure. Three figures in
+  9:16 leave little room, so keep `scale3` near 0.9 and put them at 0.24 / 0.50 / 0.76.
+- **`set: "kitchen"`** (project level, or per shot) swaps the location. `room` is a night interior
+  with a pendant lamp and a window; `kitchen` is a warm tiled kitchen with a counter, sink, kettle,
+  fridge and hanging pans. Both share `GROUND()` and the same three-plane parallax, so framing and
+  camera moves transfer. `kitchen` is the simpler of the two — props are stylised silhouettes and
+  three figures will occlude the counter, so shoot it with one or two.
 - `hold`: seconds of air after the line. A shot with an empty `line` is a designed silent beat.
 - `sfx` names come from `python audio/sfx.py --list`; `amb` takes a loopable bed.
 - `chars`: `inkbean` (hand-drawn, continuous faces) or `stick` (rig2d stick figures).

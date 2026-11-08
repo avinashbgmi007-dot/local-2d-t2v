@@ -1,0 +1,25 @@
+{
+ "title": "Cast Test",
+ "aspect": "9:16",
+ "resolution": "1080p",
+ "fps": 24,
+ "style": "midnight",
+ "chars": "inkbean",
+ "loudness": -14,
+ "cast": {
+  "MAX": {"color": "#c2553d", "top": "trench", "legs": "#2a2433", "head": "none"},
+  "JAKE": {"color": "#2f9e8f", "top": "tshirt", "legs": "#24303a", "head": "cap"},
+  "DOC": {"color": "#7a6bd6", "top": "labcoat", "legs": "#2a2433", "head": "none"}
+ },
+ "music": [],
+ "shots": [
+  {"id": "t001", "size": "wide", "line": "", "hold": 1.20,
+   "who": "MAX", "x": 0.26, "pose": "stand", "expr": "worried", "facing": 1,
+   "prop": {"worn": true, "color": "#6b4a35"},
+   "who2": "JAKE", "x2": 0.52, "pose2": "shrug", "expr2": "smirk", "facing2": -1,
+   "who3": "DOC", "x3": 0.78, "pose3": "think", "expr3": "neutral", "facing3": -1,
+   "scale3": 0.90,
+   "in": {"type": "cut"},
+   "notes": "capability test: three figures at once, plus a WORN (torso) prop on MAX"}
+ ]
+}
