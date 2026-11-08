@@ -1,0 +1,112 @@
+[
+ {
+  "word": "Three",
+  "start": 0.0,
+  "end": 0.219
+ },
+ {
+  "word": "in",
+  "start": 0.244,
+  "end": 0.381
+ },
+ {
+  "word": "the",
+  "start": 0.396,
+  "end": 0.561
+ },
+ {
+  "word": "morning.",
+  "start": 0.579,
+  "end": 0.963
+ },
+ {
+  "word": "Something",
+  "start": 1.506,
+  "end": 1.864
+ },
+ {
+  "word": "is",
+  "start": 1.904,
+  "end": 2.053
+ },
+ {
+  "word": "in",
+  "start": 2.07,
+  "end": 2.219
+ },
+ {
+  "word": "here",
+  "start": 2.236,
+  "end": 2.445
+ },
+ {
+  "word": "with",
+  "start": 2.468,
+  "end": 2.677
+ },
+ {
+  "word": "me.",
+  "start": 2.7,
+  "end": 2.969
+ },
+ {
+  "word": "Don't",
+  "start": 4.149,
+  "end": 4.436
+ },
+ {
+  "word": "move.",
+  "start": 4.467,
+  "end": 4.918
+ },
+ {
+  "word": "It's",
+  "start": 5.268,
+  "end": 5.492
+ },
+ {
+  "word": "a",
+  "start": 5.517,
+  "end": 5.666
+ },
+ {
+  "word": "fly,",
+  "start": 5.683,
+  "end": 5.981
+ },
+ {
+  "word": "Max.",
+  "start": 6.015,
+  "end": 6.388
+ },
+ {
+  "word": "Got",
+  "start": 8.229,
+  "end": 8.459
+ },
+ {
+  "word": "it.",
+  "start": 8.484,
+  "end": 8.828
+ },
+ {
+  "word": "Did",
+  "start": 9.316,
+  "end": 9.502
+ },
+ {
+  "word": "I",
+  "start": 9.522,
+  "end": 9.646
+ },
+ {
+  "word": "get",
+  "start": 9.66,
+  "end": 9.845
+ },
+ {
+  "word": "it?",
+  "start": 9.866,
+  "end": 10.144
+ }
+]

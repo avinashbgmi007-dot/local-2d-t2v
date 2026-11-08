@@ -1,0 +1,78 @@
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\director.py --story E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\examples\director-demo\story.json --out E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+director: Three In The Morning -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+  8 shots · 24.00s · 9:16 · style midnight
+  shot sizes: close x2, insert x1, med x2, wide x3
+  files: cast.js, blocking.js, sets/room.js, scenes/shots/*.js
+
+$ C:\Users\Avinash-Pro/.faceless-shorts/venv/Scripts/python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\narrate.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+narrate: am_michael x1.05 -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\build\voice.wav (10.77s total, sr=24000)
+  s001 @ 0.00  shot 1.51s  speech 1.01s  tail 0.50s  wide
+  s002 @ 1.51  shot 1.84s  speech 1.49s  tail 0.35s  med
+  s003 @ 3.35  shot 0.80s  SILENT beat          insert
+  s004 @ 4.15  shot 1.12s  speech 0.82s  tail 0.30s  close
+  s005 @ 5.27  shot 1.46s  speech 1.16s  tail 0.30s  med
+  s006 @ 6.73  shot 1.50s  SILENT beat          wide
+  s007 @ 8.23  shot 1.09s  speech 0.64s  tail 0.45s  close
+  s008 @ 9.32  shot 1.46s  speech 0.86s  tail 0.60s  wide
+  words: 22 -> timeline/words.json
+  speech: 5.97s / 10.77s = 55% of runtime
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\sound_design.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+sound design: 16 cues total (+2 whoosh, +1 footstep groups, +1 riser, +0 amb)
+  s001  1.51s  -  amb=roomtone
+  s002  1.84s  whoosh@0.05
+  s003  0.80s  buzz@0.02, whoosh@0.04
+  s004  1.12s  whoosh@0.05
+  s005  1.46s  whoosh@0.05
+  s006  1.50s  whoosh@0.04, buzz@0.10, footstep@0.10, footstep@0.40, hit@0.52
+  s007  1.09s  flash@0.00
+  s008  1.46s  whoosh@0.05
+  wrote E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\story\shots.json
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe -u E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\render_gate.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+GATE RUN: node render.mjs --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+Rendering frames 0-259 (10.8 s) with 8 worker(s)…
+  48/259 frames  8.70 fps  elapsed 0m06s  eta 0m24s
+  96/259 frames  10.01 fps  elapsed 0m10s  eta 0m16s
+  144/259 frames  10.58 fps  elapsed 0m14s  eta 0m11s
+  192/259 frames  10.82 fps  elapsed 0m18s  eta 0m06s
+  240/259 frames  10.88 fps  elapsed 0m22s  eta 0m02s
+
+Done: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\build\video_silent.mp4  (0m26s)
+
+GATE: clean (exit 0, no error signals) -> PASS
+
+$ C:\Users\Avinash-Pro/.faceless-shorts/venv/Scripts/python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\audio\mix.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+generating music: 3 section(s) — dark@0.28, tension@0.46, hopeful@0.34
+sfx: 16 cue(s), ambience on 1 shot(s)
+wrote E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\build\mix.wav  (10.8s, target -14 LUFS)
+FINAL VIDEO: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\out\Three_In_The_Morning.mp4
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\review_frames.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final --aspect 9:16
+
+=== VISUAL REVIEW GATE: video_silent.mp4 ===
+  size        : 1080x1920  aspect=9:16  (expected 9:16)
+  duration    : 10.792s
+  frames pulled: 6 -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\build\review
+  auto checks : black/dead frames = 0  | aspect_ok = True
+
+  --- MANUAL / VISION CHECKLIST (automation cannot judge these) ---
+  [ ] Characters present as the script/shot-list requires?
+  [ ] Character identity consistent (signature colours from cast.js)?
+  [ ] Composition balanced; nothing cut off or floating?
+  [ ] Captions / on-screen text legible and not overlapping?
+  [ ] Visual style matches config (e.g. 'dusk') across shots?
+  [ ] No unintended black/blank stretches? (auto: PASS)
+  [ ] Aspect correct for target platform? (auto: PASS)
+  [ ] MUSIC present & at target loudness? (only if audio stream;
+       N/A for silent video — re-run after enabling music + mix.py)
+
+  Written: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\build\review\review.json
+  >>> Eyeball the pulled frames; a human (or vision model) must
+      confirm the unchecked items before this is 'accepted'.
+
+GENERATE: DONE -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final
+  video : E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\build\video_silent.mp4
+  final : E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\out
+  review: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\cine_final\build\review

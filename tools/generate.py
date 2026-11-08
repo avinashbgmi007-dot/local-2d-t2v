@@ -48,9 +48,16 @@ def main():
         sys.exit("GENERATE: director failed")
 
     # 2. narration FIRST (so words.json exists when we render -> word-synced captions)
+    #    narrate also RETIMES every shot to its measured speech (no dead air).
     if a.audio:
         if run([runner, os.path.join(here, "narrate.py"), "--project", out], studio):
             sys.exit("GENERATE: narration (Kokoro) failed")
+
+    # 2b. sound design — fills the foley layer (cuts, walks, risers, ambience).
+    #     Runs after narrate because it needs the RETIMED shot lengths.
+    if a.audio:
+        if run([py, os.path.join(here, "sound_design.py"), "--project", out], studio):
+            sys.exit("GENERATE: sound design failed")
 
     # 3. render through the hard-fail gate
     if run([py, "-u", os.path.join(here, "render_gate.py"), "--project", out], studio):

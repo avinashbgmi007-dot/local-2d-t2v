@@ -1,86 +1,277 @@
 {
-  "title": "Director Demo \u2014 9:16",
-  "aspect": "9:16",
-  "resolution": "1080p",
-  "fps": 24,
-  "style": "dusk",
-  "cast": {
-    "MAX": {
-      "top": "hoodie",
-      "color": "#d64a33",
-      "head": "none"
-    },
-    "JAKE": {
-      "top": "tshirt",
-      "color": "#3a6ea5",
-      "head": "cap",
-      "headColor": "#f2c21a"
-    },
-    "DOC": {
-      "top": "labcoat",
-      "face": "glasses",
-      "head": "none"
-    }
+ "title": "Three In The Morning",
+ "aspect": "9:16",
+ "style": "midnight",
+ "resolution": "1080p",
+ "fps": 24,
+ "set": "room",
+ "chars": "inkbean",
+ "cast": {
+  "MAX": {
+   "color": "#c2553d",
+   "top": "trench",
+   "legs": "#2a2433",
+   "head": "none"
   },
-  "shots": [
+  "JAKE": {
+   "color": "#2f9e8f",
+   "top": "tshirt",
+   "legs": "#243244",
+   "head": "cap",
+   "headColor": "#f2c21a"
+  }
+ },
+ "shots": [
+  {
+   "id": "s001",
+   "size": "wide",
+   "line": "Three in the morning.",
+   "hold": 0.5,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "neutral",
+   "facing": 1,
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "stand",
+   "expr2": "sleepy",
+   "facing2": -1,
+   "camZ0": 1.0,
+   "camZ1": 1.05,
+   "bg": "midnight",
+   "in": {
+    "type": "fade",
+    "dur": 0.5
+   },
+   "amb": {
+    "name": "roomtone",
+    "gain": -34
+   },
+   "acting": "establish the room and the imbalance; neither looks at the other",
+   "notes": "the lamp is the only bright thing, so it is the focal point"
+  },
+  {
+   "id": "s002",
+   "size": "med",
+   "line": "Something is in here with me.",
+   "hold": 0.35,
+   "who": "MAX",
+   "x": 0.44,
+   "pose": "stand",
+   "expr": "neutral",
+   "exprTo": "worried",
+   "at": 1.05,
+   "look": [
+    0.5,
+    -0.15
+   ],
+   "facing": 1,
+   "bg": "midnight",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
     {
-      "id": "s001",
-      "start": 0.0,
-      "end": 4.0,
-      "line": "A fly buzzes past your face.",
-      "who": "MAX",
-      "pose": "stand",
-      "expr": "neutral",
-      "x": 0.5,
-      "y": 0.92,
-      "scale": 1.1,
-      "facing": 1,
-      "bg": "dusk"
-    },
-    {
-      "id": "s002",
-      "start": 4.0,
-      "end": 8.0,
-      "line": "You don't even think.",
-      "who": "MAX",
-      "pose": "point",
-      "expr": "determined",
-      "x": 0.5,
-      "y": 0.92,
-      "scale": 1.2,
-      "facing": 1,
-      "bg": "night"
-    },
-    {
-      "id": "s003",
-      "start": 8.0,
-      "end": 12.0,
-      "line": "You just catch it.",
-      "who": "JAKE",
-      "pose": "cheer",
-      "expr": "happy",
-      "x": 0.5,
-      "y": 0.92,
-      "scale": 1.1,
-      "facing": -1,
-      "bg": "dusk"
-    },
-    {
-      "id": "s004",
-      "start": 12.0,
-      "end": 16.0,
-      "line": "Your friend doesn't believe it.",
-      "who": "MAX",
-      "pose": "talk",
-      "expr": "neutral",
-      "who2": "JAKE",
-      "pose2": "surprised",
-      "expr2": "shocked",
-      "x": 0.34,
-      "x2": 0.68,
-      "y": 0.92,
-      "scale": 1.0,
-      "bg": "dusk"
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
     }
-  ]
+   ],
+   "acting": "gaze drifts off-frame on the last word only",
+   "notes": "the worry arrives on 'me', not before it"
+  },
+  {
+   "id": "s003",
+   "size": "insert",
+   "line": "",
+   "hold": 0.75,
+   "x": 0.52,
+   "y": 0.44,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.02,
+     "name": "buzz",
+     "gain": -12
+    }
+   ],
+   "acting": "no faces at all \u2014 the object is the line",
+   "notes": "buzz pans; the fly drifts on a real path, not a bob"
+  },
+  {
+   "id": "s004",
+   "size": "close",
+   "line": "Don't move.",
+   "hold": 0.3,
+   "who": "MAX",
+   "expr": "worried",
+   "exprTo": "determined",
+   "at": 0.55,
+   "look": [
+    0.35,
+    -0.1
+   ],
+   "facing": 1,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ],
+   "acting": "the expression turns on a blink, mid-line",
+   "notes": "expression-turn test \u2014 if this fails the film fails"
+  },
+  {
+   "id": "s005",
+   "size": "med",
+   "line": "It's a fly, Max.",
+   "hold": 0.3,
+   "who": "JAKE",
+   "x": 0.56,
+   "pose": "shrug",
+   "expr": "smirk",
+   "facing": -1,
+   "who2": "MAX",
+   "x2": 0.26,
+   "pose2": "stand",
+   "expr2": "angry",
+   "facing2": 1,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ],
+   "acting": "the line is dismissive; MAX does not move",
+   "notes": "reverse of s002 \u2014 now we are on the other side of the axis"
+  },
+  {
+   "id": "s006",
+   "size": "wide",
+   "line": "",
+   "hold": 1.5,
+   "who": "MAX",
+   "x": 0.4,
+   "pose": "ready",
+   "expr": "determined",
+   "facing": 1,
+   "who2": "JAKE",
+   "x2": 0.7,
+   "pose2": "stand",
+   "expr2": "shocked",
+   "facing2": -1,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.1,
+     "name": "buzz",
+     "gain": -14
+    },
+    {
+     "at": 0.52,
+     "name": "hit",
+     "gain": -10
+    },
+    {
+     "at": 0.58,
+     "name": "freeze",
+     "gain": -18
+    }
+   ],
+   "acting": "the lunge is a physical action, not a pose change",
+   "notes": "silence beat paid for by movement and foley, never by a still frame"
+  },
+  {
+   "id": "s007",
+   "size": "close",
+   "line": "Got it.",
+   "hold": 0.45,
+   "who": "MAX",
+   "expr": "determined",
+   "exprTo": "happy",
+   "at": 0.6,
+   "look": [
+    0,
+    0
+   ],
+   "facing": 1,
+   "in": {
+    "type": "flash"
+   },
+   "sfx": [
+    {
+     "at": 0.0,
+     "name": "flash",
+     "gain": -16
+    }
+   ],
+   "acting": "quiet triumph \u2014 smaller than the lunge",
+   "notes": "the payoff shot: the same face, one expression later"
+  },
+  {
+   "id": "s008",
+   "size": "wide",
+   "line": "Did I get it?",
+   "hold": 0.6,
+   "who": "MAX",
+   "x": 0.38,
+   "pose": "stand",
+   "expr": "worried",
+   "facing": 1,
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "crossArms",
+   "expr2": "smirk",
+   "facing2": -1,
+   "camZ0": 1.06,
+   "camZ1": 1.0,
+   "bg": "midnight",
+   "in": {
+    "type": "dip",
+    "dur": 0.4
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ],
+   "acting": "bookend of s001 with one thing changed",
+   "notes": "pull out instead of push in \u2014 the geography now says the opposite"
+  }
+ ],
+ "music": [
+  {
+   "start": 0,
+   "end": 3.0,
+   "mood": "dark",
+   "intensity": 0.28
+  },
+  {
+   "start": 3.0,
+   "end": 9.0,
+   "mood": "tension",
+   "intensity": 0.46
+  },
+  {
+   "start": 9.0,
+   "end": 16.0,
+   "mood": "hopeful",
+   "intensity": 0.34
+  }
+ ]
 }
