@@ -88,6 +88,7 @@
    "hold": 0.75,
    "x": 0.52,
    "y": 0.44,
+   "cut_intent": "eyeline",
    "in": {
     "type": "cut"
    },
@@ -106,6 +107,7 @@
    "size": "close",
    "line": "Don't move.",
    "hold": 0.3,
+   "cut_intent": "eyeline",
    "who": "MAX",
    "expr": "worried",
    "exprTo": "determined",

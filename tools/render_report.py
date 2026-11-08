@@ -55,19 +55,33 @@ def loudness(video):
 def motion(video):
     """Reuse the shipped audit rather than reimplementing its metric."""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    p = subprocess.run([sys.executable, os.path.join('tools', 'motion_audit.py'), video, '--json',
+    # motion_audit needs numpy; a bare system interpreter usually lacks it, so prefer the kit venv.
+    # Without this the audit silently fails and the report used to cry "ISSUES" about a video that
+    # passes — a QC gate that invents failures is worse than no gate.
+    venv = os.path.expanduser('~/.faceless-shorts/venv/Scripts/python.exe')
+    py = venv if os.path.exists(venv) else sys.executable
+    p = subprocess.run([py, os.path.join('tools', 'motion_audit.py'), video, '--json',
                         os.path.join(os.path.dirname(video) if os.path.dirname(video) else '.', 'motion.json')],
                        cwd=root, capture_output=True, text=True)
     j = os.path.join(root, os.path.dirname(video), 'motion.json') if os.path.dirname(video) else None
     d = {}
     if j and os.path.exists(j):
         d = json.load(open(j, encoding='utf-8'))
-    return {'exit': p.returncode, 'verdict': 'OK' if p.returncode == 0 else 'ISSUES',
-            'windows': len(d.get('windows', [])),
-            'min_motion': min((w['mean_motion'] for w in d.get('windows', [])), default=None),
-            'median_motion': (sorted(w['mean_motion'] for w in d['windows'])[len(d['windows']) // 2]
-                              if d.get('windows') else None),
+    windows = d.get('windows', [])
+    err = ''
+    if p.returncode != 0 and not windows:
+        lines = (p.stderr or p.stdout or '').strip().splitlines()
+        err = lines[-1] if lines else 'motion_audit exited %d' % p.returncode
+        verdict = 'NOT RUN'          # could not run != failed the check
+    else:
+        verdict = 'OK' if p.returncode == 0 else 'ISSUES'
+    return {'exit': p.returncode, 'verdict': verdict,
+            'windows': len(windows),
+            'min_motion': min((w['mean_motion'] for w in windows), default=None),
+            'median_motion': (sorted(w['mean_motion'] for w in windows)[len(windows) // 2]
+                              if windows else None),
             'issues': d.get('issues', []),
+            'error': err,
             'note': 'change rate only; see docs/MOTION_BASELINE.md — NOT a liveliness metric'}
 
 
@@ -127,12 +141,15 @@ def main():
           f'{rep["duration"]:.2f}s · {rep["bytes"]/1e6:.1f} MB · style {rep["style"]}')
     print(f'  shots {rep["shot_count"]} · sfx {rep["sfx_cues"]} · music {rep["music_plan"]}')
     print(f'  audio mean {rep["audio"].get("mean_volume")} dB / peak {rep["audio"].get("max_volume")} dB')
-    print(f'  motion {rep["motion"]["verdict"]} ({rep["motion"]["windows"]} windows, '
-          f'min {rep["motion"]["min_motion"]})')
+    mo = rep['motion']
+    if mo['verdict'] == 'NOT RUN':
+        print(f'  motion NOT RUN — {mo.get("error") or "motion_audit unavailable"}')
+    else:
+        print(f'  motion {mo["verdict"]} ({mo["windows"]} windows, min {mo["min_motion"]})')
     print(f'  style lock: {rep["style_lock"] or "none — not yet approved"}')
     print(f'  human_review: {rep["human_review"]}')
-    if rep['motion']['issues']:
-        for i in rep['motion']['issues'][:6]:
+    if mo['issues']:
+        for i in mo['issues'][:6]:
             print('  ISSUE ' + i)
 
 

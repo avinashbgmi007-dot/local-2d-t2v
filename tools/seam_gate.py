@@ -42,7 +42,9 @@ VOCAB = [
                r"outfit:\s*RAE\b", r"keysHand\("]),
     ('nils',  [r"person\(\s*g\s*,\s*'nils'", r"face\(\s*g\s*,\s*'nils'",
                r"outfit:\s*NILS\b", r"nilsAtCounter\("]),
-    ('keys',  [r"\bkeys\(", r"keysHand\("]),
+    # (?<!\.) matters: `Object.keys(CAST)` is ordinary JS and used to match as a "keys" carrier,
+    # so every boundary PASSed with "carried: keys" on projects that have no key prop at all.
+    ('keys',  [r"(?<!\.)\bkeys\(", r"keysHand\("]),
     ('bag',   [r"wornBag\(", r"heldBag\("]),
     ('latch', [r"HANDLE\(\)", r"DOOR_X\("]),
 ]
@@ -57,6 +59,34 @@ PROP_FUNCS = {
 DECLARED = ('reverse', 'match', 'intentional', 'declared')  # cut_intent values -> INFO under --auto
 # Helper names that draw the same thing under different spellings; keep the report readable.
 CANON = {'wornbag': 'bag', 'heldbag': 'bag', 'keyshand': 'keys'}
+
+
+def declared_cast(project):
+    """Cast per shot, read from story/shots.json.
+
+    A GENERATED project passes the cast as a variable — person(g, who, ...) with who = p.who —
+    so no regex over the shot source can see it. Without this the shot reads as empty and a
+    live cut is reported as dead. The story spec is the source of truth, so read it directly
+    rather than inferring identity from text.
+    """
+    sj = os.path.join(project, 'story', 'shots.json')
+    out = {}
+    if not os.path.isfile(sj):
+        return out
+    try:
+        st = json.load(io.open(sj, encoding='utf-8'))
+    except Exception:
+        return out
+    for s in st.get('shots', []):
+        sid = s.get('id')
+        if not sid:
+            continue
+        pr = s.get('params') or {}
+        names = {str(pr.get(k) or '').strip().lower() for k in ('who', 'who2')}
+        names.discard('')
+        if names:
+            out[sid] = names
+    return out
 
 
 def shot_entities(root, project):
@@ -83,6 +113,8 @@ def shot_entities(root, project):
     out = {}
     for sid, found, fn in ids:
         out[sid] = found
+    for sid, names in declared_cast(project).items():
+        out.setdefault(sid, set()).update(names)
     return out, {sid: fn for sid, found, fn in ids}
 
 
@@ -143,10 +175,10 @@ def auto_shot_entities(project):
                 if who in cast:
                     found.add(who)
             for prop in PROP_FUNCS:
-                if re.search(rf"\b{re.escape(prop)}\(", body, re.I):
+                if re.search(rf"(?<!\.)\b{re.escape(prop)}\(", body, re.I):
                     found.add(CANON.get(prop, prop))
             for s in set_only:
-                if re.search(rf"\b{re.escape(s)}\(", body, re.I):
+                if re.search(rf"(?<!\.)\b{re.escape(s)}\(", body, re.I):
                     found.add(s)
             # The fixed table is still a useful alias layer: a helper such as keysHand() draws a
             # named character's hand without naming her, and no source scan can infer that. Keep
@@ -158,6 +190,8 @@ def auto_shot_entities(project):
     out = {}
     for sid, found, fn in ids:
         out[sid] = found
+    for sid, names in declared_cast(project).items():
+        out.setdefault(sid, set()).update(names)
     return out, {sid: fn for sid, found, fn in ids}, set_only
 
 

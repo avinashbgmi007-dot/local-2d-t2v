@@ -1,0 +1,351 @@
+{
+ "title": "Three In The Morning",
+ "duration": 10.775,
+ "aspect": "9:16",
+ "resolution": "1080p",
+ "fps": 24,
+ "style": "midnight",
+ "set": "room",
+ "cast": {
+  "MAX": {
+   "color": "#c2553d",
+   "top": "trench",
+   "legs": "#2a2433",
+   "head": "none"
+  },
+  "JAKE": {
+   "color": "#2f9e8f",
+   "top": "tshirt",
+   "legs": "#243244",
+   "head": "cap",
+   "headColor": "#f2c21a"
+  }
+ },
+ "shots": [
+  {
+   "id": "s001",
+   "start": 0.0,
+   "end": 1.506,
+   "line": "Three in the morning.",
+   "size": "wide",
+   "hold": 0.5,
+   "in": {
+    "type": "fade",
+    "dur": 0.5
+   },
+   "amb": {
+    "name": "roomtone",
+    "gain": -34
+   },
+   "acting": "establish the room and the imbalance; neither looks at the other",
+   "notes": "the lamp is the only bright thing, so it is the focal point",
+   "params": {
+    "who": "MAX",
+    "who2": "JAKE",
+    "x": 0.36,
+    "x2": 0.68,
+    "pose": "stand",
+    "pose2": "stand",
+    "expr": "neutral",
+    "expr2": "sleepy",
+    "facing": 1,
+    "facing2": -1,
+    "bg": "midnight",
+    "camZ0": 1.0,
+    "camZ1": 1.05
+   },
+   "sfx": []
+  },
+  {
+   "id": "s002",
+   "start": 1.506,
+   "end": 3.349,
+   "line": "Something is in here with me.",
+   "size": "med",
+   "hold": 0.35,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ],
+   "acting": "gaze drifts off-frame on the last word only",
+   "notes": "the worry arrives on 'me', not before it",
+   "params": {
+    "who": "MAX",
+    "x": 0.44,
+    "pose": "stand",
+    "expr": "neutral",
+    "exprTo": "worried",
+    "at": 1.05,
+    "look": [
+     0.5,
+     -0.15
+    ],
+    "facing": 1,
+    "bg": "midnight"
+   }
+  },
+  {
+   "id": "s003",
+   "start": 3.349,
+   "end": 4.149,
+   "line": "",
+   "size": "insert",
+   "hold": 0.75,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.02,
+     "name": "buzz",
+     "gain": -12
+    },
+    {
+     "at": 0.04,
+     "name": "whoosh",
+     "gain": -27.0
+    }
+   ],
+   "acting": "no faces at all \u2014 the object is the line",
+   "notes": "buzz pans; the fly drifts on a real path, not a bob",
+   "cut_intent": "eyeline",
+   "params": {
+    "x": 0.52,
+    "y": 0.44
+   }
+  },
+  {
+   "id": "s004",
+   "start": 4.149,
+   "end": 5.268,
+   "line": "Don't move.",
+   "size": "close",
+   "hold": 0.3,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ],
+   "acting": "the expression turns on a blink, mid-line",
+   "notes": "expression-turn test \u2014 if this fails the film fails",
+   "cut_intent": "eyeline",
+   "params": {
+    "who": "MAX",
+    "expr": "worried",
+    "exprTo": "determined",
+    "at": 0.55,
+    "look": [
+     0.35,
+     -0.1
+    ],
+    "facing": 1
+   }
+  },
+  {
+   "id": "s005",
+   "start": 5.268,
+   "end": 6.729,
+   "line": "It's a fly, Max.",
+   "size": "med",
+   "hold": 0.3,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ],
+   "acting": "the line is dismissive; MAX does not move",
+   "notes": "reverse of s002 \u2014 now we are on the other side of the axis",
+   "params": {
+    "who": "JAKE",
+    "who2": "MAX",
+    "x": 0.56,
+    "x2": 0.26,
+    "pose": "shrug",
+    "pose2": "stand",
+    "expr": "smirk",
+    "expr2": "angry",
+    "facing": -1,
+    "facing2": 1
+   }
+  },
+  {
+   "id": "s006",
+   "start": 6.729,
+   "end": 8.229,
+   "line": "",
+   "size": "wide",
+   "hold": 1.5,
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.04,
+     "name": "whoosh",
+     "gain": -27.0
+    },
+    {
+     "at": 0.1,
+     "name": "buzz",
+     "gain": -14
+    },
+    {
+     "at": 0.1,
+     "name": "footstep",
+     "gain": -17.0,
+     "seed": 20
+    },
+    {
+     "at": 0.4,
+     "name": "footstep",
+     "gain": -17.0,
+     "seed": 21
+    },
+    {
+     "at": 0.52,
+     "name": "hit",
+     "gain": -10
+    },
+    {
+     "at": 0.58,
+     "name": "freeze",
+     "gain": -18
+    },
+    {
+     "at": 0.7,
+     "name": "footstep",
+     "gain": -17.0,
+     "seed": 22
+    },
+    {
+     "at": 1.0,
+     "name": "footstep",
+     "gain": -17.0,
+     "seed": 23
+    },
+    {
+     "at": 0.75,
+     "name": "riser",
+     "gain": -24.0
+    }
+   ],
+   "acting": "the lunge is a physical action, not a pose change",
+   "notes": "silence beat paid for by movement and foley, never by a still frame",
+   "params": {
+    "who": "MAX",
+    "who2": "JAKE",
+    "x": 0.4,
+    "x2": 0.7,
+    "pose": "ready",
+    "pose2": "stand",
+    "expr": "determined",
+    "expr2": "shocked",
+    "facing": 1,
+    "facing2": -1
+   }
+  },
+  {
+   "id": "s007",
+   "start": 8.229,
+   "end": 9.316,
+   "line": "Got it.",
+   "size": "close",
+   "hold": 0.45,
+   "in": {
+    "type": "flash"
+   },
+   "sfx": [
+    {
+     "at": 0.0,
+     "name": "flash",
+     "gain": -16
+    }
+   ],
+   "acting": "quiet triumph \u2014 smaller than the lunge",
+   "notes": "the payoff shot: the same face, one expression later",
+   "params": {
+    "who": "MAX",
+    "expr": "determined",
+    "exprTo": "happy",
+    "at": 0.6,
+    "look": [
+     0,
+     0
+    ],
+    "facing": 1
+   }
+  },
+  {
+   "id": "s008",
+   "start": 9.316,
+   "end": 10.775,
+   "line": "Did I get it?",
+   "size": "wide",
+   "hold": 0.6,
+   "in": {
+    "type": "dip",
+    "dur": 0.4
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -26
+    }
+   ],
+   "acting": "bookend of s001 with one thing changed",
+   "notes": "pull out instead of push in \u2014 the geography now says the opposite",
+   "params": {
+    "who": "MAX",
+    "who2": "JAKE",
+    "x": 0.38,
+    "x2": 0.68,
+    "pose": "stand",
+    "pose2": "crossArms",
+    "expr": "worried",
+    "expr2": "smirk",
+    "facing": 1,
+    "facing2": -1,
+    "bg": "midnight",
+    "camZ0": 1.06,
+    "camZ1": 1.0
+   }
+  }
+ ],
+ "music": [
+  {
+   "start": 0.0,
+   "end": 1.347,
+   "mood": "dark",
+   "intensity": 0.28
+  },
+  {
+   "start": 1.347,
+   "end": 4.04,
+   "mood": "tension",
+   "intensity": 0.46
+  },
+  {
+   "start": 4.04,
+   "end": 10.775,
+   "mood": "hopeful",
+   "intensity": 0.34
+  }
+ ]
+}

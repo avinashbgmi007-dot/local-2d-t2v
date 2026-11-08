@@ -32,6 +32,8 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--audio", action="store_true")
     ap.add_argument("--aspect", default=None)
+    ap.add_argument("--strict", action="store_true",
+                    help="fail the run on QC warnings (dead cuts)")
     a = ap.parse_args()
 
     py = sys.executable
@@ -75,6 +77,13 @@ def main():
     cfg = json.load(open(os.path.join(out, "config.json"), encoding="utf-8"))
     aspect = a.aspect or cfg.get("aspect", "9:16")
     run([py, os.path.join(here, "review_frames.py"), "--project", out, "--aspect", aspect], studio)
+
+    # 5. QC gates — seam continuity + a written report. Reported every run; fatal under --strict.
+    sg = run([py, os.path.join(here, "seam_gate.py"), "--project", out, "--auto"]
+             + (["--strict"] if a.strict else []), studio)
+    run([py, os.path.join(here, "render_report.py"), "--project", out], studio)
+    if a.strict and sg:
+        sys.exit("GENERATE: seam_gate failed — a cut carries no shared subject")
 
     print("\nGENERATE: DONE ->", out)
     print("  video :", os.path.join(out, "build", "video_silent.mp4"))

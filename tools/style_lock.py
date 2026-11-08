@@ -95,7 +95,14 @@ def cmd_snapshot(a):
 
 def cmd_verify(a):
     P = a.project
-    m = json.load(open(manifest_path(P), encoding='utf-8'))
+    path = manifest_path(P)
+    if not os.path.exists(path):
+        print(f'style lock: NONE — no snapshot at {path}')
+        print('  a lock can only be created by a human, from frames the owner has accepted:')
+        print(f'    python tools/style_lock.py snapshot --project {P} --approved-by "<the owner\'s words>"')
+        print('  this project has no style reference, so a style drift cannot be detected yet.')
+        return 2
+    m = json.load(open(path, encoding='utf-8'))
     bad = []
     if m.get('schema') != SCHEMA:
         bad.append(f'schema {m.get("schema")!r}, expected {SCHEMA!r}')

@@ -114,6 +114,7 @@
    ],
    "acting": "no faces at all \u2014 the object is the line",
    "notes": "buzz pans; the fly drifts on a real path, not a bob",
+   "cut_intent": "eyeline",
    "params": {
     "x": 0.52,
     "y": 0.44
@@ -138,6 +139,7 @@
    ],
    "acting": "the expression turns on a blink, mid-line",
    "notes": "expression-turn test \u2014 if this fails the film fails",
+   "cut_intent": "eyeline",
    "params": {
     "who": "MAX",
     "expr": "worried",

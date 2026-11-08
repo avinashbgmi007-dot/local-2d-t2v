@@ -1,0 +1,26 @@
+{
+  "title": "Three In The Morning",
+  "aspect": "9:16",
+  "resolution": "1080p",
+  "fps": 24,
+  "style": "midnight",
+  "duration": 10.775,
+  "captions": true,
+  "bars": "none",
+  "fadeIn": 0.4,
+  "fadeOut": 0.7,
+  "music": {
+    "enabled": true,
+    "gainDb": -17
+  },
+  "sfx": {
+    "enabled": true,
+    "gainDb": -6
+  },
+  "loudness": -14,
+  "voiceover": "build/voice.wav",
+  "captionStyle": {
+    "y": 1800,
+    "size": 56
+  }
+}

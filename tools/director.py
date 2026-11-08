@@ -422,12 +422,14 @@ DEMO_STORY = {
          "notes": "the worry arrives on 'me', not before it"},
 
         {"id": "s003", "size": "insert", "line": "", "hold": 0.75, "x": 0.52, "y": 0.44,
+         "cut_intent": "eyeline",
          "in": {"type": "cut"},
          "sfx": [{"at": 0.02, "name": "buzz", "gain": -12}],
          "acting": "no faces at all — the object is the line",
          "notes": "buzz pans; the fly drifts on a real path, not a bob"},
 
         {"id": "s004", "size": "close", "line": "Don't move.", "hold": 0.30,
+         "cut_intent": "eyeline",
          "who": "MAX", "expr": "worried", "exprTo": "determined", "at": 0.55,
          "look": [0.35, -0.10], "facing": 1,
          "in": {"type": "cut"},
@@ -511,7 +513,7 @@ def compile_project(story, out):
             "line": s.get("line", ""), "size": s.get("size", "med"),
             "hold": float(s.get("hold", 0.42)),
         }
-        for k in ("in", "sfx", "amb", "scene", "acting", "notes", "set"):
+        for k in ("in", "sfx", "amb", "scene", "acting", "notes", "set", "cut_intent"):
             if k in s:
                 rec[k] = s[k]
         params = {k: s[k] for k in PARAM_KEYS if k in s}

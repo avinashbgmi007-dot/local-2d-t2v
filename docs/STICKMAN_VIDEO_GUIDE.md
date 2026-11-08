@@ -6,7 +6,8 @@ and screenshotted, so there is no API key, no quota, no watermark and no per-vid
 
 **Verified on:** Windows 11, Git Bash, 16 GB RAM, RTX 4060 Laptop 8 GB, Node 24, ffmpeg 9.0.1.
 **Measured results:** 29.9 s @ 1080p rendered in 84 s; 13.6 s @ 1080p rendered in 41 s.
-**Last updated:** 2026-11-06.
+10.8 s @ 1080p 9:16 with narration, music and 16 foley cues: 26 s render, ~55 s end to end.
+**Last updated:** 2026-11-08.
 
 ---
 
@@ -19,12 +20,33 @@ The pipeline has two halves and they are not the same kind of thing.
 | **The renderer** | deterministic code: draw frame → screenshot → encode | commands you can run yourself |
 | **The director** | decides *what* to draw and writes that as JavaScript | **a coding agent — not you, not a script** |
 
-The renderer cannot invent a video. It executes scene code. Someone has to write `scenes/shots/*.js`.
-That is the step that needs a language model with file-editing and terminal tools. Everything below
-assumes you have one (Claude Code, Qoder, OpenCode, Codex CLI — any of them).
+The renderer cannot invent a video. It executes scene code. Historically someone had to write
+`scenes/shots/*.js` by hand — that was the step that needed a language model with file-editing and
+terminal tools.
 
-If you are expecting a `generate-video.bat` that takes a topic and outputs an MP4 with no AI in the
-loop: that does not exist, and building it means writing a template compiler first (see §9).
+**That step is now automated.** `tools/director.py` is a deterministic template compiler: it turns a
+story JSON into a complete project — cast, blocking helpers, a parametric set, and one file per shot.
+No AI, no network, no randomness. Any tool, or no tool at all, can produce the JSON.
+
+### 0.1 One command
+
+    python tools/generate.py --story story.json --out projects/my-video --audio
+
+| stage | what it does |
+|---|---|
+| `director.py` | story JSON → `cast.js`, `blocking.js`, `sets/room.js`, `scenes/shots/*.js` |
+| `narrate.py` | Kokoro TTS → `build/voice.wav` + `timeline/words.json`, and **retimes every shot to its measured speech** (a shot lasts as long as its line, not a fixed grid) |
+| `sound_design.py` | whoosh on every hard cut, footsteps on walks, riser into flash/zoom, ambience bed |
+| `render_gate.py` | runs `render.mjs` and **hard-fails on any shot error** — `render.mjs` itself exits 0 even when a shot throws |
+| `mix.py` | music + sfx + loudness normalise (−14 LUFS) + mux |
+| `review_frames.py` | frames + a checklist for the review only eyes can do |
+| `seam_gate.py` | does anything carry across each cut? `--auto` honours a declared `cut_intent` |
+| `render_report.py` | written report: format, loudness, motion, style lock, approval state |
+
+`--strict` fails the run on a dead cut. Drop `--audio` for a silent render.
+
+A hand-written project can still beat the compiler — `projects/one-more-night-9x16/` is the reference
+for what "good" looks like, and it was written by hand. Use it as the bar, not as the input format.
 
 ---
 
