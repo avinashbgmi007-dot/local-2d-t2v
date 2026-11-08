@@ -1,0 +1,110 @@
+{
+ "source": "whisper:small.en+script",
+ "words": [
+  {
+   "word": "Three",
+   "start": 0.08,
+   "end": 0.64
+  },
+  {
+   "word": "ways",
+   "start": 0.64,
+   "end": 0.9
+  },
+  {
+   "word": "to",
+   "start": 0.9,
+   "end": 1.18
+  },
+  {
+   "word": "draw",
+   "start": 1.18,
+   "end": 1.36
+  },
+  {
+   "word": "the",
+   "start": 1.36,
+   "end": 1.54
+  },
+  {
+   "word": "same",
+   "start": 1.54,
+   "end": 1.78
+  },
+  {
+   "word": "guy.",
+   "start": 1.78,
+   "end": 2.18
+  },
+  {
+   "word": "Same",
+   "start": 2.82,
+   "end": 2.84
+  },
+  {
+   "word": "story,",
+   "start": 2.84,
+   "end": 3.22
+  },
+  {
+   "word": "same",
+   "start": 3.54,
+   "end": 3.68
+  },
+  {
+   "word": "gesture,",
+   "start": 3.68,
+   "end": 4.16
+  },
+  {
+   "word": "different",
+   "start": 4.48,
+   "end": 4.66
+  },
+  {
+   "word": "skin.",
+   "start": 4.66,
+   "end": 5.02
+  },
+  {
+   "word": "Which",
+   "start": 5.54,
+   "end": 5.62
+  },
+  {
+   "word": "one",
+   "start": 5.62,
+   "end": 5.84
+  },
+  {
+   "word": "do",
+   "start": 5.84,
+   "end": 5.96
+  },
+  {
+   "word": "you",
+   "start": 5.96,
+   "end": 6.1
+  },
+  {
+   "word": "trust",
+   "start": 6.1,
+   "end": 6.36
+  },
+  {
+   "word": "for",
+   "start": 6.36,
+   "end": 6.64
+  },
+  {
+   "word": "fifty",
+   "start": 6.64,
+   "end": 7.06
+  },
+  {
+   "word": "episodes?",
+   "start": 7.06,
+   "end": 7.5
+  }
+ ]
+}

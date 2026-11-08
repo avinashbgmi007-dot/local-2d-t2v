@@ -1,0 +1,36 @@
+{
+ "schema": "aitrends-style-lock-v1",
+ "status": "approved",
+ "character": "inkbean",
+ "project": "char-lab",
+ "style": "dusk",
+ "resolution": "1080p",
+ "aspect": "16:9",
+ "required": 3,
+ "approved_by": "B!",
+ "note": "provisional; scarf rejected after 2 attempts",
+ "snapshotted_at": "2026-11-06T11:33:58",
+ "references": [
+  {
+   "time": 1.0,
+   "path": "story/style-lock/1.00s.png",
+   "sha256": "556eaa7c2906f4dd02c5c3a66d4296a84b5703eca9bc80ba1199cf9650df0962",
+   "width": 1920,
+   "height": 1080
+  },
+  {
+   "time": 4.2,
+   "path": "story/style-lock/4.20s.png",
+   "sha256": "6ac7cfb21ed99fc9b1226c6885b7e9f2726f877e80ce2d4d5784629ff02f95aa",
+   "width": 1920,
+   "height": 1080
+  },
+  {
+   "time": 7.2,
+   "path": "story/style-lock/7.20s.png",
+   "sha256": "0ab2f638725b10040cace55afffe236d68516140701855d024a73775f1a574b4",
+   "width": 1920,
+   "height": 1080
+  }
+ ]
+}

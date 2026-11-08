@@ -1,0 +1,164 @@
+{
+ "title": "She Asked About You",
+ "duration": 13.61,
+ "shots": [
+  {
+   "id": "s001",
+   "start": 0.0,
+   "end": 2.53,
+   "line": "You actually called her. / I said I would.",
+   "scene": "Two-shot at the kitchen counter. She points at him on 'called'; he breaks gaze, then smirks on his own line.",
+   "set": "room",
+   "bars": "wide",
+   "in": {
+    "type": "fade",
+    "dur": 0.4
+   },
+   "sfx": [],
+   "amb": {
+    "name": "hum",
+    "gain": -30
+   },
+   "notes": "establish + screen direction"
+  },
+  {
+   "id": "s002",
+   "start": 2.53,
+   "end": 4.45,
+   "line": "You said you'd think about it.",
+   "scene": "Medium on her, his shoulder soft in the foreground. Brow lifts exactly on 'think'.",
+   "set": "room",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -20
+    }
+   ],
+   "notes": "her turn"
+  },
+  {
+   "id": "s003",
+   "start": 4.45,
+   "end": 5.17,
+   "line": "Same energy.",
+   "scene": "Reverse medium on him. Shrug lands on the first word, smirk held. Her arms crossed, out of focus.",
+   "set": "room",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -20
+    }
+   ],
+   "notes": "his dodge"
+  },
+  {
+   "id": "s004",
+   "start": 5.17,
+   "end": 7.41,
+   "line": "That is genuinely not the same thing.",
+   "scene": "Tight on her, deadpan. Head turns a few degrees toward him on 'genuinely', finger comes up.",
+   "set": "room",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [],
+   "notes": "the correction"
+  },
+  {
+   "id": "s005",
+   "start": 7.41,
+   "end": 8.47,
+   "line": "She laughed, though.",
+   "scene": "Medium on him, grin. Eyes drop on 'laughed' and come back up \u2014 the tell.",
+   "set": "room",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -22
+    }
+   ],
+   "notes": "the pivot"
+  },
+  {
+   "id": "s006",
+   "start": 8.47,
+   "end": 10.51,
+   "line": "\u2026she laughed?",
+   "scene": "Giant face on her across the 1.4 s of silence, then eyes widen on 'laughed?'. No body, no cut.",
+   "set": "room",
+   "bars": "scope",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 1.64,
+     "name": "blip",
+     "gain": -18
+    }
+   ],
+   "notes": "the held beat"
+  },
+  {
+   "id": "s007",
+   "start": 10.51,
+   "end": 13.61,
+   "line": "Twice. Then she asked about you.",
+   "scene": "Close on him, finger up on 'Twice', then the camera pulls out to the two-shot as he says she asked about you; she finds the lens.",
+   "set": "room",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.0,
+     "name": "whoosh",
+     "gain": -18
+    },
+    {
+     "at": 0.05,
+     "name": "ding",
+     "gain": -16
+    }
+   ],
+   "notes": "button + end screen"
+  }
+ ],
+ "music": [
+  {
+   "start": 0,
+   "end": 5.17,
+   "mood": "playful",
+   "intensity": 0.4
+  },
+  {
+   "start": 5.17,
+   "end": 8.47,
+   "mood": "calm",
+   "intensity": 0.28
+  },
+  {
+   "start": 8.47,
+   "end": 13.61,
+   "mood": "hopeful",
+   "intensity": 0.45
+  }
+ ]
+}

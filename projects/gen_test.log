@@ -1,0 +1,46 @@
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\director.py --story E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\examples\director-demo\story.json --out E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test
+Director: wrote project -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test
+  shots=4  duration=12.00s  aspect=9:16  style=dusk
+  next: node render.mjs --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe -u E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\render_gate.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test
+GATE RUN: node render.mjs --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test
+Rendering frames 0-288 (12.0 s) with 8 worker(s)…
+  48/288 frames  9.21 fps  elapsed 0m05s  eta 0m26s
+  96/288 frames  10.61 fps  elapsed 0m09s  eta 0m18s
+  144/288 frames  11.05 fps  elapsed 0m13s  eta 0m13s
+  192/288 frames  11.42 fps  elapsed 0m17s  eta 0m08s
+  240/288 frames  11.52 fps  elapsed 0m21s  eta 0m04s
+  288/288 frames  11.03 fps  elapsed 0m26s  eta 0m00s
+
+Done: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test\build\video_silent.mp4  (0m28s)
+
+GATE: clean (exit 0, no error signals) -> PASS
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\review_frames.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test --aspect 9:16
+
+=== VISUAL REVIEW GATE: video_silent.mp4 ===
+  size        : 1080x1920  aspect=9:16  (expected 9:16)
+  duration    : 12.000s
+  frames pulled: 6 -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test\build\review
+  auto checks : black/dead frames = 0  | aspect_ok = True
+
+  --- MANUAL / VISION CHECKLIST (automation cannot judge these) ---
+  [ ] Characters present as the script/shot-list requires?
+  [ ] Character identity consistent (signature colours from cast.js)?
+  [ ] Composition balanced; nothing cut off or floating?
+  [ ] Captions / on-screen text legible and not overlapping?
+  [ ] Visual style matches config (e.g. 'dusk') across shots?
+  [ ] No unintended black/blank stretches? (auto: PASS)
+  [ ] Aspect correct for target platform? (auto: PASS)
+  [ ] MUSIC present & at target loudness? (only if audio stream;
+       N/A for silent video — re-run after enabling music + mix.py)
+
+  Written: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test\build\review\review.json
+  >>> Eyeball the pulled frames; a human (or vision model) must
+      confirm the unchecked items before this is 'accepted'.
+
+GENERATE: DONE -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test
+  video : E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test\build\video_silent.mp4
+  review: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\gen_test\build\review

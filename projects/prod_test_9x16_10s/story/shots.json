@@ -1,0 +1,7 @@
+{
+  "title": "Prod Test 9x16 10s",
+  "duration": 10.0,
+  "shots": [
+    { "id": "s001", "start": 0, "end": 10, "line": "prod readiness test", "scene": "animated circle + text, camera push", "bars": null, "in": { "type": "cut" }, "sfx": [], "notes": "" }
+  ]
+}

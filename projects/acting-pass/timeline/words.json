@@ -1,0 +1,205 @@
+{
+ "source": "whisper:small.en+script",
+ "words": [
+  {
+   "word": "I'm",
+   "start": 0.14,
+   "end": 0.66
+  },
+  {
+   "word": "leaving.",
+   "start": 0.66,
+   "end": 0.94
+  },
+  {
+   "word": "You",
+   "start": 1.5,
+   "end": 1.56
+  },
+  {
+   "word": "said",
+   "start": 1.56,
+   "end": 1.74
+  },
+  {
+   "word": "that",
+   "start": 1.74,
+   "end": 1.88
+  },
+  {
+   "word": "already.",
+   "start": 1.88,
+   "end": 2.18
+  },
+  {
+   "word": "This",
+   "start": 2.86,
+   "end": 2.98
+  },
+  {
+   "word": "time",
+   "start": 2.98,
+   "end": 3.24
+  },
+  {
+   "word": "I",
+   "start": 3.32,
+   "end": 3.46
+  },
+  {
+   "word": "mean",
+   "start": 3.46,
+   "end": 3.64
+  },
+  {
+   "word": "it.",
+   "start": 3.64,
+   "end": 3.84
+  },
+  {
+   "word": "You",
+   "start": 4.16,
+   "end": 4.36
+  },
+  {
+   "word": "took",
+   "start": 4.36,
+   "end": 4.5
+  },
+  {
+   "word": "your",
+   "start": 4.5,
+   "end": 4.66
+  },
+  {
+   "word": "keys.",
+   "start": 4.66,
+   "end": 4.86
+  },
+  {
+   "word": "So?",
+   "start": 6.3,
+   "end": 6.7
+  },
+  {
+   "word": "Last",
+   "start": 7.2,
+   "end": 7.42
+  },
+  {
+   "word": "time",
+   "start": 7.42,
+   "end": 7.62
+  },
+  {
+   "word": "you",
+   "start": 7.62,
+   "end": 7.76
+  },
+  {
+   "word": "left,",
+   "start": 7.76,
+   "end": 7.96
+  },
+  {
+   "word": "you",
+   "start": 8.08,
+   "end": 8.14
+  },
+  {
+   "word": "left",
+   "start": 8.14,
+   "end": 8.32
+  },
+  {
+   "word": "your",
+   "start": 8.32,
+   "end": 8.5
+  },
+  {
+   "word": "keys.",
+   "start": 8.5,
+   "end": 8.78
+  },
+  {
+   "word": "That's",
+   "start": 10.54,
+   "end": 10.92
+  },
+  {
+   "word": "not",
+   "start": 10.92,
+   "end": 11.04
+  },
+  {
+   "word": "a",
+   "start": 11.04,
+   "end": 11.2
+  },
+  {
+   "word": "reason.",
+   "start": 11.2,
+   "end": 11.48
+  },
+  {
+   "word": "It's",
+   "start": 11.98,
+   "end": 12.16
+  },
+  {
+   "word": "the",
+   "start": 12.16,
+   "end": 12.26
+  },
+  {
+   "word": "only",
+   "start": 12.26,
+   "end": 12.5
+  },
+  {
+   "word": "one",
+   "start": 12.5,
+   "end": 12.68
+  },
+  {
+   "word": "I've",
+   "start": 12.68,
+   "end": 12.84
+  },
+  {
+   "word": "got.",
+   "start": 12.84,
+   "end": 13.14
+  },
+  {
+   "word": "One",
+   "start": 14.68,
+   "end": 14.94
+  },
+  {
+   "word": "more",
+   "start": 14.94,
+   "end": 15.16
+  },
+  {
+   "word": "night.",
+   "start": 15.16,
+   "end": 15.42
+  },
+  {
+   "word": "One",
+   "start": 15.96,
+   "end": 16.1
+  },
+  {
+   "word": "more",
+   "start": 16.1,
+   "end": 16.24
+  },
+  {
+   "word": "night.",
+   "start": 16.24,
+   "end": 16.54
+  }
+ ]
+}

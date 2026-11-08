@@ -1,0 +1,62 @@
+[
+ {
+  "i": 0,
+  "start": 0.14,
+  "end": 0.94,
+  "text": "I'm leaving."
+ },
+ {
+  "i": 1,
+  "start": 1.5,
+  "end": 2.18,
+  "text": "You said that already."
+ },
+ {
+  "i": 2,
+  "start": 2.86,
+  "end": 3.84,
+  "text": "This time I mean it."
+ },
+ {
+  "i": 3,
+  "start": 4.16,
+  "end": 4.86,
+  "text": "You took your keys."
+ },
+ {
+  "i": 4,
+  "start": 6.3,
+  "end": 6.7,
+  "text": "So?"
+ },
+ {
+  "i": 5,
+  "start": 7.2,
+  "end": 8.78,
+  "text": "Last time you left, you left your keys."
+ },
+ {
+  "i": 6,
+  "start": 10.54,
+  "end": 11.48,
+  "text": "That's not a reason."
+ },
+ {
+  "i": 7,
+  "start": 11.98,
+  "end": 13.14,
+  "text": "It's the only one I've got."
+ },
+ {
+  "i": 8,
+  "start": 14.68,
+  "end": 15.42,
+  "text": "One more night."
+ },
+ {
+  "i": 9,
+  "start": 15.96,
+  "end": 16.54,
+  "text": "One more night."
+ }
+]

@@ -1,0 +1,58 @@
+[
+ {
+  "i": 0,
+  "start": 0.0,
+  "speechStart": 0.05,
+  "speechEnd": 2.37,
+  "text": "Why doesn't your stomach digest itself?",
+  "end": 2.72
+ },
+ {
+  "i": 1,
+  "start": 2.72,
+  "speechStart": 2.87,
+  "speechEnd": 8.39,
+  "text": "It's bathed in acid around pH one point five, strong enough to dissolve metal.",
+  "end": 8.68
+ },
+ {
+  "i": 2,
+  "start": 8.68,
+  "speechStart": 8.83,
+  "speechEnd": 9.93,
+  "text": "So what protects it?",
+  "end": 10.1
+ },
+ {
+  "i": 3,
+  "start": 10.1,
+  "speechStart": 10.25,
+  "speechEnd": 12.01,
+  "text": "A lining that rebuilds constantly.",
+  "end": 12.28
+ },
+ {
+  "i": 4,
+  "start": 12.28,
+  "speechStart": 12.43,
+  "speechEnd": 18.35,
+  "text": "Every few days, your stomach grows a brand new surface, cell by cell, and sheds the old one.",
+  "end": 18.48
+ },
+ {
+  "i": 5,
+  "start": 18.48,
+  "speechStart": 18.63,
+  "speechEnd": 25.03,
+  "text": "But when that rebuild slows, an ulcer, or too many painkillers, the acid reaches the tissue underneath.",
+  "end": 25.44
+ },
+ {
+  "i": 6,
+  "start": 25.44,
+  "speechStart": 25.59,
+  "speechEnd": 28.41,
+  "text": "And then it does what you'd expect. It digests you.",
+  "end": 29.91
+ }
+]

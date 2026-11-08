@@ -1,0 +1,14 @@
+{
+  "title": "Prod Test 9x16 10s",
+  "aspect": "9:16",
+  "resolution": "1080p",
+  "fps": 24,
+  "style": "dusk",
+  "duration": 10.0,
+  "captions": false,
+  "fadeIn": 0.5,
+  "fadeOut": 0.8,
+  "music": { "enabled": false },
+  "sfx": { "enabled": false },
+  "loudness": -14
+}

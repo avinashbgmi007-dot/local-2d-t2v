@@ -1,0 +1,18 @@
+{
+  "title": "Director Demo \u2014 9:16",
+  "aspect": "9:16",
+  "resolution": "1080p",
+  "fps": 24,
+  "style": "dusk",
+  "captions": false,
+  "fadeIn": 0.4,
+  "fadeOut": 0.6,
+  "music": {
+    "enabled": true
+  },
+  "sfx": {
+    "enabled": false
+  },
+  "loudness": -14,
+  "voiceover": "build/voice_silent.wav"
+}

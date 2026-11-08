@@ -1,0 +1,97 @@
+[
+ {
+  "word": "A",
+  "start": 0.0,
+  "end": 0.164
+ },
+ {
+  "word": "fly",
+  "start": 0.182,
+  "end": 0.428
+ },
+ {
+  "word": "buzzes",
+  "start": 0.456,
+  "end": 0.825
+ },
+ {
+  "word": "past",
+  "start": 0.866,
+  "end": 1.153
+ },
+ {
+  "word": "your",
+  "start": 1.185,
+  "end": 1.472
+ },
+ {
+  "word": "face.",
+  "start": 1.504,
+  "end": 1.955
+ },
+ {
+  "word": "You",
+  "start": 4.0,
+  "end": 4.212
+ },
+ {
+  "word": "don't",
+  "start": 4.236,
+  "end": 4.484
+ },
+ {
+  "word": "even",
+  "start": 4.511,
+  "end": 4.759
+ },
+ {
+  "word": "think.",
+  "start": 4.787,
+  "end": 5.211
+ },
+ {
+  "word": "You",
+  "start": 8.0,
+  "end": 8.23
+ },
+ {
+  "word": "just",
+  "start": 8.256,
+  "end": 8.525
+ },
+ {
+  "word": "catch",
+  "start": 8.555,
+  "end": 8.862
+ },
+ {
+  "word": "it.",
+  "start": 8.896,
+  "end": 9.242
+ },
+ {
+  "word": "Your",
+  "start": 12.0,
+  "end": 12.247
+ },
+ {
+  "word": "friend",
+  "start": 12.275,
+  "end": 12.593
+ },
+ {
+  "word": "doesn't",
+  "start": 12.628,
+  "end": 12.946
+ },
+ {
+  "word": "believe",
+  "start": 12.982,
+  "end": 13.335
+ },
+ {
+  "word": "it.",
+  "start": 13.375,
+  "end": 13.693
+ }
+]

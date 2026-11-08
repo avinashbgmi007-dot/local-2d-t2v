@@ -1,0 +1,262 @@
+{
+ "title": "Why Doesn't Your Stomach Digest Itself?",
+ "duration": 29.91,
+ "shots": [
+  {
+   "id": "s001",
+   "start": 0.0,
+   "end": 2.72,
+   "line": "Why doesn't your stomach digest itself?",
+   "scene": "Wide night kitchen, one cold lamp over the counter, hero at the island turning the question over. Slow push-in.",
+   "set": "kitchen",
+   "bars": "wide",
+   "in": {
+    "type": "fade",
+    "dur": 0.5
+   },
+   "sfx": [],
+   "amb": {
+    "name": "hum",
+    "gain": -30
+   },
+   "notes": "hook"
+  },
+  {
+   "id": "s002",
+   "start": 2.72,
+   "end": 5.8,
+   "cut_intent": "match",
+   "line": "It's bathed in acid around pH one point five,",
+   "scene": "Blueprint body outline, stomach drawn in glowing acid-green, callout GASTRIC ACID, pH meter filling.",
+   "set": "blueprint",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.6,
+     "name": "blip",
+     "gain": -12
+    }
+   ],
+   "notes": "diagram"
+  },
+  {
+   "id": "s003",
+   "start": 5.8,
+   "end": 8.68,
+   "cut_intent": "intentional",
+   "line": "strong enough to dissolve metal.",
+   "scene": "Acid layer above the gut wall eats an iron nail; it shrinks, sparks, glow blooms. Badge pH 1.5.",
+   "set": "gut",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.3,
+     "name": "glitch",
+     "gain": -14
+    },
+    {
+     "at": 0.5,
+     "name": "pop",
+     "gain": -16
+    }
+   ],
+   "notes": "danger"
+  },
+  {
+   "id": "s004",
+   "start": 8.68,
+   "end": 10.1,
+   "cut_intent": "intentional",
+   "line": "So what protects it?",
+   "scene": "Giant face close-up, blurred kitchen behind, brows up, lip-synced to the real word timings.",
+   "set": "kitchen",
+   "bars": "scope",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.1,
+     "name": "whoosh",
+     "gain": -18
+    }
+   ],
+   "notes": "turn"
+  },
+  {
+   "id": "s005",
+   "start": 10.1,
+   "end": 12.28,
+   "cut_intent": "intentional",
+   "line": "A lining that rebuilds constantly.",
+   "scene": "Pull-out reveal of the gut wall: mucus line, nine tissue cells in a row, callout MUCOSAL LINING.",
+   "set": "gut",
+   "bars": "wide",
+   "in": {
+    "type": "zoom",
+    "dur": 0.4
+   },
+   "sfx": [
+    {
+     "at": 0.2,
+     "name": "shimmer",
+     "gain": -16
+    }
+   ],
+   "notes": "mechanism"
+  },
+  {
+   "id": "s006",
+   "start": 12.28,
+   "end": 15.4,
+   "line": "Every few days, your stomach grows a brand new surface, cell by cell,",
+   "scene": "New cells pop in one after another beneath the row, each with a white ring; data card counts 0 to 9.",
+   "set": "gut",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.4,
+     "name": "pop",
+     "gain": -14
+    },
+    {
+     "at": 1.1,
+     "name": "pop",
+     "gain": -14
+    },
+    {
+     "at": 1.8,
+     "name": "pop",
+     "gain": -14
+    }
+   ],
+   "notes": "escalation"
+  },
+  {
+   "id": "s007",
+   "start": 15.4,
+   "end": 18.48,
+   "line": "and sheds the old one.",
+   "scene": "Old cells lift off the wall and drift up into the acid, fading; droplets hang in the layer.",
+   "set": "gut",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.3,
+     "name": "swish",
+     "gain": -20
+    }
+   ],
+   "notes": "time passes"
+  },
+  {
+   "id": "s008",
+   "start": 18.48,
+   "end": 22.0,
+   "line": "But when that rebuild slows, an ulcer, or too many painkillers,",
+   "scene": "One cell is missing from the row, red ring around the gap, pills fall in from above. Slight camera roll.",
+   "set": "gut",
+   "bars": "wide",
+   "in": {
+    "type": "dip",
+    "dur": 0.3
+   },
+   "sfx": [
+    {
+     "at": 0.2,
+     "name": "impact",
+     "gain": -10
+    },
+    {
+     "at": 0.6,
+     "name": "stinger",
+     "gain": -16
+    }
+   ],
+   "notes": "twist"
+  },
+  {
+   "id": "s009",
+   "start": 22.0,
+   "end": 25.44,
+   "line": "the acid reaches the tissue underneath.",
+   "scene": "Acid pours through the breach as a bright column, red glow spreads into the tissue, camera shake on impact.",
+   "set": "gut",
+   "bars": "scope",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.75,
+     "name": "impact",
+     "gain": -6
+    },
+    {
+     "at": 0.8,
+     "name": "glitch",
+     "gain": -12
+    }
+   ],
+   "notes": "climax"
+  },
+  {
+   "id": "s010",
+   "start": 25.44,
+   "end": 29.91,
+   "line": "And then it does what you'd expect. It digests you.",
+   "scene": "Giant face, warm-red rim, blurred breached wall behind; then cut to the hero arms-crossed with the end question.",
+   "set": "gut",
+   "bars": "scope",
+   "in": {
+    "type": "flash"
+   },
+   "sfx": [
+    {
+     "at": 1.9,
+     "name": "whoosh",
+     "gain": -14
+    }
+   ],
+   "notes": "payoff + end screen"
+  }
+ ],
+ "music": [
+  {
+   "start": 0,
+   "end": 8.68,
+   "mood": "mystery",
+   "intensity": 0.35
+  },
+  {
+   "start": 8.68,
+   "end": 18.48,
+   "mood": "wonder",
+   "intensity": 0.42
+  },
+  {
+   "start": 18.48,
+   "end": 25.44,
+   "mood": "tension",
+   "intensity": 0.6
+  },
+  {
+   "start": 25.44,
+   "end": 29.91,
+   "mood": "calm",
+   "intensity": 0.3
+  }
+ ]
+}

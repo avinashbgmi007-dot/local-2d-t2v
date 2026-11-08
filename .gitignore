@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# render / build outputs (large binaries: frames, mp4s, wavs)
+build/
+out/
+*.mp4
+*.wav
+*.part
+
+# python bytecode
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -1,0 +1,99 @@
+{
+  "title": "Director Demo \u2014 9:16",
+  "duration": 12.0,
+  "shots": [
+    {
+      "id": "s001",
+      "start": 0.0,
+      "end": 3.0,
+      "line": "A fly buzzes past your face.",
+      "in": {
+        "type": "cut"
+      },
+      "params": {
+        "who": "MAX",
+        "pose": "stand",
+        "expr": "neutral",
+        "x": 0.5,
+        "y": 0.92,
+        "scale": 1.1,
+        "facing": 1,
+        "bg": "dusk"
+      }
+    },
+    {
+      "id": "s002",
+      "start": 3.0,
+      "end": 6.0,
+      "line": "You don't even think.",
+      "in": {
+        "type": "cut"
+      },
+      "params": {
+        "who": "MAX",
+        "pose": "point",
+        "expr": "determined",
+        "x": 0.5,
+        "y": 0.92,
+        "scale": 1.2,
+        "facing": 1,
+        "bg": "night"
+      }
+    },
+    {
+      "id": "s003",
+      "start": 6.0,
+      "end": 9.0,
+      "line": "You just catch it.",
+      "in": {
+        "type": "cut"
+      },
+      "params": {
+        "who": "JAKE",
+        "pose": "cheer",
+        "expr": "happy",
+        "x": 0.5,
+        "y": 0.92,
+        "scale": 1.1,
+        "facing": -1,
+        "bg": "dusk"
+      }
+    },
+    {
+      "id": "s004",
+      "start": 9.0,
+      "end": 12.0,
+      "line": "Your friend doesn't believe it.",
+      "in": {
+        "type": "cut"
+      },
+      "params": {
+        "who": "MAX",
+        "pose": "talk",
+        "expr": "neutral",
+        "x": 0.34,
+        "y": 0.92,
+        "scale": 1.0,
+        "bg": "dusk",
+        "who2": "JAKE",
+        "pose2": "surprised",
+        "expr2": "shocked",
+        "x2": 0.68
+      }
+    }
+  ],
+  "music": [
+    {
+      "start": 0,
+      "end": 6,
+      "mood": "hopeful",
+      "intensity": 0.5
+    },
+    {
+      "start": 6,
+      "end": 12,
+      "mood": "tension",
+      "intensity": 0.6
+    }
+  ]
+}

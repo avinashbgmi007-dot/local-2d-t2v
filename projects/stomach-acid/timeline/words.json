@@ -1,0 +1,375 @@
+{
+ "source": "whisper:small.en+script",
+ "words": [
+  {
+   "word": "Why",
+   "start": 0.05,
+   "end": 0.57
+  },
+  {
+   "word": "doesn't",
+   "start": 0.57,
+   "end": 0.83
+  },
+  {
+   "word": "your",
+   "start": 0.83,
+   "end": 1.03
+  },
+  {
+   "word": "stomach",
+   "start": 1.03,
+   "end": 1.41
+  },
+  {
+   "word": "digest",
+   "start": 1.41,
+   "end": 1.85
+  },
+  {
+   "word": "itself?",
+   "start": 1.85,
+   "end": 2.37
+  },
+  {
+   "word": "It's",
+   "start": 2.87,
+   "end": 3.07
+  },
+  {
+   "word": "bathed",
+   "start": 3.07,
+   "end": 3.51
+  },
+  {
+   "word": "in",
+   "start": 3.51,
+   "end": 3.67
+  },
+  {
+   "word": "acid",
+   "start": 3.67,
+   "end": 4.07
+  },
+  {
+   "word": "around",
+   "start": 4.07,
+   "end": 4.43
+  },
+  {
+   "word": "pH",
+   "start": 4.43,
+   "end": 4.97
+  },
+  {
+   "word": "one",
+   "start": 4.97,
+   "end": 5.59
+  },
+  {
+   "word": "point",
+   "start": 5.59,
+   "end": 6.21
+  },
+  {
+   "word": "five,",
+   "start": 6.21,
+   "end": 6.83
+  },
+  {
+   "word": "strong",
+   "start": 6.83,
+   "end": 7.07
+  },
+  {
+   "word": "enough",
+   "start": 7.07,
+   "end": 7.37
+  },
+  {
+   "word": "to",
+   "start": 7.37,
+   "end": 7.59
+  },
+  {
+   "word": "dissolve",
+   "start": 7.59,
+   "end": 7.99
+  },
+  {
+   "word": "metal.",
+   "start": 7.99,
+   "end": 8.39
+  },
+  {
+   "word": "So",
+   "start": 8.83,
+   "end": 8.97
+  },
+  {
+   "word": "what",
+   "start": 8.97,
+   "end": 9.17
+  },
+  {
+   "word": "protects",
+   "start": 9.17,
+   "end": 9.55
+  },
+  {
+   "word": "it?",
+   "start": 9.55,
+   "end": 9.93
+  },
+  {
+   "word": "A",
+   "start": 10.25,
+   "end": 10.35
+  },
+  {
+   "word": "lining",
+   "start": 10.35,
+   "end": 10.65
+  },
+  {
+   "word": "that",
+   "start": 10.65,
+   "end": 10.95
+  },
+  {
+   "word": "rebuilds",
+   "start": 10.95,
+   "end": 11.51
+  },
+  {
+   "word": "constantly.",
+   "start": 11.51,
+   "end": 12.01
+  },
+  {
+   "word": "Every",
+   "start": 12.43,
+   "end": 12.67
+  },
+  {
+   "word": "few",
+   "start": 12.67,
+   "end": 12.91
+  },
+  {
+   "word": "days,",
+   "start": 12.91,
+   "end": 13.23
+  },
+  {
+   "word": "your",
+   "start": 13.23,
+   "end": 13.49
+  },
+  {
+   "word": "stomach",
+   "start": 13.49,
+   "end": 13.85
+  },
+  {
+   "word": "grows",
+   "start": 13.85,
+   "end": 14.15
+  },
+  {
+   "word": "a",
+   "start": 14.15,
+   "end": 14.35
+  },
+  {
+   "word": "brand",
+   "start": 14.35,
+   "end": 14.55
+  },
+  {
+   "word": "new",
+   "start": 14.55,
+   "end": 14.79
+  },
+  {
+   "word": "surface,",
+   "start": 14.79,
+   "end": 15.29
+  },
+  {
+   "word": "cell",
+   "start": 15.79,
+   "end": 16.13
+  },
+  {
+   "word": "by",
+   "start": 16.13,
+   "end": 16.37
+  },
+  {
+   "word": "cell,",
+   "start": 16.37,
+   "end": 16.79
+  },
+  {
+   "word": "and",
+   "start": 17.03,
+   "end": 17.27
+  },
+  {
+   "word": "sheds",
+   "start": 17.27,
+   "end": 17.55
+  },
+  {
+   "word": "the",
+   "start": 17.55,
+   "end": 17.81
+  },
+  {
+   "word": "old",
+   "start": 17.81,
+   "end": 18.05
+  },
+  {
+   "word": "one.",
+   "start": 18.05,
+   "end": 18.35
+  },
+  {
+   "word": "But",
+   "start": 18.63,
+   "end": 18.77
+  },
+  {
+   "word": "when",
+   "start": 18.77,
+   "end": 18.91
+  },
+  {
+   "word": "that",
+   "start": 18.91,
+   "end": 19.13
+  },
+  {
+   "word": "rebuild",
+   "start": 19.13,
+   "end": 19.71
+  },
+  {
+   "word": "slows,",
+   "start": 19.71,
+   "end": 20.07
+  },
+  {
+   "word": "an",
+   "start": 20.07,
+   "end": 20.49
+  },
+  {
+   "word": "ulcer,",
+   "start": 20.49,
+   "end": 20.97
+  },
+  {
+   "word": "or",
+   "start": 21.41,
+   "end": 21.47
+  },
+  {
+   "word": "too",
+   "start": 21.47,
+   "end": 21.73
+  },
+  {
+   "word": "many",
+   "start": 21.73,
+   "end": 21.89
+  },
+  {
+   "word": "painkillers,",
+   "start": 21.89,
+   "end": 22.49
+  },
+  {
+   "word": "the",
+   "start": 22.93,
+   "end": 23.17
+  },
+  {
+   "word": "acid",
+   "start": 23.17,
+   "end": 23.57
+  },
+  {
+   "word": "reaches",
+   "start": 23.57,
+   "end": 23.91
+  },
+  {
+   "word": "the",
+   "start": 23.91,
+   "end": 24.19
+  },
+  {
+   "word": "tissue",
+   "start": 24.19,
+   "end": 24.51
+  },
+  {
+   "word": "underneath.",
+   "start": 24.51,
+   "end": 25.03
+  },
+  {
+   "word": "And",
+   "start": 25.59,
+   "end": 25.65
+  },
+  {
+   "word": "then",
+   "start": 25.65,
+   "end": 25.77
+  },
+  {
+   "word": "it",
+   "start": 25.77,
+   "end": 25.87
+  },
+  {
+   "word": "does",
+   "start": 25.87,
+   "end": 26.03
+  },
+  {
+   "word": "what",
+   "start": 26.03,
+   "end": 26.27
+  },
+  {
+   "word": "you'd",
+   "start": 26.27,
+   "end": 26.51
+  },
+  {
+   "word": "expect.",
+   "start": 26.51,
+   "end": 26.93
+  },
+  {
+   "word": "It",
+   "start": 27.47,
+   "end": 27.59
+  },
+  {
+   "word": "digests",
+   "start": 27.59,
+   "end": 28.13
+  },
+  {
+   "word": "you.",
+   "start": 28.13,
+   "end": 28.41
+  }
+ ]
+}

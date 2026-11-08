@@ -1,0 +1,23 @@
+{
+ "title": "Why Doesn't Your Stomach Digest Itself?",
+ "aspect": "16:9",
+ "resolution": "1080p",
+ "fps": 24,
+ "style": "midnight",
+ "voiceover": "input/voiceover.wav",
+ "script": "input/script.txt",
+ "duration": 29.719,
+ "captions": false,
+ "bars": "wide",
+ "fadeIn": 0.5,
+ "fadeOut": 0.8,
+ "music": {
+  "enabled": true,
+  "gainDb": -17
+ },
+ "sfx": {
+  "enabled": true,
+  "gainDb": -6
+ },
+ "loudness": -14
+}

@@ -1,0 +1,333 @@
+{
+ "title": "One More Night",
+ "duration": 17.99,
+ "character": "B · Ink Bean",
+ "resolution": "1080p",
+ "aspect": "9:16",
+ "fps": 24,
+ "style": "midnight",
+ "screen_direction": "NILS frame-LEFT facing right, seated at the counter. RAE frame-RIGHT facing left, standing, with the door at 0.90W behind her. Never crossed.",
+ "cast": {
+  "RAE": {
+   "skin": "inkbean",
+   "color": "#2f9e8f",
+   "voice": "af_heart",
+   "signature": "teal"
+  },
+  "NILS": {
+   "skin": "inkbean",
+   "color": "#c2553d",
+   "voice": "am_puck",
+   "signature": "rust"
+  }
+ },
+ "shots": [
+  {
+   "id": "s001",
+   "start": 0.0,
+   "end": 1.5,
+   "line": "I'm leaving.",
+   "scene": "Wide two-shot, night kitchen. He sits at the counter frame left, not looking up; she stands frame right with a bag over one shoulder, facing him, already half-turned toward the door behind her. One pendant lamp is the only bright thing. Slow push-in.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "fade",
+    "dur": 0.5
+   },
+   "sfx": [],
+   "amb": {
+    "name": "hum",
+    "gain": -32
+   },
+   "acting": "flat delivery, no gesture, already turned half away — she has said this before",
+   "notes": "establish geography and the imbalance"
+  },
+  {
+   "id": "s002",
+   "start": 1.5,
+   "end": 2.86,
+   "line": "You said that already.",
+   "scene": "Medium on him, her shoulder soft in the foreground right of frame. He keeps his eyes on the counter until 'already', then looks at her.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -22
+    }
+   ],
+   "acting": "tired, not angry; gaze lifts on the last word only",
+   "notes": "his first look at her in the film"
+  },
+  {
+   "id": "s003",
+   "start": 2.86,
+   "end": 4.16,
+   "line": "This time I mean it.",
+   "scene": "Medium on her, his shoulder foreground left. Free hand comes up on 'mean' and the brow lifts on 'it'.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -22
+    }
+   ],
+   "acting": "the over-conviction beat — gesture lands on 'mean' (3.32s), brow on 'it' (3.64s)",
+   "notes": "word-accurate gesture test 1"
+  },
+  {
+   "id": "s004",
+   "start": 4.16,
+   "end": 4.66,
+   "line": "You took your keys.",
+   "scene": "Insert close on her hand at her side — keys between two fingers, catching the lamp. His eyeline arrives into frame from the right.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "zoom",
+    "dur": 0.3
+   },
+   "sfx": [
+    {
+     "at": 0.1,
+     "name": "blip",
+     "gain": -20
+    }
+   ],
+   "acting": "no acting at all — the object is the line",
+   "notes": "prop must be readable at phone size"
+  },
+  {
+   "id": "s005",
+   "start": 4.66,
+   "end": 6.3,
+   "line": "",
+   "scene": "SILENCE 1.64s. Wide: she crosses to the door at frame right, four footsteps, hand finds the handle, and stops without turning back. He stays seated at frame left. Camera holds, slight drift only.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.12,
+     "name": "../../audio/foley/footstep-concrete-000.ogg",
+     "gain": -12
+    },
+    {
+     "at": 0.42,
+     "name": "../../audio/foley/footstep-concrete-002.ogg",
+     "gain": -13
+    },
+    {
+     "at": 0.72,
+     "name": "../../audio/foley/footstep-concrete-001.ogg",
+     "gain": -13
+    },
+    {
+     "at": 1.02,
+     "name": "../../audio/foley/footstep-concrete-003.ogg",
+     "gain": -14
+    },
+    {
+     "at": 1.34,
+     "name": "../../audio/foley/creak1.ogg",
+     "gain": -22
+    }
+   ],
+   "acting": "walk cycle with planted feet and a matching x-speed; the stop has weight",
+   "notes": "physical action test — walkPose, not a slide"
+  },
+  {
+   "id": "s006",
+   "start": 6.3,
+   "end": 7.2,
+   "line": "So?",
+   "scene": "Close on her profile at the door, still facing it. Chin lifts a fraction toward him on the word.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [],
+   "acting": "two words, defensive, eyes still on the door — she has not committed to turning",
+   "notes": "gaze refuses the exchange"
+  },
+  {
+   "id": "s007",
+   "start": 7.2,
+   "end": 8.5,
+   "line": "Last time you left, you left your keys.",
+   "scene": "Medium on him, now turned fully toward her. Hands stay flat on the counter. Even lighting on his face, no push.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -24
+    }
+   ],
+   "acting": "he states a fact and does not embellish it; this is the line that has to land",
+   "notes": "delivery must be quiet or the whole scene tips"
+  },
+  {
+   "id": "s008",
+   "start": 8.5,
+   "end": 10.54,
+   "cut_intent": "reverse",
+   "line": "",
+   "scene": "SILENCE 2.04s — THE TEST. Giant face on her, blurred door behind. Nothing happens for 1.2s. Then the expression turns: brows drop, eyes soften, mouth unclenches. One blink at 9.6s. Camera almost still, 1.02 to 1.04 over the whole shot.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 1.1,
+     "name": "heartbeat",
+     "gain": -26
+    }
+   ],
+   "acting": "the decision happens on her face with no words and no cut. If this shot fails, the film fails.",
+   "notes": "expression-turn test — the single most important shot in the pass"
+  },
+  {
+   "id": "s009",
+   "start": 10.54,
+   "end": 11.98,
+   "line": "That's not a reason.",
+   "scene": "Two-shot from the door: she has turned back, half-body, bag still on. She says it while starting to face him properly.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "swish",
+     "gain": -24
+    }
+   ],
+   "acting": "the line is a protest, the body has already begun to concede — they must disagree",
+   "notes": "word/physical contradiction test"
+  },
+  {
+   "id": "s010",
+   "start": 11.98,
+   "end": 12.84,
+   "line": "It's the only one I've got.",
+   "scene": "Medium on him. He looks away first, down to the counter, on 'only one'.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [],
+   "acting": "he admits it; gaze breaks on 'only one' (12.26s)",
+   "notes": "word-accurate gaze break test"
+  },
+  {
+   "id": "s011",
+   "start": 12.84,
+   "end": 14.68,
+   "line": "",
+   "scene": "SILENCE 1.84s — the decision told by an object. Insert on the counter: her hand puts the keys down. They land, and the film FREEZE-FRAMES on the impact — dust and a lamp-mote hang in the air, cool tint, corner badge, slow rings. Then time resumes and her hand withdraws.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "flash"
+   },
+   "sfx": [
+    {
+     "at": 0.34,
+     "name": "../../audio/foley/impactmetal-heavy-000.ogg",
+     "gain": -8
+    },
+    {
+     "at": 0.36,
+     "name": "freeze",
+     "gain": -14
+    },
+    {
+     "at": 1.2,
+     "name": "shimmer",
+     "gain": -22
+    }
+   ],
+   "acting": "no faces at all — the keys decide. Freeze enters on the impact and holds ~0.8s.",
+   "notes": "signature device test: freeze-frame with particles hanging"
+  },
+  {
+   "id": "s012",
+   "start": 14.68,
+   "end": 15.96,
+   "line": "One more night.",
+   "scene": "Medium on her, bag now off the shoulder and hanging from one hand. She looks at him for the first time since the door.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -24
+    }
+   ],
+   "acting": "quieter than her other lines, slightly warm, and she initiates the gaze",
+   "notes": "the turn, paid off"
+  },
+  {
+   "id": "s013",
+   "start": 15.96,
+   "end": 17.99,
+   "line": "One more night.",
+   "scene": "Slow pull-out to the wide two-shot from the opening, now with the keys visible on the counter between them. He repeats her words. She almost smiles. End card question rises over the last second.",
+   "set": "kitchen",
+   "bars": "none",
+   "in": {
+    "type": "dip",
+    "dur": 0.4
+   },
+   "sfx": [],
+   "acting": "mirror of s001 with one object changed — the geography now says the opposite thing",
+   "notes": "bookend; the keys must be readable in frame"
+  }
+ ],
+ "music": [
+  {
+   "start": 0,
+   "end": 4.66,
+   "mood": "dark",
+   "intensity": 0.28
+  },
+  {
+   "start": 4.66,
+   "end": 12.84,
+   "mood": "tension",
+   "intensity": 0.42
+  },
+  {
+   "start": 12.84,
+   "end": 17.99,
+   "mood": "hopeful",
+   "intensity": 0.34
+  }
+ ]
+}

@@ -1,0 +1,61 @@
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\director.py --story E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\examples\director-demo\story.json --out E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+Director: wrote project -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+  shots=4  duration=16.00s  aspect=9:16  style=dusk
+  next: node render.mjs --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe -u E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\render_gate.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+GATE RUN: node render.mjs --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+Rendering frames 0-384 (16.0 s) with 8 worker(s)…
+  48/384 frames  9.11 fps  elapsed 0m05s  eta 0m37s
+  96/384 frames  10.46 fps  elapsed 0m09s  eta 0m28s
+  144/384 frames  10.93 fps  elapsed 0m13s  eta 0m22s
+  192/384 frames  11.40 fps  elapsed 0m17s  eta 0m17s
+  240/384 frames  11.47 fps  elapsed 0m21s  eta 0m13s
+  288/384 frames  11.42 fps  elapsed 0m25s  eta 0m08s
+  336/384 frames  11.53 fps  elapsed 0m29s  eta 0m04s
+  384/384 frames  10.89 fps  elapsed 0m35s  eta 0m00s
+
+Done: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\build\video_silent.mp4  (0m37s)
+
+GATE: clean (exit 0, no error signals) -> PASS
+
+$ C:\Users\Avinash-Pro/.faceless-shorts/venv/Scripts/python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\narrate.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+voice: am_michael x1.05 -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\build\voice.wav (16.00s, sr=24000)
+  s001 @ 0.00s  speech 2.01s / shot 4.00s  ok
+  s002 @ 4.00s  speech 1.26s / shot 4.00s  ok
+  s003 @ 8.00s  speech 1.28s / shot 4.00s  ok
+  s004 @12.00s  speech 1.73s / shot 4.00s  ok
+words: 19 -> timeline/words.json ; captions on ; voiceover=build/voice.wav
+
+$ C:\Users\Avinash-Pro/.faceless-shorts/venv/Scripts/python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\audio\mix.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+wrote E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\build\mix.wav  (16.0s, target -14 LUFS)
+FINAL VIDEO: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\out\Director_Demo__916.mp4
+
+$ C:\Users\Avinash-Pro\.workbuddy-ai\binaries\python\versions\3.13.12\python.exe E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\tools\review_frames.py --project E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps --aspect 9:16
+
+=== VISUAL REVIEW GATE: video_silent.mp4 ===
+  size        : 1080x1920  aspect=9:16  (expected 9:16)
+  duration    : 16.000s
+  frames pulled: 6 -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\build\review
+  auto checks : black/dead frames = 0  | aspect_ok = True
+
+  --- MANUAL / VISION CHECKLIST (automation cannot judge these) ---
+  [ ] Characters present as the script/shot-list requires?
+  [ ] Character identity consistent (signature colours from cast.js)?
+  [ ] Composition balanced; nothing cut off or floating?
+  [ ] Captions / on-screen text legible and not overlapping?
+  [ ] Visual style matches config (e.g. 'dusk') across shots?
+  [ ] No unintended black/blank stretches? (auto: PASS)
+  [ ] Aspect correct for target platform? (auto: PASS)
+  [ ] MUSIC present & at target loudness? (only if audio stream;
+       N/A for silent video — re-run after enabling music + mix.py)
+
+  Written: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\build\review\review.json
+  >>> Eyeball the pulled frames; a human (or vision model) must
+      confirm the unchecked items before this is 'accepted'.
+
+GENERATE: DONE -> E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps
+  video : E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\build\video_silent.mp4
+  final : E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\out
+  review: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\voiced_caps\build\review

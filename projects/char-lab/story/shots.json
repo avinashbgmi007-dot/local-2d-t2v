@@ -1,0 +1,66 @@
+{
+ "title": "Three Ways To Draw The Same Guy",
+ "duration": 8.73,
+ "shots": [
+  {
+   "id": "s001",
+   "start": 0.0,
+   "end": 2.58,
+   "line": "Three ways to draw the same guy.",
+   "scene": "Line-up: three figures side by side on the ground line, breathing, labelled STICKMAN / THE BEAN / THE INKLING.",
+   "set": "lab",
+   "bars": "wide",
+   "in": {
+    "type": "fade",
+    "dur": 0.4
+   },
+   "sfx": []
+  },
+  {
+   "id": "s002",
+   "start": 2.58,
+   "end": 5.46,
+   "line": "Same story, same gesture, different skin.",
+   "scene": "All three perform the identical point gesture landed on the word 'gesture', brow rising with it. (edited)",
+   "set": "lab",
+   "bars": "wide",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -20
+    }
+   ]
+  },
+  {
+   "id": "s003",
+   "start": 5.46,
+   "end": 8.73,
+   "line": "Which one do you trust for fifty episodes?",
+   "scene": "Three faces blown up large, expression turning surprised on 'fifty' — the face-treatment comparison.",
+   "set": "lab",
+   "bars": "scope",
+   "in": {
+    "type": "cut"
+   },
+   "sfx": [
+    {
+     "at": 0.05,
+     "name": "whoosh",
+     "gain": -20
+    }
+   ]
+  }
+ ],
+ "music": [
+  {
+   "start": 0,
+   "end": 8.73,
+   "mood": "wonder",
+   "intensity": 0.35
+  }
+ ]
+}
