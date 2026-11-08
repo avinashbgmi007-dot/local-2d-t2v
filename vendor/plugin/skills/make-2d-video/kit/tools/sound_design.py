@@ -24,7 +24,9 @@ WHOOSH_GAIN = -27.0     # subtle: felt, not heard
 FOOT_GAIN = -17.0
 RISER_GAIN = -24.0
 AMB_DEFAULT = {"name": "roomtone", "gain": -34}
-WALK_POSES = ("walk", "run", "ready")
+# "ready" is a crouched STANCE, not locomotion — including it gave a lunge five
+# footsteps on a fixed grid. Only real gait cycles count.
+WALK_POSES = ("walk", "run")
 
 
 def main():
@@ -54,9 +56,17 @@ def main():
         # a walk with no footsteps is the classic "sliding character" tell
         if any(w in pos for w in WALK_POSES) and dur > 0.8:
             if "footstep" not in has:
-                n = max(2, int(dur / 0.30))
-                for k in range(n):
-                    cues.append({"at": round(0.10 + k * 0.30, 2),
+                # The shot code drives walk phase by DISTANCE, so the plants are at
+                # fixed fractions of the walk window. director.py resolves them and
+                # passes step_u; a fixed 0.30s grid would drift off the feet.
+                walk = (s.get("params") or {}).get("walk")
+                if isinstance(walk, dict) and walk.get("step_u"):
+                    u0, u1 = float(walk.get("u0", 0.0)), float(walk.get("u1", 1.0))
+                    ats = [(u0 + (u1 - u0) * float(u)) * dur for u in walk["step_u"]]
+                else:
+                    ats = [0.10 + k * 0.30 for k in range(max(2, int(dur / 0.30)))]
+                for k, at in enumerate(ats):
+                    cues.append({"at": round(min(at, dur - 0.02), 2),
                                  "name": "footstep", "gain": FOOT_GAIN,
                                  "seed": 20 + k})
                 added["footstep"] += 1

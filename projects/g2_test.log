@@ -1,0 +1,7 @@
+GATE RUN: node render.mjs --project projects/g2_test
+Rendering frames 0-72 (3.0 s) with 3 worker(s)…
+  48/72 frames  5.04 fps  elapsed 0m10s  eta 0m05s
+
+Done: E:\Local_Mis_WS\_yt_stickman\aitrends-2d-studio\projects\g2_test\build\video_silent.mp4  (0m15s)
+
+GATE: clean (exit 0, no error signals) -> PASS
