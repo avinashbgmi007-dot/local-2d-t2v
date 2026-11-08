@@ -53,7 +53,6 @@ import sys
 
 TOL_SOFT = 0.35   # apply a corrective pass beyond this
 TOL_HARD = 0.80   # give up and fail beyond this
-LIMIT_MARGIN = 0.30  # sample-peak limiter set this far below the true-peak ceiling
 
 
 def _json_block(text):
@@ -104,7 +103,7 @@ def corrective(src, dst, gain_db, sample_limit_db):
     alimiter is a SAMPLE-peak limiter, not a true-peak one, so inter-sample
     overshoot lands a little above the sample limit. Measured on this material:
     limit -1.8 dBFS -> true peak -1.74 dBTP, i.e. ~0.06 dB of overshoot. The
-    caller sets the limit LIMIT_MARGIN below the ceiling to absorb that.
+    caller passes a limit already below the true-peak ceiling to absorb that.
     """
     lim = 10 ** (sample_limit_db / 20.0)
     af = "volume=%.3fdB,alimiter=limit=%.6f:level=false:attack=5:release=60" % (gain_db, lim)
@@ -213,6 +212,11 @@ def main():
     cfg = json.load(open(cfgp, encoding="utf-8")) if os.path.exists(cfgp) else {}
     target = a.target if a.target is not None else float(cfg.get("loudness", -14))
 
+    # build/ may not exist: it is gitignored, and prune.py removes it. Every
+    # intermediate this tool writes goes there, so create it up front rather
+    # than crashing on a delivery whose build/ was cleaned.
+    os.makedirs(os.path.join(P, "build"), exist_ok=True)
+
     video = video_of(P)
     if not video:
         sys.exit("MASTER: no mp4 in %s/out — run mix.py first" % P)
@@ -252,44 +256,7 @@ def main():
 
     build = os.path.join(P, "build")
     base = os.path.join(build, "_master_base.wav")
-    two_pass(src, base, target, a.tp, m0)
-    mb = measure(base)
-    print("  two-pass : %.2f LUFS, TP %.2f dBTP" % (mb["i"], mb["tp"]))
-
-    best = {"path": base, "m": mb, "gain": 0.0, "limit": None, "af": "two-pass loudnorm"}
-    work = base
-    for it in range(1, 3):
-        m = best["m"]
-        d = target - m["i"]
-        if abs(d) <= TOL_SOFT and m["tp"] <= a.tp + 0.05:
-            break
-        # recompute from the BASE each time so corrections never compound
-        gain = best["gain"] + d
-        lim = a.tp - LIMIT_MARGIN
-        cand = os.path.join(build, "_master_c%d.wav" % it)
-        af = corrective(base, cand, gain, lim)
-        mc = measure(cand)
-        print("  correct%d : %+.2f dB + limiter %.1f dBFS -> %.2f LUFS, TP %.2f dBTP"
-              % (it, gain, lim, mc["i"], mc["tp"]))
-        better = (abs(target - mc["i"]) < abs(target - best["m"]["i"])
-                  and mc["tp"] <= a.tp + 0.05)
-        if better:
-            best = {"path": cand, "m": mc, "gain": gain, "limit": lim, "af": af}
-            work = cand
-        else:
-            print("           (no improvement, keeping previous)")
-            os.path.exists(cand) and os.remove(cand)
-            break
-
-    mf = best["m"]
-    err = abs(target - mf["i"])
-
-    if best["path"] == base:
-        master_wav = os.path.join(build, "master.wav")
-        shutil.copyfile(base, master_wav)
-    else:
-        master_wav = os.path.join(build, "master.wav")
-        shutil.copyfile(best["path"], master_wav)
+    master_wav = os.path.join(build, "master.wav")
 
     vsrc, vnote = pick_video(P, video)
     print("  picture  : %s" % vnote)
@@ -299,61 +266,95 @@ def main():
     dur = duration_of(vsrc) or duration_of(video)
     if not dur:
         print("  WARNING  : could not read a duration — output is NOT length-capped")
-    tmp = video + ".mastering.mp4"
-    remux(vsrc, master_wav, tmp, dur)
-    os.replace(tmp, video)
 
-    # Verify the video stream survived untouched, and measure the file that
-    # actually SHIPS. AAC encoding shifts integrated loudness slightly (~0.02 LU);
-    # reporting the pre-encode wav would describe a file nobody receives.
-    def vinfo(p):
+    # Never leave the delivery worse than we found it: a failed master must not
+    # overwrite a working file with a louder-but-clipping one.
+    backup = video + ".premaster"
+    shutil.copyfile(video, backup)
+
+    # DESIGN FOR THE ENCODED FILE, NOT THE WAV.
+    # AAC adds inter-sample overshoot, so a wav sitting at exactly the ceiling ships
+    # ABOVE it. Measured on real material: +0.03 dB on one project, +0.23 dB on
+    # another. Pay the headroom up front, then verify on the delivered mp4, and buy
+    # more headroom if the codec ate it.
+    CODE_HEADROOM = 0.30
+    chosen, shipped = None, None
+    for attempt in range(1, 4):
+        tp_design = a.tp - CODE_HEADROOM * attempt
+        two_pass(src, base, target, tp_design, m0)
+        mb = measure(base)
+        wav, gain, limit, af = base, 0.0, None, "two-pass loudnorm"
+        if abs(target - mb["i"]) > TOL_SOFT:
+            # only correct loudness when it is actually off; the corrective stage
+            # is a sample-peak limiter and can cost true peak for little gain
+            gain = target - mb["i"]
+            limit = tp_design
+            cand = os.path.join(build, "_master_c.wav")
+            af = corrective(base, cand, gain, limit)
+            wav = cand
+        shutil.copyfile(wav, master_wav)
+        tmp = video + ".mastering.mp4"
+        remux(vsrc, master_wav, tmp, dur)
+        os.replace(tmp, video)
+
+        shipped = measure(video)
+        err = abs(target - shipped["i"])
+        ok = err <= TOL_HARD and shipped["tp"] <= a.tp + 0.02
+        print("  attempt%d : design TP %.2f -> wav %.2f LUFS / %.2f dBTP -> "
+              "shipped %.2f LUFS / %.2f dBTP  %s"
+              % (attempt, tp_design, mb["i"], mb["tp"],
+                 shipped["i"], shipped["tp"], "OK" if ok else "retry"))
+        chosen = {"mb": mb, "gain": gain, "limit": limit, "af": af,
+                  "tp_design": tp_design, "ok": ok, "attempt": attempt}
+        if ok:
+            break
+
+    if not chosen["ok"]:
+        os.replace(backup, video)
+        os.remove(backup)
+        print("MASTER: no attempt met the spec (%.1f LUFS, TP <= %.1f dBTP). "
+              "ORIGINAL RESTORED — nothing was shipped."
+              % (target, a.tp), file=sys.stderr)
+        return 1
+
+    def vinfo(pth):
         r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0",
                             "-show_entries", "stream=codec_name,width,height,nb_frames",
                             "-show_entries", "format=duration",
-                            "-of", "json", p], capture_output=True, text=True)
+                            "-of", "json", pth], capture_output=True, text=True)
         return json.loads(r.stdout or "{}")
 
-    shipped = measure(video)
-    err = abs(target - shipped["i"])
-    ok = err <= TOL_HARD and shipped["tp"] <= a.tp + 0.10
-    shipped_v = vinfo(video)   # stats of the file that ships (video is copied, so equal)
+    shipped_v = vinfo(video)   # the file that ships (video is copied, so equal)
     report = {
         "project": os.path.basename(P),
         "file": os.path.basename(video),
         "target_lufs": target,
         "true_peak_ceiling": a.tp,
         "input": m0,
-        "two_pass": mb,
-        "pre_mux": mf,
+        "two_pass": chosen["mb"],
+        "pre_mux": chosen["mb"],
         "final": shipped,
-        "corrective": {"gain_db": best["gain"], "sample_limit_db": best["limit"],
-                       "filter": best["af"]},
+        "attempts": chosen["attempt"],
+        "codec_headroom_db": CODE_HEADROOM,
+        "design_true_peak": chosen["tp_design"],
+        "corrective": {"gain_db": chosen["gain"], "sample_limit_db": chosen["limit"],
+                       "filter": chosen["af"]},
         "error_lu": round(shipped["i"] - target, 3),
-        "passed": ok,
+        "passed": True,
         "video": shipped_v.get("streams", [{}])[0] if shipped_v.get("streams") else {},
         "video_source": vnote,
         "duration": float(shipped_v.get("format", {}).get("duration") or 0),
-        "note": ("loudness measured on the DELIVERED mp4 (ffmpeg loudnorm, BS.1770); "
-                 "video stream copied, not re-encoded"),
+        "note": ("loudness and true peak measured on the DELIVERED mp4 (ffmpeg loudnorm, "
+                 "BS.1770), not on the pre-encode wav; video stream copied, not re-encoded"),
     }
     rp = os.path.join(build, "master_report.json")
     json.dump(report, open(rp, "w", encoding="utf-8"), indent=2)
 
-    print("  shipped  : %.2f LUFS, TP %.2f dBTP  (error %+.2f LU, %s)"
-          % (shipped["i"], shipped["tp"], shipped["i"] - target,
-             "PASS" if ok else "FAIL"))
+    print("  shipped  : %.2f LUFS, TP %.2f dBTP  (error %+.2f LU, PASS)"
+          % (shipped["i"], shipped["tp"], shipped["i"] - target))
     print("  report   : %s" % os.path.relpath(rp, P).replace("\\", "/"))
-    for f in (base,):
+    for f in (base, os.path.join(build, "_master_c.wav"), backup):
         os.path.exists(f) and os.remove(f)
-    for f in ("_master_c1.wav", "_master_c2.wav"):
-        p = os.path.join(build, f)
-        os.path.exists(p) and os.remove(p)
-
-    if not ok:
-        print("MASTER: could not reach %.1f LUFS within %.1f LU without exceeding "
-              "%.1f dBTP (crest factor is binding). Result is %.2f LUFS."
-              % (target, TOL_HARD, a.tp, shipped["i"]), file=sys.stderr)
-        return 1
     return 0
 
 
