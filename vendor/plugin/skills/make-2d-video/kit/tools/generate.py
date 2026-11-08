@@ -6,7 +6,8 @@ Chains the whole pipeline deterministically:
   1. director.py     story JSON  -> project (config/cast/shots/scene code)
   2. render_gate.py  render.mjs  -> mp4, HARD-FAIL on any shot error
   3. mix.py          (optional, --audio) music+sfx+loudnorm+mux (needs config.voiceover)
-  4. review_frames.py visual-review frames + checklist
+  4. master.py       (optional, --audio) hit the LUFS target, verify true peak
+  5. review_frames.py visual-review frames + checklist
 
 Any stage failing aborts with a non-zero exit (no silent success).
 
@@ -72,6 +73,12 @@ def main():
             sys.exit("GENERATE: no voiceover after narration")
         if run([runner, os.path.join(studio, "audio", "mix.py"), "--project", out], studio):
             sys.exit("GENERATE: mix failed")
+
+        # 4b. mastering — mix.py's single-pass loudnorm lands ~1.7 dB off target.
+        #     Fatal, not a warning: shipping a mis-levelled master silently is the
+        #     exact failure this stage exists to stop.
+        if run([py, os.path.join(here, "master.py"), "--project", out], studio):
+            sys.exit("GENERATE: mastering failed (loudness target not reached)")
 
     # 4. visual review
     cfg = json.load(open(os.path.join(out, "config.json"), encoding="utf-8"))

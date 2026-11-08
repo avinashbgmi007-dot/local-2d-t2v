@@ -44,7 +44,7 @@ retimed to its measured speech**, so there is no fixed-duration grid and no dead
 python tools/generate.py --story story.json --out projects/<slug> --audio [--strict]
 ```
 
-It chains director -> narrate -> sound design -> render gate -> mix -> review -> seam gate -> report,
+It chains director -> narrate -> sound design -> render gate -> mix -> master -> review -> seam gate -> report,
 and stops on the first failure. `--strict` makes a dead cut fatal. Use this when the film fits what the
 compiler can express: wide / med / close / insert, one parametric set, one or two characters,
 continuous expressions, and cut / zoom / flash / dip / fade transitions.
@@ -177,8 +177,10 @@ Read `references/render-qc.md`.
    `node render.mjs` — `render.mjs` prints shot errors but **exits 0**, so an unattended run
    reports success on a broken video. The gate scrapes the error signals and fails non-zero.
    Run it in the background for long videos and poll the log. The log prints fps and ETA, so share the estimate.
-3. Run `python audio/mix.py --project projects/<slug>`, which generates music and SFX, ducks the music under the voice, normalises to −14 LUFS and muxes `out/<title>.mp4`.
-4. QC the final file: duration matches, audio is present, and a 1-frame-per-10-s contact sheet looks right. Deliver the MP4 (send the file), then give the location in plain words and one line on what to tweak next if needed.
+3. Run `python audio/mix.py --project projects/<slug>`, which generates music and SFX, ducks the music under the voice, applies a **single-pass** `loudnorm`, and muxes `out/<title>.mp4`.
+   **Single-pass loudnorm does not reach the target** — measured on real material it lands about 1.7 dB low (−15.7 against −14) while true peak sits slightly over the ceiling. Always follow it with
+   `python tools/master.py --project projects/<slug>`, which re-masters the mixer's own output (two-pass, then a measured corrective gain + limiter), verifies the true peak, **copies the video stream untouched** and writes `build/master_report.json`. `generate.py --audio` runs it for you and treats a failure as fatal, so a mis-levelled master cannot ship silently.
+4. QC the final file: duration matches, `build/report.json` shows loudness within ~0.5 LU of the target with true peak at or under the ceiling, and a 1-frame-per-10-s contact sheet looks right. Deliver the MP4 (send the file), then give the location in plain words and one line on what to tweak next if needed.
 5. Write the shape line and three-line retro in `docs/LESSONS.md` (worked / failed / one rule), creating it from the template in `references/self-improve.md` if missing. Read the last five before the next episode. One rule change at a time.
 
 ## Defaults and judgement calls

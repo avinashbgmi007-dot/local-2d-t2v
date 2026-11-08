@@ -8,6 +8,10 @@ out/
 *.wav
 *.part
 
+# run logs — transient, and one per pipeline run
+projects/*.log
+*.log
+
 # python bytecode
 __pycache__/
 *.pyc

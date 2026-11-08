@@ -11,7 +11,7 @@ engine; nothing in engine/ was modified.
 
 Writes projects/<slug>/build/report.json and prints a one-screen summary.
 """
-import argparse, hashlib, json, os, subprocess, sys
+import argparse, hashlib, json, os, re, subprocess, sys
 
 try:
     import numpy as np
@@ -50,6 +50,31 @@ def loudness(video):
             if k in line:
                 out[k] = float(line.split(k + ':')[1].strip().replace(' dB', ''))
     return out
+
+
+def lufs(video):
+    """Integrated loudness (BS.1770) and true peak — what platforms normalise to.
+
+    `loudness()` above reports volumedetect mean/max dBFS, which is not a
+    loudness standard: it cannot tell you whether a master hits -14 LUFS.
+    Measured on the file that ships, not on an intermediate, so the number
+    cannot go stale when a project is re-mastered.
+    """
+    p = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', video,
+                        '-af', 'loudnorm=I=-14:TP=-1.5:print_format=json',
+                        '-f', 'null', '-'], capture_output=True, text=True)
+    hits = re.findall(r'\{[^{}]*\}', p.stderr or '', re.S)
+    for h in reversed(hits):
+        try:
+            d = json.loads(h)
+        except Exception:
+            continue
+        if 'input_i' in d:
+            return {'integrated_lufs': float(d['input_i']),
+                    'true_peak_dbtp': float(d['input_tp']),
+                    'lra_lu': float(d['input_lra']),
+                    'standard': 'ITU-R BS.1770-4 via ffmpeg loudnorm'}
+    return {'error': 'could not measure loudness'}
 
 
 def motion(video):
@@ -127,7 +152,7 @@ def main():
         'bytes': info['bytes'], 'shot_count': len(story.get('shots', [])),
         'music_plan': [s.get('mood') for s in story.get('music', [])],
         'sfx_cues': sum(len(s.get('sfx', [])) for s in story.get('shots', [])),
-        'audio': loudness(vid), 'motion': motion(vid), 'style_lock': lock,
+        'audio': loudness(vid), 'lufs': lufs(vid), 'motion': motion(vid), 'style_lock': lock,
         'character': a.character or (lock or {}).get('character'),
         'human_review': 'required; technical checks are not acceptance',
         'approved_by': a.approved_by or None,
@@ -141,6 +166,15 @@ def main():
           f'{rep["duration"]:.2f}s · {rep["bytes"]/1e6:.1f} MB · style {rep["style"]}')
     print(f'  shots {rep["shot_count"]} · sfx {rep["sfx_cues"]} · music {rep["music_plan"]}')
     print(f'  audio mean {rep["audio"].get("mean_volume")} dB / peak {rep["audio"].get("max_volume")} dB')
+    lu = rep.get('lufs') or {}
+    if 'integrated_lufs' in lu:
+        tgt = cfg.get('loudness', -14)
+        err = lu['integrated_lufs'] - tgt
+        print(f'  loudness {lu["integrated_lufs"]:.2f} LUFS (target {tgt}) · '
+              f'TP {lu["true_peak_dbtp"]:.2f} dBTP · LRA {lu["lra_lu"]:.1f} LU · '
+              f'error {err:+.2f} LU')
+    else:
+        print(f'  loudness NOT MEASURED — {lu.get("error") or "unavailable"}')
     mo = rep['motion']
     if mo['verdict'] == 'NOT RUN':
         print(f'  motion NOT RUN — {mo.get("error") or "motion_audit unavailable"}')
