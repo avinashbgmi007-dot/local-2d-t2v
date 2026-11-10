@@ -523,6 +523,9 @@ class ApprovalGateBehavioralTests(unittest.TestCase):
 
 import shutil as _shutil
 _FFMPEG = _shutil.which("ffmpeg") is not None
+# REQUIRE_FFMPEG=1 turns ffmpeg-dependent skips into failures
+if os.environ.get("REQUIRE_FFMPEG") == "1" and not _FFMPEG:
+    raise RuntimeError("REQUIRE_FFMPEG=1 but ffmpeg not found on PATH")
 
 
 def _make_clip(path, color, duration=2.0, fps=24, size="320x240"):
@@ -856,6 +859,38 @@ class FrameQABoundaryTests(unittest.TestCase):
             result, fq = self._analyze(clip)
             self.assertEqual(len(result["frozen_runs"]), 0,
                              "moving element must not be flagged as frozen")
+
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_subtle_motion_not_frozen(self):
+        """Subtle motion (SAD in 40-120 range) must NOT be flagged frozen.
+
+        A blink or mouth-only motion produces SAD just above SAD_FREEZE.
+        This verifies the threshold does not false-positive on small changes.
+        """
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "subtle.mp4")
+            W, H = 320, 240
+            N = 48
+            raw = bytearray()
+            for f in range(N):
+                brightness = (100 + f * 5) % 256
+                for y in range(H):
+                    for x in range(W):
+                        if 100 <= x < 140 and 100 <= y < 140:
+                            raw.append(brightness)
+                        else:
+                            raw.append(50)
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                fh.write(raw)
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '%dx%d' % (W, H), '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            result, fq = self._analyze(clip)
+            self.assertEqual(len(result["frozen_runs"]), 0,
+                             "subtle motion must not be flagged as frozen")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

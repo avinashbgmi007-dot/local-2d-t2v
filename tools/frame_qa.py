@@ -136,9 +136,42 @@ def shot_transition_type(sh):
         return t.get("type", "cut")
     return "cut"
 
-def analyze_black_runs(black_frames, ts_list, shots):
+def shot_transition_dur(sh):
+    """Return the declared transition duration (seconds) for a shot, or 0.0."""
+    if not sh:
+        return 0.0
+    t = sh.get("in", {})
+    if isinstance(t, dict):
+        d = t.get("dur")
+        if d is not None:
+            try:
+                return float(d)
+            except (TypeError, ValueError):
+                pass
+    # Default durations for transitions without explicit dur
+    typ = shot_transition_type(sh)
+    if typ in ("fade", "dip"):
+        return 0.5
+    if typ == "flash":
+        return 0.1
+    return 0.0
+
+def analyze_black_runs(black_frames, ts_list, shots, dur=None, lumas=None):
+    """Classify black frame runs as expected (declared transition), end_tail,
+    undeclared_fade (ramp at shot start, not declared), or finding (hard cut).
+
+    A run is 'expected' only if it is anchored to a shot START boundary and that
+    shot declares a non-cut transition (fade/dip/flash) whose duration covers
+    the run.  A run at the very end of the video is 'end_tail'.  A run at a shot
+    start that ramps in luma (fade pattern) but is declared as 'cut' is
+    'undeclared_fade' (info, not a quality finding).  Otherwise 'finding'.
+    """
     if not black_frames:
         return []
+    if dur is None:
+        dur = ts_list[-1] if ts_list else 0.0
+    if lumas is None:
+        lumas = [0.0] * (ts_list[-1] + 1 if ts_list else 0)
     runs = []
     current = [black_frames[0]]
     for bf in black_frames[1:]:
@@ -151,10 +184,47 @@ def analyze_black_runs(black_frames, ts_list, shots):
     result = []
     for run in runs:
         mid_t = run[len(run) // 2][1]
+        run_start_t = run[0][1]
+        run_end_t = run[-1][1]
         sh, loc = nearest_shot(mid_t, shots)
         trans = shot_transition_type(sh)
         shot_id = sh.get("id", "?") if sh else "?"
-        classification = "expected" if trans in ("fade", "dip", "flash") else "finding"
+        trans_dur = shot_transition_dur(sh)
+
+        # End tail: run is within the last 1.5s of the video
+        is_end_tail = (run_end_t >= dur - 1.5) and (dur > 0)
+
+        # Anchored expected: run must be near a shot START boundary
+        # and within the declared transition duration
+        is_anchored_expected = False
+        if sh and trans in ("fade", "dip", "flash"):
+            shot_start = float(sh.get("start", 0))
+            if abs(run_start_t - shot_start) <= trans_dur + 0.2:
+                is_anchored_expected = True
+
+        # Undeclared fade: run at shot start with ramping luma (fade pattern)
+        # but shot declares 'cut' (or no transition)
+        is_undeclared_fade = False
+        if not is_anchored_expected and sh:
+            shot_start = float(sh.get("start", 0))
+            if abs(run_start_t - shot_start) <= 0.3:
+                # Check if luma ramps after the run (fade pattern)
+                next_idx = run[-1][0] + 1
+                if next_idx < len(lumas):
+                    post_luma = lumas[next_idx]
+                    last_black_luma = run[-1][2]
+                    if post_luma > last_black_luma + 3:
+                        is_undeclared_fade = True
+
+        if is_anchored_expected:
+            classification = "expected"
+        elif is_undeclared_fade:
+            classification = "undeclared_fade"
+        elif is_end_tail:
+            classification = "end_tail"
+        else:
+            classification = "finding"
+
         result.append({
             "start_idx": run[0][0],
             "end_idx": run[-1][0],
@@ -218,7 +288,7 @@ def analyze_frames(frames, fps, dur, freeze_wins, shots=None):
                     else:
                         frozen_info.append((run_start, len(sads), run_ts[0], run_ts[-1], run_len))
 
-    black_runs = analyze_black_runs(black, ts_list, shots or [])
+    black_runs = analyze_black_runs(black, ts_list, shots or [], dur, lumas)
 
     return {
         "black": black,
@@ -346,12 +416,21 @@ def main():
     if black_runs:
         print("  black runs:")
         for br in black_runs:
-            status = "expected" if br["classification"] == "expected" else "FINDING"
+            cls = br["classification"]
+            if cls == "expected":
+                status = "expected"
+            elif cls == "undeclared_fade":
+                status = "undeclared_fade (info)"
+            elif cls == "end_tail":
+                status = "end_tail"
+            else:
+                status = "FINDING"
             print("    %s: frames %d-%d t=%.2f..%.2f (%d fr) shot=%s transition=%s" % (
                 status, br["start_idx"], br["end_idx"], br["start_t"], br["end_t"],
                 br["n_frames"], br["shot_id"], br["transition"]))
 
     # findings: black runs classified as "finding" + white + pops + frozen_runs
+    # end_tail runs are reported but not findings (they are expected at video end)
     black_findings = sum(1 for br in black_runs if br["classification"] == "finding")
     findings = black_findings + len(white) + len(pops) + len(frozen_runs)
     if findings == 0:
