@@ -18,10 +18,16 @@ import subprocess
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 STUDIO = os.path.dirname(TOOLS)
 WS = os.path.dirname(os.path.dirname(STUDIO))
-SHORTS = os.path.join(WS, "_yt_a6zA", "fs", "faceless-shorts", "scripts")
-for p in (TOOLS, SHORTS):
+# Allow override via env var for fresh-clone / CI environments
+SHORTS = os.environ.get("FACELESS_SHORTS_PATH",
+    os.path.join(WS, "_yt_a6zA", "fs", "faceless-shorts", "scripts"))
+for p in (TOOLS,):
     if os.path.isdir(p) and p not in sys.path:
         sys.path.insert(0, p)
+if os.path.isdir(SHORTS) and SHORTS not in sys.path:
+    sys.path.insert(0, SHORTS)
+else:
+    print("SKIP: faceless-shorts scripts/ not found at %s (set FACELESS_SHORTS_PATH)" % SHORTS)
 
 import scene_coverage          # noqa: E402  (committed; hard import so a break fails, not skips)
 import approval_gate           # noqa: E402
@@ -32,6 +38,10 @@ try:
     import project                # noqa: E402
 except ImportError:
     project = None
+try:
+    import words as _words
+except ImportError:
+    _words = None
 try:
     import frame_qa                # noqa: E402
 except ImportError:
@@ -320,27 +330,27 @@ class SourceContractTests(unittest.TestCase):
         self.assertNotIn("if a.strict and sg:", src)
 
 
-@unittest.skipUnless(words, "faceless-shorts scripts/ not found")
+@unittest.skipUnless(_words, "faceless-shorts scripts/ not found")
 class WordTimingCompatTests(unittest.TestCase):
     def test_script_json(self):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, "script.json"), "w", encoding="utf-8") as f:
                 json.dump({"lines": [{"text": "hello"}]}, f)
-            self.assertEqual(words.load_script(Path(d))["lines"][0]["text"], "hello")
+            self.assertEqual(_words.load_script(Path(d))["lines"][0]["text"], "hello")
 
     def test_dialogue_json_fallback(self):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, "dialogue.json"), "w", encoding="utf-8") as f:
                 json.dump({"lines": [{"text": "hello", "voice": "af_heart"}]}, f)
-            self.assertEqual(words.load_script(Path(d))["lines"][0]["text"], "hello")
+            self.assertEqual(_words.load_script(Path(d))["lines"][0]["text"], "hello")
 
     def test_both_absent_raises(self):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(SystemExit):
-                words.load_script(Path(d))
+                _words.load_script(Path(d))
 
 
 class ProjectTests(unittest.TestCase):
