@@ -68,3 +68,21 @@ workspace root). Keep entries concrete and checkable; “make it better” is no
   that is correct in isolation still has to be framed. Caught only by looking at the render.
 - Rule: before changing exposure, ask whether the subject has an EDGE. And draw a body behind the
   head, never over it — occlusion order is what makes a neck read as a neck.
+
+## 2026-11-08 — SLICE-4: local Kokoro voices shipped (espeak fixture retired for narration)
+
+- Worked: the "Kokoro weights unreachable" dead-end was WRONG in general — only HF and
+  GitHub-release-asset routes are blocked. npm (`kokoro-q8-shards` with a sha256-pinned
+  6-part reassembly, `kokoro-local-runtime` voices), pypi (`kokoro-onnx` vocab,
+  `piper-phonemize`+`espeakng_loader` IPA) and `onnxruntime-web` WASM (ships inside its
+  npm tarball) cover everything. Fully offline, ~3s/line on CPU.
+- Worked: keeping test_voice.py's output contract (voice.wav/stems/words.json) meant
+  zero downstream changes; espeak stays ONLY as the word-clock (its WORD events are
+  measured, then stretched per-line to the Kokoro duration) — the speech audit
+  (420/0) proves the stretch is sound.
+- Learned: onnxruntime-node's postinstall fetches blocked GitHub binaries — always
+  `--ignore-scripts`; ESM imports resolve from the SCRIPT's dir, so import
+  onnxruntime-web via absolute pathToFileURL into the asset dir.
+- Learned: Kokoro is slower than espeak per line, so shots sized for espeak overflow —
+  auto-fit `speed` (clamped <=1.9) per line, and re-run for lines that need it.
+- Caveat: gates prove sync, not pleasantness — voice quality is judged by ear, by the user.

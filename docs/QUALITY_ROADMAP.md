@@ -23,7 +23,17 @@ that is `present_file`-ed to the user; brutal honesty; runtime restored via
   (npm kokoro-q8-shards reassembled sha256 fbae9257..., voices from npm
   kokoro-local-runtime, vocab from pypi kokoro-onnx config.json, IPA via pypi
   piper-phonemize+espeakng_loader, onnxruntime-web wasm). 5/5 fixture lines OK.
-- Next item: SLICE-4 (Kokoro voices wired into the benchmark render).
+- SLICE-4 DONE (commit pending): Kokoro-82M q8 local voices shipped in the video.
+  tools/setup_tts.sh fetches model (npm shards, sha256-verified), voices (npm),
+  vocab (pypi), IPA (pypi piper-phonemize+espeakng_loader); tools/kokoro_voice.py
+  keeps test_voice.py's output contract; tools/kokoro_run.mjs runs onnxruntime-web
+  WASM. Auto speed-fit per line (1.0-1.34) keeps speech inside shots. Gates PASS
+  (envelope 420/0, continuity PASS); master -14.38 LUFS/-1.71 dBTP PASS; per-shot
+  RMS: speaking shots -17..-18 dB, silent shots -25..-31 dB. 19 words.
+  Notes/self-critique: word timings are espeak-measured stretched to Kokoro
+  durations (audit-verified, but listen-check belongs to the user); b07 runs at
+  speed 1.34 and may sound rushed; loudness error widened to -0.38 LU (was -0.14).
+- Next item: SLICE-5 (full-figure torso shading for wide/medium).
 
 ## Definition of "significant change" (loop stop per item)
 
