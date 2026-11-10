@@ -207,47 +207,36 @@ def analyze_black_runs(black_frames, ts_list, shots, dur=None, lumas=None):
             if abs(run_start_t - shot_start) <= trans_dur + 0.2:
                 is_anchored_expected = True
 
+        # Flicker check runs INDEPENDENTLY of anchoring.
+        # Even inside a declared dip/fade window, an instant drop+rise is a flicker.
+        is_flicker = False
+        pre_idx = run[0][0] - 1
+        post_idx = run[-1][0] + 1
+        if pre_idx >= 0 and post_idx < len(lumas):
+            pre_luma = lumas[pre_idx]
+            post_luma = lumas[post_idx]
+            last_black = run[-1][2]
+            first_black = run[0][2]
+            instant_drop = (pre_luma > 20 and first_black < 8)
+            instant_rise = (last_black < 8 and post_luma > 20)
+            if instant_drop and instant_rise and len(run) <= 3:
+                is_flicker = True
+
         # Undeclared fade: run at shot start with GRADUAL luma ramp (fade pattern)
         # but shot declares 'cut' (or no transition).
-        # A real fade ramps across 3+ frames with small steps (<=20 levels/frame).
-        # A flicker jumps instantly (>40 levels in one frame) -- that's a finding.
         is_undeclared_fade = False
-        if not is_anchored_expected and sh:
+        if not is_anchored_expected and not is_flicker and sh:
             shot_start = float(sh.get("start", 0))
             if abs(run_start_t - shot_start) <= 0.3:
-                # Check post-run luma for gradual fade-in (3+ rising frames, small steps)
                 post_indices = list(range(run[-1][0] + 1, min(len(lumas), run[-1][0] + 5)))
                 if len(post_indices) >= 3:
                     post_lumas = [lumas[i] for i in post_indices]
-                    # Gradual: each step <= 20, at least 3 steps rising
                     steps = [post_lumas[i+1] - post_lumas[i] for i in range(len(post_lumas)-1)]
                     rising = all(s > 0 and s <= 20 for s in steps[:3])
-                    # Also check first post-run frame doesn't jump too much from black
                     first_jump = post_lumas[0] - run[-1][2]
                     no_instant_jump = first_jump <= 20
                     if rising and no_instant_jump:
                         is_undeclared_fade = True
-
-        # Also check for fade-out pattern at end of run (for end_tail classification)
-        # and for flicker detection at any run location
-        is_flicker = False
-        if not is_anchored_expected and not is_undeclared_fade:
-            # Check if this is a hard cut to/from black (flicker)
-            # Flicker: bright -> black in 1 frame, or black -> bright in 1 frame
-            pre_idx = run[0][0] - 1
-            post_idx = run[-1][0] + 1
-            if pre_idx >= 0 and post_idx < len(lumas):
-                pre_luma = lumas[pre_idx]
-                post_luma = lumas[post_idx]
-                last_black = run[-1][2]
-                first_black = run[0][2]
-                # Instant drop: pre-frame bright, first black frame near 0
-                instant_drop = (pre_luma > 20 and first_black < 8)
-                # Instant rise: last black frame near 0, post-frame bright
-                instant_rise = (last_black < 8 and post_luma > 20)
-                # If BOTH instant drop and instant rise around a short run, it's flicker
-                if instant_drop and instant_rise and len(run) <= 3:
-                    is_flicker = True
 
         if is_flicker:
             classification = "finding"

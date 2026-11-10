@@ -26,7 +26,10 @@ Accepted. Constants frozen as of 2026-11-10.
 
 ## Known limitations
 
-- Flicker detection requires both instant drop AND instant rise within ≤3 frames. A 4+ frame black run with instant transitions is not classified as flicker.
-- SAD_FREEZE=50 against p5=58-61 leaves thin margin. One noisy frame in a real freeze resets the run (false-negative risk).
-- Pop detection needs both neighbors; 2-frame spikes at video boundaries are missed.
-- frame_qa is report-only (warning level), not fatal. Promotion to fatal deferred until known-bad corpus is complete.
+- **Whole-frame freezes only.** frame_qa detects frames where the entire 32x18 downscale is static (SAD < 50). A freeze with parallax planes, practical light, or minor drift (SAD >= 50) is not detected. The s006 freeze in cine_release (~14 frames, 0.58s) shows only 3-frame static runs because the set keeps moving. frame_qa does NOT verify that the freeze feature works; it only catches whole-frame freezes.
+- **Fast fades (<=4 frames) classified as flicker.** The ramp test requires 3+ rising frames at <=20 levels/step. A deliberate dip or fade of 4 frames or fewer would be classed as flicker. The ramp cap is tuned to the fades observed in cine_release (5-9 frame runs).
+- **Flicker detection requires both instant drop AND instant rise within <=3 frames.** A 4+ frame black run with instant transitions is not classified as flicker.
+- **SAD_FREEZE=50 against p5=58-61 leaves thin margin.** One noisy frame in a real freeze resets the run (false-negative risk).
+- **Pop detection needs both neighbors;** 2-frame spikes at video boundaries are missed.
+- **frame_qa is report-only (warning level), not fatal.** Promotion to fatal deferred until known-bad corpus is complete.
+- **End-tail cap: 0.5s.** Trailing black beyond 0.5s is flagged as finding.

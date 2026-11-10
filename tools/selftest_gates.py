@@ -902,5 +902,52 @@ class FrameQABoundaryTests(unittest.TestCase):
             self.assertEqual(len(result["frozen_runs"]), 0,
                              "subtle motion must not be flagged as frozen")
 
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_flicker_is_finding(self):
+        """Synthetic flicker (bright, 2 black, bright) must be a finding."""
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "flicker.mp4")
+            W, H = 320, 240
+            N = 48
+            raw = bytearray()
+            for f in range(N):
+                val = 0 if 20 <= f <= 21 else 100
+                for _ in range(H * W):
+                    raw.append(val)
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                fh.write(raw)
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '%dx%d' % (W, H), '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            result, fq = self._analyze(clip)
+            self.assertTrue(any(br["classification"] == "finding" for br in result["black_runs"]),
+                            "flicker must be classified as finding")
+
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_pop_is_detected(self):
+        """Synthetic single-frame pop must be detected."""
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "pop.mp4")
+            W, H = 320, 240
+            N = 48
+            raw = bytearray()
+            for f in range(N):
+                val = 255 if f == 24 else 100
+                for _ in range(H * W):
+                    raw.append(val)
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                fh.write(raw)
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '%dx%d' % (W, H), '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            result, fq = self._analyze(clip)
+            self.assertGreater(len(result["pops"]), 0, "pop must be detected")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
