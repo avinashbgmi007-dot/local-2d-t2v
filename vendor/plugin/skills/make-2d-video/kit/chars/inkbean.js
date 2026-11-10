@@ -143,10 +143,37 @@ export function drawInkBean(g, o) {
   sketchSeg(g, sh, P(pose, 'eF'), 19, shade(col, -0.20), seed + 23, 0.45);
   sketchSeg(g, P(pose, 'eF'), P(pose, 'hF'), 17, shade(col, -0.20), seed + 24, 0.45);
 
-  rr(g, -BW / 2, cy - BH / 2, BW, BH, BW / 2); g.fillStyle = col; g.fill();
-  g.save(); g.beginPath(); rr(g, -BW / 2, cy - BH / 2, BW, BH, BW / 2); g.clip();
-  g.fillStyle = alpha('#000000', 0.15); g.fillRect(-BW / 2, cy - BH / 2, BW * 0.30, BH); g.restore();
-  rr(g, -BW / 2, cy - BH / 2, BW, BH, BW / 2); g.strokeStyle = INK; g.lineWidth = 9; g.stroke();
+  // Torso with sloped shoulders and a key-to-shadow gradient (local -x is the key side,
+  // matching the leg rims at -17.5 and the close-up bust). Was: flat capsule + a hard
+  // 30%-width black strip. Silhouette anchors (sh/hip/hF) are untouched, so prop
+  // contact math is unaffected.
+  const top = cy - BH / 2, bot = cy + BH / 2, SW = BW * 0.95, HW = BW * 0.55;
+  const torsoPath = () => {
+    g.beginPath();
+    g.moveTo(-HW, bot - 16);
+    g.quadraticCurveTo(-SW, bot - 40, -SW, top + 26);
+    g.quadraticCurveTo(-SW, top - 6, -HW * 0.42, top - 6);
+    g.quadraticCurveTo(0, top - 14, HW * 0.42, top - 6);
+    g.quadraticCurveTo(SW, top - 6, SW, top + 26);
+    g.quadraticCurveTo(SW, bot - 40, HW, bot - 16);
+    g.quadraticCurveTo(0, bot + 12, -HW, bot - 16);
+    g.closePath();
+  };
+  torsoPath();
+  g.fillStyle = linGrad(g, -SW, 0, SW, 0, [shade(col, 0.14), col, shade(col, -0.45)]);
+  g.fill();
+  g.save(); torsoPath(); g.clip();
+  g.fillStyle = linGrad(g, 0, top, 0, bot, [alpha('#000000', 0), alpha('#000000', 0.22)]);
+  g.fillRect(-SW, top - 16, SW * 2, BH + 32);           // ambient occlusion toward the hem
+  g.strokeStyle = shade(col, -0.55); g.lineWidth = 6; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(-9, top + 4); g.lineTo(0, top + 16); g.lineTo(9, top + 4); g.stroke();  // collar V
+  g.strokeStyle = alpha(M.rim, 0.65); g.lineWidth = 4.5;  // lit edge on the key side
+  g.beginPath();
+  g.moveTo(-SW + 3, top + 28);
+  g.quadraticCurveTo(-SW + 3, bot - 40, -HW + 3, bot - 16);
+  g.stroke();
+  g.restore();
+  torsoPath(); g.strokeStyle = INK; g.lineWidth = 9; g.stroke();
 
   sketchCircle(g, P(pose, 'hF')[0], P(pose, 'hF')[1], 15, 8, INK, seed + 25, col);   // mitten hand
 

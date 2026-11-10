@@ -86,3 +86,15 @@ workspace root). Keep entries concrete and checkable; “make it better” is no
 - Learned: Kokoro is slower than espeak per line, so shots sized for espeak overflow —
   auto-fit `speed` (clamped <=1.9) per line, and re-run for lines that need it.
 - Caveat: gates prove sync, not pleasantness — voice quality is judged by ear, by the user.
+
+## 2026-11-08 — SLICE-5: full-figure torso shading
+
+- Worked: replacing the flat capsule + hard 30% shadow strip with a sloped-shoulder
+  path and a 3-stop key-to-shadow gradient made wide shots read as bodies, not tubes.
+  Keeping EVERY joint coordinate (sh/hip/eF/hF) identical meant the prop-contact gate
+  stayed green with zero contact fixes — change fills, never anchors, when a gate
+  depends on geometry.
+- Worked: light direction in local -x for the full figure matches both the leg rims
+  (always at -17.5) and the close-up bust (lit=-1) — one consistent key light.
+- Watch: at wide scale (1.45x) fine details (collar V) vanish — design for the smallest
+  scale the asset appears at; 3 gradient stops, no banding observed.

@@ -33,7 +33,14 @@ that is `present_file`-ed to the user; brutal honesty; runtime restored via
   Notes/self-critique: word timings are espeak-measured stretched to Kokoro
   durations (audit-verified, but listen-check belongs to the user); b07 runs at
   speed 1.34 and may sound rushed; loudness error widened to -0.38 LU (was -0.14).
-- Next item: SLICE-5 (full-figure torso shading for wide/medium).
+- SLICE-5 DONE (commit pending): full-figure torso = sloped-shoulder path + 3-stop
+  key-to-shadow linGrad (key at local -x, matching leg rims) + hem AO + collar V +
+  lit edge rim; anchors (sh/hip/hF) untouched so prop contact is unchanged.
+  Gates PASS (continuity contact intact), review10 sheet: wides read as bodies now.
+  Notes/self-critique: fill/shading only, zero joint-coordinate changes (contact gate
+  proves it); gradient stops kept to 3 to avoid banding at wide 1.45x scale; collar V
+  barely visible at wide scale (accepted); shadow side vs background is SLICE-6.
+- Next item: SLICE-6 (set lighting pass).
 
 ## Definition of "significant change" (loop stop per item)
 
