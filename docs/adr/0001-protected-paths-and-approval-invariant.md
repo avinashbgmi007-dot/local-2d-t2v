@@ -140,12 +140,12 @@ in an autonomous run.
 
 ## Appendix D — Efficiency & determinism scope (2026-11-10)
 
-**Efficiency:** `frame_qa.py` does NOT share `motion_audit`'s frame scan. It runs its own
-ffmpeg luma extraction on 12 sampled frames. Cost is accepted: measured at ~1.3s on an 18s video (12 samples), dominated by ffmpeg
-startup rather than video duration. Runs only at review time, not in the render path. No efficiency regression to
-the production pipeline. If profiling later shows it's a bottleneck, the scan can be
-shared by having `motion_audit` emit per-frame luma to a JSON sidecar that `frame_qa`
-reads.
+**Efficiency:** `frame_qa.py` now does a FULL per-frame scan (not sparse sampling). Extracts
+all frame lumas in a single ffmpeg pass (~0.6s on an 18s/432-frame video). Full scan
+catches short freezes (>=3 frames) and single-frame pops that sparse sampling missed.
+Cost is accepted: runs only at review time, not in the render path. Does NOT share
+`motion_audit`'s frame scan; if profiling shows a bottleneck, `motion_audit` can emit
+per-frame luma to a JSON sidecar that `frame_qa` reads instead.
 
 **Determinism:** Confirmed only for **stills** (identical frame hashes across 2 renders on
 the same machine and ffmpeg version). Candidate 1's safety net (hash comparison) is

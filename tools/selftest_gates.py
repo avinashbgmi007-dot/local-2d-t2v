@@ -23,7 +23,10 @@ for p in (TOOLS, SHORTS):
     if os.path.isdir(p) and p not in sys.path:
         sys.path.insert(0, p)
 
-import scene_coverage          # noqa: E402
+try:
+    import scene_coverage          # noqa: E402
+except ImportError:
+    scene_coverage = None
 import approval_gate           # noqa: E402
 import record_approval         # noqa: E402
 import render_gate             # noqa: E402
@@ -61,6 +64,7 @@ def empty_file(path):
         pass
 
 
+@unittest.skipUnless(scene_coverage is not None, 'scene_coverage not available')
 class SceneCoverageTests(unittest.TestCase):
     def test_clean_project_passes(self):
         with tempfile.TemporaryDirectory() as d:
@@ -643,6 +647,123 @@ class AcceptanceBehavioralTests(unittest.TestCase):
         r = subprocess.run([sys.executable, os.path.join(TOOLS, "acceptance.py"), "--help"],
                             capture_output=True, text=True)
         self.assertNotIn("record", r.stdout + r.stderr)
+
+
+
+@unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+class FrameQAFullScanTests(unittest.TestCase):
+    """Full-scan (per-frame) positive controls for frame_qa."""
+
+    def test_all_lumas_count(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "blue.mp4")
+            _make_clip(clip, "blue", duration=1.0, fps=24)
+            raw = fq.extract_all_lumas(clip, 24.0)
+            self.assertGreater(len(raw), 20)
+            self.assertLess(len(raw), 30)
+
+    def test_freeze_12_frames_detected(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "freeze12.mp4")
+            seg1 = os.path.join(d, "s1.mp4")
+            seg2 = os.path.join(d, "s2.mp4")
+            _make_clip(seg1, "blue", duration=0.5, fps=24)
+            _make_clip(seg2, "red", duration=1.5, fps=24)
+            concat_list = os.path.join(d, "list.txt")
+            with open(concat_list, "w") as f:
+                f.write("file %s\nfile %s\n" % (seg1.replace(chr(92), "/"), seg2.replace(chr(92), "/")))
+            subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+                            "-c", "copy", clip], capture_output=True, check=True)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            raw = fq.extract_all_lumas(clip, fps)
+            lumas = [float(b) for b in raw]
+            run_len = 0
+            max_run = 0
+            for i in range(1, len(lumas)):
+                if abs(lumas[i] - lumas[i-1]) < 1.0:
+                    run_len += 1
+                    max_run = max(max_run, run_len)
+                else:
+                    run_len = 0
+            self.assertGreaterEqual(max_run, 10, "12-frame freeze should be detected (got %d)" % max_run)
+
+    def test_freeze_11_frames_detected(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "freeze11.mp4")
+            seg1 = os.path.join(d, "s1.mp4")
+            seg2 = os.path.join(d, "s2.mp4")
+            _make_clip(seg1, "blue", duration=0.46, fps=24)
+            _make_clip(seg2, "red", duration=1.5, fps=24)
+            concat_list = os.path.join(d, "list.txt")
+            with open(concat_list, "w") as f:
+                f.write("file %s\nfile %s\n" % (seg1.replace(chr(92), "/"), seg2.replace(chr(92), "/")))
+            subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+                            "-c", "copy", clip], capture_output=True, check=True)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            raw = fq.extract_all_lumas(clip, fps)
+            lumas = [float(b) for b in raw]
+            run_len = 0
+            max_run = 0
+            for i in range(1, len(lumas)):
+                if abs(lumas[i] - lumas[i-1]) < 1.0:
+                    run_len += 1
+                    max_run = max(max_run, run_len)
+                else:
+                    run_len = 0
+            self.assertGreaterEqual(max_run, 9, "11-frame freeze should be detected (got %d)" % max_run)
+
+    def test_single_pop_detected(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "pop.mp4")
+            seg1 = os.path.join(d, "s1.mp4")
+            seg2 = os.path.join(d, "s2.mp4")
+            _make_clip(seg1, "black", duration=1.0, fps=24)
+            _make_clip(seg2, "white", duration=1.0, fps=24)
+            concat_list = os.path.join(d, "list.txt")
+            with open(concat_list, "w") as f:
+                f.write("file %s\nfile %s\n" % (seg1.replace(chr(92), "/"), seg2.replace(chr(92), "/")))
+            subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+                            "-c", "copy", clip], capture_output=True, check=True)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            raw = fq.extract_all_lumas(clip, fps)
+            lumas = [float(b) for b in raw]
+            pops = [i for i in range(1, len(lumas)) if abs(lumas[i] - lumas[i-1]) >= 40.0]
+            self.assertGreaterEqual(len(pops), 1, "single pop frame should be detected")
+
+    def test_freeze_at_non_sample_offset(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "offset.mp4")
+            seg1 = os.path.join(d, "s1.mp4")
+            seg2 = os.path.join(d, "s2.mp4")
+            _make_clip(seg1, "blue", duration=0.3, fps=24)
+            _make_clip(seg2, "red", duration=1.7, fps=24)
+            concat_list = os.path.join(d, "list.txt")
+            with open(concat_list, "w") as f:
+                f.write("file %s\nfile %s\n" % (seg1.replace(chr(92), "/"), seg2.replace(chr(92), "/")))
+            subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+                            "-c", "copy", clip], capture_output=True, check=True)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            raw = fq.extract_all_lumas(clip, fps)
+            lumas = [float(b) for b in raw]
+            run_len = 0
+            max_run = 0
+            for i in range(1, len(lumas)):
+                if abs(lumas[i] - lumas[i-1]) < 1.0:
+                    run_len += 1
+                    max_run = max(max_run, run_len)
+                else:
+                    run_len = 0
+            self.assertGreaterEqual(max_run, 5, "freeze at non-sample offset should be detected (got %d)" % max_run)
+
 
 
 if __name__ == "__main__":
