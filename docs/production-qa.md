@@ -107,3 +107,29 @@ Order matters. Do the cheap visual checks first — rendering is slow, looking i
       is in the revenue path.
 - [ ] `story/treatment.md` exists and names the one native move and the ending echo. If it was
       written after the shot code, treat that as a warning: the film was assembled, not directed.
+
+## 11. Readability traps (visual review) — checklist
+Automation cannot judge these; eyeball the pulled frames (`tools/review_frames.py`)
+and the side-by-side sheets (`tools/sbs_sheet.py`) against a reference.
+
+- [ ] **A swing drawn as one rope that disappears behind the figure reads as a
+      HANGING.** Use two ropes to a wide plank with the figure between them; frame
+      whose legs clear the arc.
+- [ ] **Props or flotsam closer than ~2 m to the lens become huge cut-off blobs**
+      when the camera moves. Re-check every near prop after a camera move.
+- [ ] **A foreground element cut by the frame edge reads as a "ball"/blob.** A
+      foreground prop must be recognisable or removed.
+- [ ] **Flags:** red + yellow star/diamond reads as Vietnam's. Use a
+      period-correct flag.
+- [ ] **Painted signs lit by a side sun go grey-blue and unreadable.** Give the
+      sign face an unlit material.
+- [ ] **Golden rim light done as an offset outer copy turns every hat into a
+      picture frame.** Inner rim only, head/torso only.
+- [ ] **Balcony/railing rails at chest height through characters.** Put the lens
+      ~2.5 m up so rails cross legs, not torsos.
+- [ ] **Flat holds read as freezes in QA (frozen span >= 12 frames).** Every hold
+      needs a creeping push-in.
+- [ ] **Intentional freezes** (`freeze` in shots.json) must be declared; an
+      undeclared freeze is a defect, not a feature.
+- [ ] **Aspect mismatch / black / white frames** are measured by
+      `tools/review_frames.py` and `tools/frame_qa.py` — treat any flag as FAIL.
