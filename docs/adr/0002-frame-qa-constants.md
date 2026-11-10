@@ -28,6 +28,7 @@ Accepted. Constants frozen as of 2026-11-10.
 
 - **Whole-frame freezes only.** frame_qa detects frames where the entire 32x18 downscale is static (SAD < 50). A freeze with parallax planes, practical light, or minor drift (SAD >= 50) is not detected. The s006 freeze in cine_release (~14 frames, 0.58s) shows only 3-frame static runs because the set keeps moving. frame_qa does NOT verify that the freeze feature works; it only catches whole-frame freezes.
 - **Fast fades (<=4 frames) classified as flicker.** The ramp test requires 3+ rising frames at <=20 levels/step. A deliberate dip or fade of 4 frames or fewer would be classed as flicker. The ramp cap is tuned to the fades observed in cine_release (5-9 frame runs).
+- **Ramp cap margin is thin.** cine_release's biggest dip step is 18.09 -> 1.69 (16.4 levels), against a cap of 20. A slightly snappier dip in a future project would flip from "expected" to "finding". This is acceptable for a warning-level tool; the human approver can dismiss it.
 - **Flicker detection requires both instant drop AND instant rise within <=3 frames.** A 4+ frame black run with instant transitions is not classified as flicker.
 - **SAD_FREEZE=50 against p5=58-61 leaves thin margin.** One noisy frame in a real freeze resets the run (false-negative risk).
 - **Pop detection needs both neighbors;** 2-frame spikes at video boundaries are missed.

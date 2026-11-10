@@ -949,5 +949,158 @@ class FrameQABoundaryTests(unittest.TestCase):
             result, fq = self._analyze(clip)
             self.assertGreater(len(result["pops"]), 0, "pop must be detected")
 
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_flicker_in_declared_dip_is_finding(self):
+        """Flicker inside a declared dip window must still be a finding.
+
+        Proves the rule-order fix: flicker check runs before anchoring.
+        """
+        import frame_qa as fq
+        import json
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "flicker_dip.mp4")
+            W, H = 320, 240
+            N = 48
+            # frames 20-21: instant drop to black and rise (flicker)
+            # surrounding frames: bright (100)
+            raw = bytearray()
+            for f in range(N):
+                val = 0 if 20 <= f <= 21 else 100
+                for _ in range(H * W):
+                    raw.append(val)
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                fh.write(raw)
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '%dx%d' % (W, H), '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            # shots.json declares a dip at frame 20 (t=0.833)
+            shots = [{"id": "s1", "start": 0.0, "end": 2.0,
+                      "in": {"type": "dip", "dur": 0.5}}]
+            # Place the dip at the flicker location
+            shots = [{"id": "s1", "start": 0.833, "end": 2.0,
+                      "in": {"type": "dip", "dur": 0.5}}]
+            frames = fq.extract_all_frames(clip)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            dur = float(info['format']['duration'])
+            result = fq.analyze_frames(frames, fps, dur, [], shots)
+            self.assertTrue(any(br["classification"] == "finding" for br in result["black_runs"]),
+                            "flicker in declared dip must be finding")
+
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_gradual_dip_in_declared_window_is_expected(self):
+        """Gradual dip inside a declared window stays 'expected'.
+
+        Reproduces cine_release frames 224-234 synthetically.
+        """
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "gradual_dip.mp4")
+            W, H = 320, 240
+            N = 48
+            # Gradual ramp down and up (like cine_release dip)
+            raw = bytearray()
+            for f in range(N):
+                if f < 20:
+                    val = 100
+                elif f == 20:
+                    val = 30
+                elif f == 21:
+                    val = 5
+                elif f == 22:
+                    val = 3
+                elif f == 23:
+                    val = 5
+                elif f == 24:
+                    val = 20
+                elif f == 25:
+                    val = 40
+                else:
+                    val = 100
+                for _ in range(H * W):
+                    raw.append(val)
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                fh.write(raw)
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '%dx%d' % (W, H), '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            # shots.json declares a dip at the boundary
+            shots = [{"id": "s1", "start": 20/24.0, "end": 2.0,
+                      "in": {"type": "dip", "dur": 0.5}}]
+            frames = fq.extract_all_frames(clip)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            dur = float(info['format']['duration'])
+            result = fq.analyze_frames(frames, fps, dur, [], shots)
+            # The run at frames 21-23 (black) should be 'expected'
+            black_runs = result["black_runs"]
+            self.assertTrue(any(br["classification"] == "expected" for br in black_runs),
+                            "gradual dip in declared window must be expected")
+
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_end_tail_cap_is_finding(self):
+        """Trailing black > 0.5s is a finding, not end_tail."""
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "long_tail.mp4")
+            W, H = 320, 240
+            N = 48
+            # 24 frames of content, then 24 frames of black (1s tail)
+            raw = bytearray()
+            for f in range(N):
+                val = 100 if f < 24 else 0
+                for _ in range(H * W):
+                    raw.append(val)
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                fh.write(raw)
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '%dx%d' % (W, H), '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            frames = fq.extract_all_frames(clip)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            dur = float(info['format']['duration'])
+            result = fq.analyze_frames(frames, fps, dur, [], [])
+            # The trailing black run should be 'finding' (not end_tail) due to cap
+            black_runs = result["black_runs"]
+            tail_runs = [br for br in black_runs if br["start_idx"] >= 20]
+            self.assertTrue(any(br["classification"] == "finding" for br in tail_runs),
+                            "long trailing black must be finding, not end_tail")
+
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_real_frame_freeze_detected(self):
+        """Hold a golden PNG frame for 15 frames through H.264; must detect freeze."""
+        import frame_qa as fq
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "golden_freeze.mp4")
+            # Load golden frame and convert to grayscale video
+            img = Image.open('tests/golden/frame_01.png').convert('L')
+            # Resize to 320x240 for manageable encoding
+            img = img.resize((320, 240))
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                for _ in range(15):
+                    fh.write(img.tobytes())
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '320x240', '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            frames = fq.extract_all_frames(clip)
+            info = fq.ffprobe_json(clip)
+            fps = fq.parse_fps(info)
+            dur = float(info['format']['duration'])
+            result = fq.analyze_frames(frames, fps, dur, [], [])
+            self.assertGreater(len(result["frozen_runs"]), 0,
+                               "held golden frame must be detected as freeze")
+            self.assertTrue(any(fr[4] >= 12 for fr in result["frozen_runs"]),
+                            "freeze must be >= 12 frames")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
