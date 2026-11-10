@@ -25,7 +25,7 @@ EXPECTED = {
     "tools/seam_gate.py": "ddf83566e32e0b92",
     "tools/style_lock.py": "6e8bc8038f9bbff3",
     "tools/generate.py": "3edcbb6204c8feea",
-    "tools/director.py": "35d9ffbbd9337367",
+    "tools/director.py": "bd21fafca2207c22",
     "tools/narrate.py": "33eb0e904109b4f0",
     "audio/dsp.py": "589d305d94d8acc3",
     "audio/mix.py": "a48273c523b68c3b",

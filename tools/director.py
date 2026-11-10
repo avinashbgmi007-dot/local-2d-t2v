@@ -341,13 +341,14 @@ export function room(g, t, cam = {}, o = {}) {
       g.fillStyle = linGrad(g, 0, y, 0, y + h, [[0, mix(M.sky[1], '#1d2440', 0.55)], [1, M.sky[0]]]);
       g.fillRect(x, y, w, h);
     });
-    glow(g, wx + ww / 2, wy + wh / 2, V(400, 360), '#8fa8d8', 0.08);
-    FX.godRays(g, wx + ww / 2, wy + wh / 2, { count: 6, len: V(760, 800), spread: 0.4, color: '#9fb6e0', a: 0.05, angle: 1.22 });
+    glow(g, wx + ww / 2, wy + wh / 2, V(470, 420), '#8fa8d8', 0.12);
+    FX.godRays(g, wx + ww / 2, wy + wh / 2, { count: 6, len: V(760, 800), spread: 0.4, color: '#9fb6e0', a: 0.075, angle: 1.22 });
 
     // a clock on the wall: the title is a time, so the room should agree with it
     FX.clock(g, CX + V(430, 210), E.H * V(0.20, 0.135), V(58, 46), 3 * 3600,
              { face: shade(M.wall, 0.30), ink: shade(dark, -0.25), red: '#c04a3a' });
     glow(g, CX + V(430, 210), E.H * V(0.20, 0.135), V(150, 120), '#8fa8d8', 0.05);
+    glow(g, lx, ly + V(120, 100), V(780, 640), M.practical, 0.10);   // pendant bloom on the wall
 
     const dw = V(230, 190), dh = V(430, 520), dx = DOOR_X();
     FX.door(g, { x: dx - dw / 2, y: GY, w: dw, h: dh, color: shade(dark, -0.15), open: o.doorOpen || 0, light: '#2a3554' });
@@ -359,15 +360,16 @@ export function room(g, t, cam = {}, o = {}) {
   // plane 3 · counter, floor, pendant lamp, floor pool
   layer(g, cam, 0.86, (g) => {
     counterPanel(g, GY, M, dark);
-    g.fillStyle = linGrad(g, 0, GY, 0, GY + 460, [[0, shade(M.floor, -0.05)], [1, shade(M.dark, -0.32)]]);
+    g.fillStyle = linGrad(g, 0, GY, 0, GY + 460, [[0, shade(M.floor, 0.04)], [1, shade(M.dark, -0.28)]]);
     g.fillRect(-E.W, GY, E.W * 4, E.H * 2);
     FX.floorLines(g, GY, GY + 470, 'rgba(0,0,0,.3)', 0.085);
 
     seg(g, [[lx, 0], [lx, ly]], 6, dark);
     poly(g, [[lx - 52, ly], [lx + 52, ly], [lx + 32, ly + 40], [lx - 32, ly + 40]], shade(dark, 0.24));
     glow(g, lx, ly + 46, V(470, 570), M.practical, 0.52);
-    FX.lightCone(g, lx, ly + 46, { angle: Math.PI / 2, spread: 0.42, len: COUNTER_Y() - ly, color: M.practical, a: 0.10 });
-    FX.pool(g, lx, GY, V(330, 250), V(58, 44), M.practical, 0.20);
+    FX.lightCone(g, lx, ly + 46, { angle: Math.PI / 2, spread: 0.42, len: COUNTER_Y() - ly, color: M.practical, a: 0.13 });
+    FX.pool(g, lx, GY, V(360, 270), V(62, 48), M.practical, 0.27);
+    FX.pool(g, CX - V(880, 400) + V(170, 125), GY + V(70, 56), V(300, 230), V(66, 50), '#8fa8d8', 0.10);  // moonlight pool
   });
 
   return { GY, M, seats: SEATS(), counterY: COUNTER_Y(), lamp: [lx, ly], doorX: DOOR_X() };

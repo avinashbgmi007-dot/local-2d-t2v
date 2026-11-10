@@ -40,7 +40,13 @@ that is `present_file`-ed to the user; brutal honesty; runtime restored via
   Notes/self-critique: fill/shading only, zero joint-coordinate changes (contact gate
   proves it); gradient stops kept to 3 to avoid banding at wide 1.45x scale; collar V
   barely visible at wide scale (accepted); shadow side vs background is SLICE-6.
-- Next item: SLICE-6 (set lighting pass).
+- SLICE-6 DONE (commit pending): set lighting — stronger window glow (0.12) + god
+  rays (0.075), pendant bloom on the wall, lighter floor at the wall line, lamp cone
+  0.13 / pool 0.27, plus a cool moonlight pool from the window. Environment only;
+  characters untouched. review11: wall mean lum ~53 vs floor ~18 (separation),
+  two motivated sources read, no halo. Gates PASS, master -14.38 LUFS PASS.
+  Notes/self-critique: kept glows wide+soft; close-up veil/bounce untouched (slice 3).
+- Next item: SLICE-7 (target-directed gestures).
 
 ## Definition of "significant change" (loop stop per item)
 

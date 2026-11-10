@@ -98,3 +98,12 @@ workspace root). Keep entries concrete and checkable; “make it better” is no
   (always at -17.5) and the close-up bust (lit=-1) — one consistent key light.
 - Watch: at wide scale (1.45x) fine details (collar V) vanish — design for the smallest
   scale the asset appears at; 3 gradient stops, no banding observed.
+
+## 2026-11-08 — SLICE-6: set lighting pass
+
+- Worked: two motivated sources (cool window moonlight + warm pendant) with soft wide
+  glows and floor pools made the room read at night; wall/floor luminance separation
+  measured ~53 vs ~18. Lighting the ENVIRONMENT (never the ink-bean faces) preserves
+  the dark-on-dark identity while fixing murk.
+- Rule: raise glow radius together with alpha — small+bright reads as halo, wide+soft
+  reads as light. Close-up veil stays; separation there comes from the slice-3 rim+bounce.
