@@ -23,10 +23,7 @@ for p in (TOOLS, SHORTS):
     if os.path.isdir(p) and p not in sys.path:
         sys.path.insert(0, p)
 
-try:
-    import scene_coverage          # noqa: E402
-except ImportError:
-    scene_coverage = None
+import scene_coverage          # noqa: E402  (committed; hard import so a break fails, not skips)
 import approval_gate           # noqa: E402
 import record_approval         # noqa: E402
 import render_gate             # noqa: E402
@@ -64,7 +61,6 @@ def empty_file(path):
         pass
 
 
-@unittest.skipUnless(scene_coverage is not None, 'scene_coverage not available')
 class SceneCoverageTests(unittest.TestCase):
     def test_clean_project_passes(self):
         with tempfile.TemporaryDirectory() as d:
@@ -765,6 +761,81 @@ class FrameQAFullScanTests(unittest.TestCase):
             self.assertGreaterEqual(max_run, 5, "freeze at non-sample offset should be detected (got %d)" % max_run)
 
 
+
+class FrameQABoundaryTests(unittest.TestCase):
+    """Boundary tests for frame_qa SAD-based detection thresholds."""
+
+    def _make_freeze_clip(self, d, freeze_frames):
+        red1 = os.path.join(d, "red1.mp4")
+        blue = os.path.join(d, "blue.mp4")
+        red2 = os.path.join(d, "red2.mp4")
+        _make_clip(red1, "red", duration=5.0/24.0, fps=24)
+        _make_clip(blue, "blue", duration=freeze_frames/24.0, fps=24)
+        _make_clip(red2, "red", duration=5.0/24.0, fps=24)
+        concat_list = os.path.join(d, "list.txt")
+        with open(concat_list, "w") as f:
+            f.write("file %s\nfile %s\nfile %s\n" % (
+                red1.replace(chr(92), "/"), blue.replace(chr(92), "/"), red2.replace(chr(92), "/")))
+        clip = os.path.join(d, "clip.mp4")
+        subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+                        "-c", "copy", clip], capture_output=True, check=True)
+        return clip
+
+    def test_11_frames_is_info_only(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = self._make_freeze_clip(d, 11)
+            frames = fq.extract_all_frames(clip)
+            sads = [fq.compute_sad(frames[i], frames[i-1]) for i in range(1, len(frames))]
+            run_len = 0
+            max_run = 0
+            for s in sads:
+                if s < fq.SAD_FREEZE:
+                    run_len += 1
+                    max_run = max(max_run, run_len)
+                else:
+                    run_len = 0
+            # 11 frozen frames => 10 low-sad transitions; < 12 threshold
+            self.assertGreaterEqual(max_run, 9)
+            self.assertLess(max_run + 1, 12, "11 frames must stay below 12-frame threshold")
+
+    def test_12_frames_is_finding(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = self._make_freeze_clip(d, 12)
+            frames = fq.extract_all_frames(clip)
+            sads = [fq.compute_sad(frames[i], frames[i-1]) for i in range(1, len(frames))]
+            run_len = 0
+            max_run = 0
+            for s in sads:
+                if s < fq.SAD_FREEZE:
+                    run_len += 1
+                    max_run = max(max_run, run_len)
+                else:
+                    run_len = 0
+            # 12 frozen frames => 11 low-sad transitions; >= 11 meets threshold
+            self.assertGreaterEqual(max_run + 1, 12, "12 frames must meet 12-frame threshold")
+
+    def test_single_midclip_pop_detected(self):
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "pop.mp4")
+            subprocess.run(['ffmpeg', '-y', '-f', 'lavfi', '-i',
+                            'color=c=0x000000:s=320x240:r=24:d=2',
+                            '-vf', "drawbox=x=0:y=0:w=320:h=240:color=white:t=fill:enable='eq(n,24)'",
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            frames = fq.extract_all_frames(clip)
+            sads = [fq.compute_sad(frames[i], frames[i-1]) for i in range(1, len(frames))]
+            pop_found = False
+            for i in range(1, len(sads) - 1):
+                if sads[i] >= fq.SAD_POP:
+                    if i + 1 < len(frames):
+                        sad_ba = fq.compute_sad(frames[i - 1], frames[i + 1])
+                        if sad_ba < fq.SAD_POP // 2:
+                            pop_found = True
+                            break
+            self.assertTrue(pop_found, "single mid-clip pop should be detected")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
