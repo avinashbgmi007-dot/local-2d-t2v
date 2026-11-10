@@ -146,10 +146,12 @@
    },
    "prop": {
     "kind": "book",
-    "who": "ARUN",
+    "who": "NILA",
+    "from": "ARUN",
+    "at": 0.65,
     "color": "#b8452f"
    },
-   "notes": "Transfer beat: NILA reaches, ARUN still holds. The handoff completes across the cut into b07."
+   "notes": "Transfer beat ON SCREEN: ARUN holds until 65% of the shot, then NILA takes the book — her aimed reach (SLICE-7) lands exactly on it, so the swap is seamless; b07 confirms NILA holds."
   },
   {
    "id": "b07",

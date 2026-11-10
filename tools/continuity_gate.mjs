@@ -56,9 +56,12 @@ const report = await withPlayer(args.project, page => page.evaluate(({ fps, shot
     const shot = shots.find(s => t >= s.start - 1e-9 && t < s.end - 1e-9) || shots[shots.length - 1];
     const entries = window.PROP_FRAME || [];
     const prop = shot.prop;
-    if (prop && prop.who !== lastOwner) {
-      timeline.push({ t: +shot.start.toFixed(3), shot: shot.id, from: lastOwner, to: prop.who });
-      lastOwner = prop.who;
+    const sdur = shot.end - shot.start, slt = t - shot.start;
+    const effWho = prop && prop.from != null && prop.at != null && slt < prop.at * sdur
+      ? prop.from : (prop && prop.who);
+    if (prop && effWho !== lastOwner) {
+      timeline.push({ t: +t.toFixed(3), shot: shot.id, from: lastOwner, to: effWho });
+      lastOwner = effWho;
     }
     if (entries.length) {
       seen[shot.id] = (seen[shot.id] || 0) + 1;
@@ -66,8 +69,8 @@ const report = await withPlayer(args.project, page => page.evaluate(({ fps, shot
         wrongHolder.push({ f, shot: shot.id, reason: 'prop drawn more than once', count: entries.length });
       }
       for (const e of entries) {
-        if (prop && e.who && e.who !== prop.who && wrongHolder.length < 40) {
-          wrongHolder.push({ f, shot: shot.id, reason: 'wrong holder', got: e.who, want: prop.who });
+        if (prop && e.who && e.who !== effWho && wrongHolder.length < 40) {
+          wrongHolder.push({ f, shot: shot.id, reason: 'wrong holder', got: e.who, want: effWho });
         }
         const half = (HALF[e.kind] != null ? HALF[e.kind] : 8) * e.k;
         const gap = Math.max(0, Math.abs(e.cx - e.handX) - half);

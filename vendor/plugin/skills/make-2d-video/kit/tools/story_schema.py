@@ -18,7 +18,7 @@ SFX = set("whoosh swish impact hit riser slowmo freeze tick clock heartbeat pop 
 TRANSITIONS = set("cut fade dip dipWhite flash whip zoom".split())
 SIZES = set("wide med close insert".split())
 PROP_KINDS = set("mug book phone".split())
-PROP_KEYS = set("kind who color hand scale tilt".split())
+PROP_KEYS = set("kind who color hand scale tilt from at".split())
 ID = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
 CAST_ID = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 RESERVED = set("break case catch class const continue debugger default delete do else export extends finally for function if import in instanceof new return super switch this throw try typeof var void while with yield let static enum await implements package protected interface private public".split())
@@ -172,6 +172,11 @@ def validate_story(story):
                     warnings.append(f"{label}: prop has no holder; contact cannot be verified")
                 if "hand" in pr and pr["hand"] not in ("front", "back"):
                     errors.append(f"{label}: prop.hand must be front or back")
+                if "from" in pr and pr["from"] is not None and pr["from"] not in cast:
+                    errors.append(f"{label}: unknown prop.from {pr['from']!r}")
+                if "at" in pr and not (isinstance(pr["at"], (int, float)) and not isinstance(pr["at"], bool)
+                                       and 0 < pr["at"] < 1):
+                    errors.append(f"{label}: prop.at must be a fraction in (0,1) of the shot")
                 if "scale" in pr and not bounded(pr["scale"], .2, 3):
                     errors.append(f"{label}: prop.scale out of range")
                 if "tilt" in pr and not bounded(pr["tilt"], -3.14, 3.14):

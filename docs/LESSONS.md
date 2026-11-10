@@ -107,3 +107,14 @@ workspace root). Keep entries concrete and checkable; “make it better” is no
   the dark-on-dark identity while fixing murk.
 - Rule: raise glow radius together with alpha — small+bright reads as halo, wide+soft
   reads as light. Close-up veil stays; separation there comes from the slice-3 rim+bounce.
+
+## 2026-11-08 — SLICE-7+8: aimed gestures + on-screen prop transfer
+
+- Aimed reach: compute the target from the OTHER figure's pose (hand world position),
+  not from a preset. Combined with prop.from/at, the reach lands exactly where the
+  book is, so the mid-shot swap is pixel-seamless.
+- Gotcha: templates receive LOCAL shot time (player.js drawShot passes lt). Assuming
+  global t double-subtracts and silently breaks time-based logic — the continuity
+  gate caught it (wrong-holder frames), which is exactly what the gate is for.
+- Mid-shot ownership needs all three of: schema fields, interpreter effective-owner,
+  gate effective-owner. Missing any one -> gate FAIL, not silent corruption.

@@ -65,6 +65,18 @@ export function createTemplates({ cast, person, outfitOf, speak, faceAt, blinkAt
     // ONE pose object for the figure and anything it holds, so the hand and the
     // prop cannot drift apart during a breath or a gesture.
     const po = breathe(pose(p['pose' + n] || 'stand'), t, 1, i + 1);
+    // Target-directed reach: a canned 'reach' preset aims at a fixed height, not at the
+    // object. If this figure reaches and the on-screen prop belongs to the OTHER figure,
+    // aim the hand at that figure's actual hand — which is where the prop is held.
+    const shotProp0 = p.prop || (info.shot && info.shot.prop);
+    if (shotProp0 && shotProp0.who && shotProp0.who !== who && /reach/i.test(String(p['pose' + n] || '')) && i === 0) {
+      const fx2 = E.W * (p.x2 ?? .68), fy2 = GY();
+      const fs2 = wide ? V(1.45, 2.20) : V(1.75, 2.7), fc2 = p.facing2 ?? -1;
+      const h2 = (pose(p.pose2 || 'stand').hF) || [0, 0];
+      const dx = (fx2 + h2[0] * fs2 * fc2) - fx, dy = (fy2 + h2[1] * fs2) - fy;
+      po.hF = [dx / (fs * fc), dy / fs];
+      po.eF = [dx * 0.5 / (fs * fc) - 8, dy * 0.5 / fs - 16];
+    }
     const out = person(g, who, { x: fx, y: fy, s: fs, facing: fc, pose: po,
       face: faceAt(t, p.at, p['expr' + n] || 'neutral', p['exprTo' + n]),
       // Mouth routing: the shot names its speaker; only that figure may talk.
@@ -76,10 +88,15 @@ export function createTemplates({ cast, person, outfitOf, speak, faceAt, blinkAt
     // A prop is owned by a person, not by a shot: it is drawn only in its holder's
     // hand, and only when that holder is actually on screen.
     const prop = p.prop || (info.shot && info.shot.prop);
-    if (prop && prop.who === who) {
+    // Mid-shot transfer: prop.from holds until prop.at (a fraction of the shot), then
+    // prop.who takes over — the handoff can happen ON SCREEN instead of across a cut.
+    const lt = t;   // templates receive LOCAL shot time (see player.js drawShot)
+    const effWho = prop && prop.from != null && prop.at != null && lt < prop.at * (info.dur || 1)
+      ? prop.from : (prop && prop.who);
+    if (prop && effWho === who) {
       holdProp(g, prop, { x: overrides.x ?? fx, y: overrides.y ?? fy,
                           s: overrides.s ?? fs, facing: overrides.facing ?? fc,
-                          pose: po, owner: who });
+                          pose: po, owner: effWho });
     }
     return out;
   };

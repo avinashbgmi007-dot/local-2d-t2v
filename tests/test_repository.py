@@ -356,3 +356,27 @@ class PropContinuityTests(unittest.TestCase):
         from tools.story_schema import POSES
         self.assertIn("reachLow", POSES)
         self.assertIn("reachLow:", Path("engine/rig2d.js").read_text(encoding="utf-8"))
+
+
+class PropTransferTests(unittest.TestCase):
+    """Mid-shot prop transfer (prop.from + prop.at): the schema half."""
+
+    def _story(self, prop):
+        return {"title": "t", "aspect": "9:16", "cast": {"NILA": {}, "ARUN": {}},
+                "shots": [{"id": "s1", "size": "med", "dur": 2, "prop": prop}], "music": []}
+
+    def test_transfer_fields_valid(self):
+        from tools.story_schema import validate_story
+        e, w = validate_story(self._story({"kind": "book", "who": "NILA", "from": "ARUN",
+                                           "at": 0.65, "color": "#b8452f"}))
+        self.assertEqual(e, [])
+
+    def test_bad_at_rejected(self):
+        from tools.story_schema import validate_story
+        e, _ = validate_story(self._story({"kind": "book", "who": "NILA", "from": "ARUN", "at": 1.5}))
+        self.assertTrue(any("prop.at" in x for x in e))
+
+    def test_unknown_from_rejected(self):
+        from tools.story_schema import validate_story
+        e, _ = validate_story(self._story({"kind": "book", "who": "NILA", "from": "GHOST", "at": 0.5}))
+        self.assertTrue(any("prop.from" in x for x in e))

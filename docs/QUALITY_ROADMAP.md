@@ -46,7 +46,17 @@ that is `present_file`-ed to the user; brutal honesty; runtime restored via
   characters untouched. review11: wall mean lum ~53 vs floor ~18 (separation),
   two motivated sources read, no halo. Gates PASS, master -14.38 LUFS PASS.
   Notes/self-critique: kept glows wide+soft; close-up veil/bounce untouched (slice 3).
-- Next item: SLICE-7 (target-directed gestures).
+- SLICE-7 DONE: reach poses now AIM at the other figure's actual hand (where the prop
+  is held) instead of a canned height — computed per shot in interpreter.figure().
+  review12: at 8.40-9.00s NILA's mitten lands on the book. Gate PASS.
+- SLICE-8 DONE: on-screen handoff via prop.from/prop.at (fraction of shot). b06:
+  ARUN holds until 65%, NILA takes over AT 9.00s mid-shot, right where her aimed
+  reach lands -> seamless swap. Gate timeline: (none)->ARUN @0.00, ARUN->NILA @9.00
+  inside b06; 0 wrong-holder / no-contact frames. Schema+gate+tests updated (37 py).
+  Notes/self-critique: templates receive LOCAL shot time (player drawShot) — the
+  first version double-subtracted shot.start and the gate caught it (10 wrong-holder
+  frames). The gate is what makes a mid-shot transfer safe to ship.
+- Next item: SLICE-9 (sound post: motif score + real foley).
 
 ## Definition of "significant change" (loop stop per item)
 
