@@ -1,0 +1,13 @@
+# SLICE-10 demo: plain prose -> story.json -> video. New scene, new prop, new set.
+Title: The Mug
+Set: kitchen
+Voices: MIRA=af_heart, JAY=am_adam
+
+[wide] MIRA and JAY stand at the counter.
+JAY says: You always take the last cup.
+[close] MIRA says: Then I will take this one.
+JAY holds the mug.
+MIRA reaches for the mug for 1.5 seconds.
+[med] MIRA takes the mug.
+[insert] the mug for 1.0 seconds.
+[wide] MIRA and JAY stand at the counter.

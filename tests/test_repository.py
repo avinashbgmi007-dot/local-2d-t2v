@@ -380,3 +380,49 @@ class PropTransferTests(unittest.TestCase):
         from tools.story_schema import validate_story
         e, _ = validate_story(self._story({"kind": "book", "who": "NILA", "from": "GHOST", "at": 0.5}))
         self.assertTrue(any("prop.from" in x for x in e))
+
+
+class ProseManifestTests(unittest.TestCase):
+    """SLICE-10: prose -> manifest. The text-in half of text-to-video."""
+
+    def _parse(self, text):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ptm", "tools/prose_to_manifest.py")
+        m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+        return m.parse_prose(text)
+
+    def test_demo_prose_validates(self):
+        from tools.story_schema import validate_story
+        story = self._parse(open("examples/quality-benchmark/prose_mug.txt", encoding="utf-8").read())
+        e, w = validate_story(story)
+        self.assertEqual(e, [], msg=str(e))
+        self.assertEqual(story["set"], "kitchen")
+        self.assertEqual(story["voices"]["MIRA"], "af_heart")
+
+    def test_dialogue_becomes_line_and_speaker(self):
+        st = self._parse("JAY says: Hello there.\n")
+        sh = st["shots"][0]
+        self.assertEqual(sh["line"], "Hello there.")
+        self.assertEqual(sh["speaker"], "JAY")
+        self.assertIn("JAY", st["cast"])
+
+    def test_take_creates_onscreen_transfer(self):
+        from tools.story_schema import validate_story
+        st = self._parse("JAY holds the mug.\nMIRA takes the mug.\n")
+        e, _ = validate_story(st)
+        self.assertEqual(e, [], msg=str(e))
+        take = st["shots"][1]["prop"]
+        self.assertEqual(take["who"], "MIRA")
+        self.assertEqual(take["from"], "JAY")
+        self.assertAlmostEqual(take["at"], 0.65)
+
+    def test_insert_shot_carries_prop(self):
+        from tools.story_schema import validate_story
+        st = self._parse("JAY holds the book.\n[insert] the book for 1.0 seconds.\n")
+        e, _ = validate_story(st)
+        self.assertEqual(e, [], msg=str(e))
+        # insert beats compile to the insert-object TEMPLATE (the size-'insert' path
+        # draws a decorative fly, not the prop)
+        self.assertEqual(st["shots"][1]["template"], "insert-object")
+        self.assertEqual(st["shots"][1]["prop"]["kind"], "book")
+        self.assertEqual(st["shots"][1]["params"]["object"]["kind"], "book")

@@ -65,7 +65,20 @@ that is `present_file`-ed to the user; brutal honesty; runtime restored via
   — foley stays synthesized in audio/sfx.py. Gates PASS, master -14.34 LUFS PASS.
   Notes/self-critique: could not A/B-listen; evidence is cue list + measured
   transients + loudness, not ear. Score pleasantness remains user-judged.
-- Next item: SLICE-10 (prose -> manifest, text-in/film-out).
+- SLICE-10 DONE (commit pending): tools/prose_to_manifest.py — deterministic mini-grammar
+  (Title/Set/Cast/Voices headers; [size] tags; "X says:", "X holds/takes/reaches for the
+  <prop>", "for N seconds") -> schema-valid story.json -> full pipeline. Demo
+  examples/quality-benchmark/prose_mug.txt -> build/quality/prose/out/The_Mug.mp4 (14.2s,
+  kitchen set, mug prop, on-screen transfer JAY->MIRA at 11.42s via from/at, insert-object
+  shot). Gates PASS both projects; master -14.22 LUFS PASS; 41 py tests.
+  Notes/self-critique: size-'insert' in director's generated scenes draws a decorative FLY
+  and never the prop — insert beats MUST use template 'insert-object' (learned via gate
+  MISSING failure). Legacy size shots take top-level scalar who/who2/pose/pose2 (params is
+  template-only). Generator puts the prop-relevant actor in `who` (figure 1 holds the prop
+  in the generated size path).
+- Backlog now leads: render pending end-card dust; overlapping-dialogue gate; hi/te TTS;
+  frame-QC report in master.py. All 10 main slices DONE — awaiting user steer (e.g. a
+  reference video to score against, or another prose scene to try).
 
 ## Definition of "significant change" (loop stop per item)
 

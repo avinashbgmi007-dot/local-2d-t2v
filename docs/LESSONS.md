@@ -127,3 +127,15 @@ workspace root). Keep entries concrete and checkable; “make it better” is no
 - Music loop -> motifs: rotate the key per plan segment (render_score key + i*5).
 - Kenney CC0 audio is unreachable from the allowlist (kenney.nl blocked, no github
   audio mirror) — do not retry; audio/sfx.py synthesis is the local foley source.
+
+## 2026-11-08 — SLICE-10: prose -> manifest (text-in/film-out)
+
+- Worked: a deterministic documented mini-grammar beats an LLM prompt here — testable,
+  offline, and every output is schema-validated before anything is written.
+- Learned (gate-caught): director's generated size-'insert' scene draws a FLY, not the
+  prop — insert beats must compile to template 'insert-object'. A green parse + red gate
+  caught it; the gate is the spec.
+- Learned: legacy size shots use top-level scalar who/who2/pose/pose2 (params is for
+  template shots only); bg must be a MOODS entry ('night'), not 'midnight'.
+- Prose props flow through the SAME ownership machinery as authored stories — "takes"
+  emits prop.from/at and the handoff renders on screen (JAY->MIRA at 11.42s).
