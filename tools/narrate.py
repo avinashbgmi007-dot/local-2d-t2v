@@ -61,6 +61,44 @@ def word_weights(text):
     return out
 
 
+def retime(story, durations, no_retime=False):
+    """Plan contiguous shot intervals; no-retime really preserves declared starts.
+
+    Speech longer than its declared slot is an error in no-retime mode, not silently
+    clipped or overlapped into the next line. Retime mode retains the existing hold rules.
+    """
+    shots = story.get("shots", [])
+    if len(durations) != len(shots):
+        raise ValueError("one speech duration per shot required")
+    cursor, plan = 0.0, []
+    for shot, speech in zip(shots, durations):
+        if not number(speech) or speech < 0:
+            raise ValueError("speech durations must be finite and non-negative")
+        declared = float(shot["end"]) - float(shot["start"])
+        hold = float(shot.get("hold", .42 if speech else .9))
+        if not number(hold) or hold < 0 or declared <= 0:
+            raise ValueError("shot durations/holds must be positive (holds non-negative)")
+        if no_retime:
+            start, duration = float(shot["start"]), declared
+            if start + .001 < cursor:
+                raise ValueError("no-retime requires ordered, non-overlapping shots")
+            if speech > duration + .001:
+                raise ValueError(f"{shot.get('id')}: speech {speech:.3f}s exceeds slot {duration:.3f}s")
+            cursor = start
+        else:
+            start = cursor
+            duration = max(MIN_SHOT, speech + hold) if speech else max(SILENT_MIN, hold)
+        plan.append((shot, speech, duration, start))
+        cursor += duration
+    return {"shots": [{"start": round(start, 3), "end": round(start + duration, 3)}
+                      for _, _, duration, start in plan], "duration": round(cursor, 3), "plan": plan}
+
+
+def number(value):
+    import math
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", required=True)
@@ -76,6 +114,12 @@ def main():
     st = json.load(open(os.path.join(P, "story", "shots.json"), encoding="utf-8"))
     voice = a.voice or cfg.get("voice") or "am_michael"
     speed = a.speed or cfg.get("speed") or 1.05
+    # Per-speaker casting. A story may declare {"voices": {"NILA": "af_heart", ...}};
+    # without it every line uses the single default voice (legacy behaviour).
+    voice_map = st.get("voices") or {}
+
+    def voice_for(shot):
+        return voice_map.get(shot.get("speaker") or "", voice)
 
     kdir = os.path.expanduser("~/.faceless-shorts/kokoro")
     model = os.path.join(kdir, "kokoro-v1.0.onnx")
@@ -85,7 +129,9 @@ def main():
 
     from kokoro_onnx import Kokoro
     K = Kokoro(model, voices)
-    lang = "en-gb" if voice.startswith("b") else "en-us"
+
+    def lang_for(v):
+        return "en-gb" if v.startswith("b") else "en-us"
 
     # ── pass 1 · synthesize and trim every line ──────────────────────────────
     clips = {}
@@ -94,7 +140,8 @@ def main():
         text = (s.get("line") or "").strip()
         if not text:
             continue
-        samples, sr = K.create(text, voice=voice, speed=speed, lang=lang)
+        v = voice_for(s)
+        samples, sr = K.create(text, voice=v, speed=speed, lang=lang_for(v))
         x = np.asarray(samples, dtype=np.float32)
         x = trim_silence(x, sr)
         if SR is None:
@@ -106,24 +153,18 @@ def main():
 
     # ── pass 2 · retime: a shot lasts as long as its line, plus a hold ──────
     old_total = float(st.get("duration") or st["shots"][-1]["end"])
-    cursor = 0.0
-    plan = []
-    for s in st["shots"]:
-        sid = s["id"]
-        if sid in clips:
-            speech = len(clips[sid][1]) / SR
-            dur = speech + float(s.get("hold", 0.42))
-            dur = max(MIN_SHOT, dur) if not a.no_retime else float(s["end"]) - float(s["start"])
-        else:
-            speech = 0.0
-            dur = max(SILENT_MIN, float(s.get("hold", 0.9))) if not a.no_retime \
-                else float(s["end"]) - float(s["start"])
-        plan.append((s, speech, dur, cursor))
-        cursor += dur
-    total = cursor
+    durations = [len(clips[s["id"]][1]) / SR if s["id"] in clips else 0.0 for s in st["shots"]]
+    timing = retime(st, durations, a.no_retime)
+    plan, total = timing["plan"], timing["duration"]
 
     # ── pass 3 · lay the audio down at the new starts ────────────────────────
     buf = np.zeros(int(round(total * SR)), dtype=np.float32)
+    # Per-speaker stems: the mouth envelope must be measured from ONE voice, or a
+    # listener's mouth moves while somebody else talks. Written only when the film
+    # actually casts more than one voice.
+    speakers = sorted({(s.get("speaker") or "NARRATOR") for s in st["shots"]
+                       if s["id"] in clips})
+    stems = {sp: np.zeros_like(buf) for sp in speakers} if len(speakers) > 1 else {}
     words = []
     for s, speech, dur, start in plan:
         s["start"] = round(start, 3)
@@ -134,6 +175,9 @@ def main():
         at = int(round(start * SR))
         end = min(len(buf), at + len(x))
         buf[at:end] += x[:end - at]
+        sp = s.get("speaker") or "NARRATOR"
+        if sp in stems:
+            stems[sp][at:end] += x[:end - at]
 
         # word times from the TRIMMED window, with a gap so the mouth closes
         toks = text.split()
@@ -142,8 +186,10 @@ def main():
         c = start
         for w, wt in zip(toks, wts):
             d = speech * wt / tw
-            words.append({"word": w, "start": round(c, 3),
-                          "end": round(c + d * WORD_GAP, 3)})
+            rec = {"word": w, "start": round(c, 3), "end": round(c + d * WORD_GAP, 3)}
+            if s.get("speaker"):
+                rec["speaker"] = s["speaker"]
+            words.append(rec)
             c += d
 
     peak = float(np.abs(buf).max()) or 1.0
@@ -151,6 +197,11 @@ def main():
     out_wav = os.path.join(P, "build", "voice.wav")
     os.makedirs(os.path.dirname(out_wav), exist_ok=True)
     wavfile.write(out_wav, SR, (buf * 32767).astype(np.int16))
+    for sp, stem in stems.items():
+        sd = os.path.join(P, "build", "voice")
+        os.makedirs(sd, exist_ok=True)
+        wavfile.write(os.path.join(sd, sp + ".wav"), SR,
+                      (np.clip(stem / peak, -1, 1) * 32767).astype(np.int16))
 
     tl = os.path.join(P, "timeline")
     os.makedirs(tl, exist_ok=True)
@@ -183,10 +234,10 @@ def main():
             air = dur - speech
             dead += air
             print("  %s @%5.2f  shot %4.2fs  speech %4.2fs  tail %.2fs  %s"
-                  % (s["id"], start, dur, speech, air, s["size"]))
+                  % (s["id"], start, dur, speech, air, s.get("size", s.get("template", "shot"))))
         else:
             print("  %s @%5.2f  shot %4.2fs  SILENT beat          %s"
-                  % (s["id"], start, dur, s["size"]))
+                  % (s["id"], start, dur, s.get("size", s.get("template", "shot"))))
     print("  words: %d -> timeline/words.json" % len(words))
 
     # ── verify word-anchored beats resolve INSIDE their own shot ────────────

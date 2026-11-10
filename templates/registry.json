@@ -1,0 +1,17 @@
+{
+  "schema": "local-2d-t2v-templates-v1",
+  "templates": {
+    "establish-push": {"size": "wide", "params": ["who", "pose", "expr", "push", "drift_x", "set", "bg"], "defaults": {"push": [1.0, 1.06]}},
+    "medium-two-shot": {"size": "med", "params": ["who", "pose", "expr", "x", "facing", "push", "set", "bg"], "defaults": {"x": [0.34, 0.68], "facing": [1, -1]}},
+    "over-shoulder": {"size": "med", "params": ["who", "pose", "expr", "set", "bg", "side"], "defaults": {"side": "left"}},
+    "giant-face": {"size": "close", "params": ["who", "expr", "exprTo", "at", "atWord", "look", "facing", "set", "bg"], "defaults": {}},
+    "insert-object": {"size": "insert", "params": ["object", "x", "y", "scale", "set", "bg"], "defaults": {"object": {"kind": "mug"}, "x": 0.5, "y": 0.44}},
+    "blueprint-diagram": {"size": "med", "params": ["title", "labels", "fact"], "defaults": {"labels": ["INPUT", "PROCESS", "RESULT"]}},
+    "lowpoly-3d": {"size": "wide", "params": ["who", "pose", "mood", "orbit"], "defaults": {"orbit": [-0.5, 0.25]}},
+    "pull-out-bookend": {"size": "wide", "params": ["who", "pose", "expr", "push", "set", "bg"], "defaults": {"push": [1.06, 1.0]}},
+    "freeze-frame": {"size": "med", "params": ["who", "pose", "expr", "freeze_at", "badge", "set", "bg"], "defaults": {"freeze_at": 0.65, "badge": "HOLD"}},
+    "title-card": {"size": "wide", "params": ["lines", "sub", "set", "bg"], "defaults": {}},
+    "end-card": {"size": "wide", "params": ["question", "attribution", "who"], "defaults": {"question": "What happens next?"}},
+    "transition-whip": {"size": "wide", "params": ["who", "pose", "expr", "set", "bg", "direction"], "defaults": {"direction": 1}}
+  }
+}

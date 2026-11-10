@@ -2,7 +2,7 @@
 // 16:9 stage = 1920x1080, 9:16 stage = 1080x1920. The player scales to output pixels.
 import { STYLES, BASE_MOODS } from './styles.js';
 
-export const E = { W: 1920, H: 1080, PX: 1, fps: 24, vertical: false, style: null, styleId: 'dusk', cfg: {}, words: [], shots: [] };
+export const E = { W: 1920, H: 1080, PX: 1, fps: 24, vertical: false, style: null, styleId: 'dusk', cfg: {}, words: [], shots: [], speech: null };
 export const V = (h, v) => (E.vertical ? v : h);           // pick a value by aspect: V(landscape, vertical)
 
 // ---------- math / timing ----------
@@ -37,11 +37,79 @@ const hash = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return
 export function noise(x, seed = 0) { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return lerp(hash(i + seed * 57), hash(i + 1 + seed * 57), u) * 2 - 1; }
 export const shake = (t, amp = 4, freq = 1.3, seed = 3) => [noise(t * freq, seed) * amp, noise(t * freq, seed + 9) * amp];
 // talking mouth amount (0..1) driven by the real word timings when available
-export function talkAmount(globalT, from = -1, to = 1e9) {
-  if (globalT < from || globalT > to) return 0;
-  const w = E.words.find(w => globalT >= w.start && globalT <= w.end);
-  if (!w && E.words.length) return 0;
-  return clamp(0.25 + 0.75 * Math.abs(Math.sin(globalT * 17)) * (0.6 + 0.4 * Math.sin(globalT * 5.3)));
+// ---------- mouth clock ----------
+// A mouth is driven by the RECORDING, not by a metronome. tools/speech_track.py
+// measures a per-speaker loudness envelope from the actual voice and gates it by
+// that speaker's word windows; E.speech carries it. Consequences:
+//   * the shape follows the performance (loud syllable -> wide mouth);
+//   * only the speaker's mouth moves — a listener stays shut;
+//   * silence between words closes the mouth.
+// Without a speech track we fall back to the old word-window gate, but the
+// speaker tag is still honoured so the wrong mouth never opens.
+function recordSpeech(who, amount, source) {
+  const f = typeof window === 'undefined' ? null : window.SPEECH_FRAME;
+  if (!f) return;
+  const k = who || '?';
+  const prev = f[k];
+  // A figure may be drawn twice in one frame (transition blend); keep the peak so
+  // the audit sees the mouth as it appears on screen.
+  if (!prev || amount > prev.amount) f[k] = { amount: +amount.toFixed(4), source };
+}
+
+function wordAtTime(globalT) {
+  return E.words.find(w => globalT >= w.start && globalT <= w.end) || null;
+}
+
+// Which cast id is speaking at this instant? Explicit word tags win, then the
+// shot's declared speaker, then the legacy first-figure fallback.
+export function speakerAt(globalT, fallback = null) {
+  const w = wordAtTime(globalT);
+  if (w && w.speaker) return w.speaker;
+  const s = E.shots.find(s => globalT >= s.start && globalT < s.end);
+  if (s && s.speaker) return s.speaker;
+  return fallback;
+}
+
+// The speaker of the word covering this instant, or null in a pause/hold. A shot
+// DECLARES an owner for its whole duration, but that owner is only speaking inside
+// a word window; the tail hold is a silent beat and the mouth must be shut there.
+export function activeSpeakerAt(globalT) {
+  const w = wordAtTime(globalT);
+  if (!w) return null;
+  return w.speaker || speakerAt(globalT, null);
+}
+
+export function speechAmount(globalT, who = null, from = -1, to = 1e9) {
+  const sp = E.speech;
+  // A measured envelope is ALREADY gated by the speaker's word windows, so it is
+  // the authority. Applying the legacy [from,to] line guard on top of it clipped
+  // the first 50 ms of every line (templates pass from=0.05) and desynced speech
+  // that starts exactly on the cut. Picture follows the performance, not a guard.
+  if (sp && sp.tracks && who && sp.tracks[who]) {
+    const tr = sp.tracks[who], fps = sp.fps || E.fps;
+    const x = globalT * fps, i = Math.floor(x);
+    if (i < 0 || i >= tr.length) { recordSpeech(who, 0, 'envelope'); return 0; }
+    // linear interpolation keeps the mouth smooth if the envelope fps != render fps
+    const a = tr[i], b = tr[Math.min(tr.length - 1, i + 1)];
+    const v = clamp(lerp(a, b, x - i));
+    recordSpeech(who, v, 'envelope');
+    return v;
+  }
+  if (globalT < from || globalT > to) { recordSpeech(who, 0, 'outside-line'); return 0; }
+  const w = wordAtTime(globalT);
+  if (!w && E.words.length) { recordSpeech(who, 0, 'no-word'); return 0; }
+  // Routing without an envelope: a tagged word belongs to exactly one mouth.
+  const owner = w && w.speaker ? w.speaker : speakerAt(globalT, who);
+  if (who && owner && owner !== who) { recordSpeech(who, 0, 'other-speaker'); return 0; }
+  const v = clamp(0.25 + 0.75 * Math.abs(Math.sin(globalT * 17)) * (0.6 + 0.4 * Math.sin(globalT * 5.3)));
+  recordSpeech(who, v, 'fallback-sine');
+  return v;
+}
+
+// Legacy entry point: untagged shots keep animating the caller's mouth, but a
+// tagged word still overrides it, so old projects cannot open the wrong mouth.
+export function talkAmount(globalT, from = -1, to = 1e9, who = null) {
+  return speechAmount(globalT, who, from, to);
 }
 
 // time (global seconds) when a word is spoken: wordTime('brain', 40) -> 43.78 (null if not found)

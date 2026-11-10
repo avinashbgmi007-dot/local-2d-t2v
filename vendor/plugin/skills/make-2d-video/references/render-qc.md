@@ -4,6 +4,8 @@
 
 **Preview first.** `node render.mjs --project projects/my-video --from 0 --to 30 --scale 0.5` writes `build/preview.mp4`. Watch it (or sample stills). Then send the user a preview or a contact sheet before the long final render.
 
+**Failure behavior:** `render.mjs` exits nonzero on boot/import/shot errors and publishes a video only after a complete encode. `tools/render_gate.py` adds project validation and streamed error detection.
+
 **Final render:**
 ```bash
 node render.mjs --project projects/my-video [--workers N] [--format jpeg]

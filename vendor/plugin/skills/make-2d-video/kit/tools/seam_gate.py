@@ -77,7 +77,8 @@ def declared_cast(project):
     if not os.path.isfile(sj):
         return out
     try:
-        st = json.load(io.open(sj, encoding='utf-8'))
+        with io.open(sj, encoding='utf-8') as fh:
+            st = json.load(fh)
     except Exception:
         return out
     for s in st.get('shots', []):
@@ -85,10 +86,19 @@ def declared_cast(project):
         if not sid:
             continue
         pr = s.get('params') or {}
-        names = {str(pr.get(k) or '').strip().lower() for k in ('who', 'who2')}
-        names.discard('')
+        raw = list(pr.get(k) for k in ('who', 'who2', 'who3') if pr.get(k))
+        if isinstance(pr.get('who'), list):
+            raw = pr['who'] + [pr.get(k) for k in ('who2', 'who3') if pr.get(k)]
+        names = {str(n).strip().lower() for n in raw if n}
         if names:
-            out[sid] = names
+            out.setdefault(sid, set()).update(names)
+        # Template shots are data-driven; their manifest is the entity source of truth.
+        if s.get('template'):
+            obj = pr.get('object') or {}
+            if isinstance(obj, dict) and obj.get('kind'):
+                out.setdefault(sid, set()).add(str(obj['kind']).lower())
+            if pr.get('set'):
+                out.setdefault(sid, set()).add(str(pr['set']).lower())
     return out
 
 
@@ -103,7 +113,7 @@ def shot_entities(root, project):
             continue
         text = io.open(os.path.join(sdir, fn), encoding='utf-8', errors='replace').read()
         # split on registerShot('sNNN' so each chunk belongs to exactly one shot
-        parts = re.split(r"registerShot\(\s*'(s\d+)'", text)
+        parts = re.split(r"registerShot\(\s*['\"]([A-Za-z][\w-]*)['\"]", text)
         for i in range(1, len(parts) - 1, 2):
             sid, body = parts[i], parts[i + 1]
             found = set()
@@ -163,7 +173,7 @@ def auto_shot_entities(project):
         if not fn.endswith('.js'):
             continue
         text = io.open(os.path.join(sdir, fn), encoding='utf-8', errors='replace').read()
-        parts = re.split(r"registerShot\(\s*'(s\d+)'", text)
+        parts = re.split(r"registerShot\(\s*['\"]([A-Za-z][\w-]*)['\"]", text)
         for i in range(1, len(parts) - 1, 2):
             sid, body = parts[i], parts[i + 1]
             found = set()
@@ -295,7 +305,7 @@ def main():
         io.open(a.json_out, 'w', encoding='utf-8').write(json.dumps(payload, indent=1))
         print(f'wrote {a.json_out}')
 
-    sys.exit(1 if (a.strict and warn) else 0)
+    sys.exit(1 if (a.strict and (warn or unjudged or missing)) else 0)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,206 @@
+{
+ "title": "Quality benchmark - The Book",
+ "aspect": "9:16",
+ "resolution": "720p",
+ "fps": 24,
+ "style": "midnight",
+ "chars": "inkbean",
+ "set": "room",
+ "purpose": "Fixed A/B benchmark for the text-to-video quality programme. Dialogue routing, measured timing, silent beat, insert, bookend. Not an episode.",
+ "cast": {
+  "NILA": {
+   "color": "#2f9e8f",
+   "marker": "bob",
+   "top": "tshirt",
+   "legs": "#243244"
+  },
+  "ARUN": {
+   "color": "#c2553d",
+   "marker": "glasses",
+   "top": "trench",
+   "legs": "#2a2433"
+  }
+ },
+ "shots": [
+  {
+   "id": "b01",
+   "template": "establish-push",
+   "dur": 1.7,
+   "line": "You kept the book.",
+   "speaker": "NILA",
+   "params": {
+    "who": [
+     "NILA",
+     "ARUN"
+    ],
+    "pose": [
+     "relaxed",
+     "stand"
+    ],
+    "expr": [
+     "neutral",
+     "listening"
+    ],
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "ARUN",
+    "color": "#b8452f"
+   }
+  },
+  {
+   "id": "b02",
+   "template": "medium-two-shot",
+   "dur": 1.8,
+   "line": "I kept the promise.",
+   "speaker": "ARUN",
+   "params": {
+    "who": [
+     "NILA",
+     "ARUN"
+    ],
+    "expr": [
+     "listening",
+     "neutral"
+    ],
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "ARUN",
+    "color": "#b8452f"
+   }
+  },
+  {
+   "id": "b03",
+   "template": "giant-face",
+   "dur": 2.2,
+   "line": "That is not the same thing.",
+   "speaker": "NILA",
+   "params": {
+    "who": "NILA",
+    "expr": "worried",
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "ARUN",
+    "color": "#b8452f"
+   }
+  },
+  {
+   "id": "b04",
+   "template": "insert-object",
+   "dur": 1.0,
+   "line": "",
+   "params": {
+    "object": {
+     "kind": "book",
+     "color": "#b8452f"
+    },
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "ARUN",
+    "color": "#b8452f"
+   }
+  },
+  {
+   "id": "b05",
+   "template": "giant-face",
+   "dur": 1.5,
+   "line": "Then take it.",
+   "speaker": "ARUN",
+   "params": {
+    "who": "ARUN",
+    "expr": "tired",
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "ARUN",
+    "color": "#b8452f"
+   }
+  },
+  {
+   "id": "b06",
+   "template": "medium-two-shot",
+   "dur": 1.2,
+   "line": "",
+   "params": {
+    "who": [
+     "NILA",
+     "ARUN"
+    ],
+    "pose": [
+     "reachLow",
+     "holdFront"
+    ],
+    "expr": [
+     "determined",
+     "tired"
+    ],
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "ARUN",
+    "color": "#b8452f"
+   },
+   "notes": "Transfer beat: NILA reaches, ARUN still holds. The handoff completes across the cut into b07."
+  },
+  {
+   "id": "b07",
+   "template": "giant-face",
+   "dur": 1.2,
+   "line": "I will.",
+   "speaker": "NILA",
+   "params": {
+    "who": "NILA",
+    "expr": "determined",
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "NILA",
+    "color": "#b8452f"
+   }
+  },
+  {
+   "id": "b08",
+   "template": "pull-out-bookend",
+   "dur": 1.6,
+   "line": "",
+   "params": {
+    "who": [
+     "NILA",
+     "ARUN"
+    ],
+    "pose": [
+     "holdFront",
+     "relaxed"
+    ],
+    "bg": "night"
+   },
+   "prop": {
+    "kind": "book",
+    "who": "NILA",
+    "color": "#b8452f"
+   }
+  }
+ ],
+ "music": [
+  {
+   "start": 0,
+   "end": 12.2,
+   "mood": "sad",
+   "intensity": 0.3
+  }
+ ],
+ "voices": {
+  "NILA": "af_heart",
+  "ARUN": "am_michael"
+ }
+}

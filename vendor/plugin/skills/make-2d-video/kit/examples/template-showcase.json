@@ -1,0 +1,23 @@
+{
+  "title": "Template capability showcase — not a finished episode",
+  "aspect": "9:16", "resolution": "720p", "fps": 24, "style": "midnight", "chars": "inkbean", "set": "room",
+  "cast": {
+    "MAX": {"color": "#c2553d", "top": "trench", "legs": "#2a2433", "head": "none"},
+    "JAKE": {"color": "#2f9e8f", "top": "tshirt", "legs": "#243244", "head": "cap", "headColor": "#f2c21a"}
+  },
+  "shots": [
+    {"id": "s001", "template": "establish-push", "dur": 2, "line": "", "params": {"who": ["MAX", "JAKE"], "pose": ["stand", "relaxed"], "bg": "night"}},
+    {"id": "s002", "template": "medium-two-shot", "dur": 2, "line": "", "params": {"who": ["MAX", "JAKE"], "expr": ["curious", "listening"], "bg": "night"}},
+    {"id": "s003", "template": "over-shoulder", "dur": 2, "line": "", "params": {"who": ["MAX", "JAKE"], "expr": ["listening", "curious"], "bg": "night"}},
+    {"id": "s004", "template": "giant-face", "dur": 2, "line": "", "params": {"who": "MAX", "expr": "worried", "exprTo": "relieved", "at": 1, "bg": "night"}},
+    {"id": "s005", "template": "insert-object", "dur": 2, "line": "", "params": {"object": {"kind": "book", "color": "#b8452f"}, "bg": "night"}},
+    {"id": "s006", "template": "blueprint-diagram", "dur": 2, "line": "", "params": {"title": "A STORY IN THREE BEATS", "labels": ["QUESTION", "CHOICE", "CONSEQUENCE"], "fact": "A capability demo, not a factual claim"}},
+    {"id": "s007", "template": "lowpoly-3d", "dur": 2, "line": "", "params": {"who": ["MAX", "JAKE"], "pose": ["stand", "relaxed"], "mood": "night"}},
+    {"id": "s008", "template": "pull-out-bookend", "dur": 2, "line": "", "params": {"who": ["MAX", "JAKE"], "bg": "night"}},
+    {"id": "s009", "template": "freeze-frame", "dur": 2, "line": "", "params": {"who": "MAX", "pose": "point", "freeze_at": 0.5, "badge": "HOLD", "bg": "night"}},
+    {"id": "s010", "template": "title-card", "dur": 2, "line": "", "params": {"lines": ["TWELVE TEMPLATES", "ONE VISUAL ENGINE"], "sub": "Technical showcase", "bg": "night"}},
+    {"id": "s011", "template": "end-card", "dur": 2, "line": "", "params": {"question": "Which shot tells the story?", "who": ["MAX", "JAKE"], "attribution": "Local 2D Studio · template test"}},
+    {"id": "s012", "template": "transition-whip", "dur": 2, "line": "", "params": {"who": ["MAX", "JAKE"], "bg": "night"}}
+  ],
+  "music": []
+}

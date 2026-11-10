@@ -1,117 +1,106 @@
 #!/usr/bin/env python3
-"""
-generate.py — one command: story.json -> video + QC.
+"""Story -> validated project -> optional narration/audio -> render -> QC report.
 
-Chains the whole pipeline deterministically:
-  1. director.py     story JSON  -> project (config/cast/shots/scene code)
-  2. render_gate.py  render.mjs  -> mp4, HARD-FAIL on any shot error
-  3. mix.py          (optional, --audio) music+sfx+loudnorm+mux (needs config.voiceover)
-  4. master.py       (optional, --audio) hit the LUFS target, verify true peak
-  5. review_frames.py visual-review frames + checklist
-
-Any stage failing aborts with a non-zero exit (no silent success).
-
-USAGE
-  python tools/generate.py --story examples/director-demo/story.json --out projects/foo
-  python tools/generate.py --story story.json --out projects/foo --audio --aspect 9:16
+Every required stage's exit code is checked. --strict additionally fails unjudged
+seams and motion warnings. Human style/episode approval is never manufactured.
+  python tools/generate.py --story examples/template-showcase.json --out projects/demo
+  python tools/generate.py --story story.json --out projects/episode --audio --strict
 """
 import argparse
 import json
 import os
 import subprocess
 import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
-def run(cmd, cwd):
-    print("\n$", " ".join(cmd))
-    return subprocess.run(cmd, cwd=cwd).returncode
+def run(cmd):
+    print("\n$", " ".join(map(str, cmd)), flush=True)
+    return subprocess.run(list(map(str, cmd)), cwd=ROOT).returncode
+
+
+def fail(stage, code):
+    print(f"GENERATE FAILED: {stage} (exit {code})")
+    return code or 1
 
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--story", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--audio", action="store_true")
-    ap.add_argument("--aspect", default=None)
-    ap.add_argument("--strict", action="store_true",
-                    help="fail the run on QC warnings (dead cuts)")
-    a = ap.parse_args()
-
-    py = sys.executable
-    here = os.path.dirname(os.path.abspath(__file__))
-    studio = os.path.dirname(here)
-    story = os.path.abspath(a.story)
-    out = os.path.abspath(a.out)
-
-    venv = os.path.expanduser("~/.faceless-shorts/venv/Scripts/python.exe")
-    runner = venv if os.path.exists(venv) else py
-
-    # 1. director
-    if run([py, os.path.join(here, "director.py"), "--story", story, "--out", out], studio):
-        sys.exit("GENERATE: director failed")
-
-    # 2. narration FIRST (so words.json exists when we render -> word-synced captions)
-    #    narrate also RETIMES every shot to its measured speech (no dead air).
-    if a.audio:
-        if run([runner, os.path.join(here, "narrate.py"), "--project", out], studio):
-            sys.exit("GENERATE: narration (Kokoro) failed")
-
-    # 2b. sound design — fills the foley layer (cuts, walks, risers, ambience).
-    #     Runs after narrate because it needs the RETIMED shot lengths.
-    if a.audio:
-        if run([py, os.path.join(here, "sound_design.py"), "--project", out], studio):
-            sys.exit("GENERATE: sound design failed")
-
-    # 3. render through the hard-fail gate
-    if run([py, "-u", os.path.join(here, "render_gate.py"), "--project", out], studio):
-        sys.exit("GENERATE: render gate failed (shot error / render failure)")
-
-    # 4. audio mix (music + sfx + loudness normalise + mux)
-    if a.audio:
-        cfg = json.load(open(os.path.join(out, "config.json"), encoding="utf-8"))
-        if not cfg.get("voiceover"):
-            sys.exit("GENERATE: no voiceover after narration")
-        if run([runner, os.path.join(studio, "audio", "mix.py"), "--project", out], studio):
-            sys.exit("GENERATE: mix failed")
-
-        # 4b. mastering — mix.py's single-pass loudnorm lands ~1.7 dB off target.
-        #     Fatal, not a warning: shipping a mis-levelled master silently is the
-        #     exact failure this stage exists to stop.
-        if run([py, os.path.join(here, "master.py"), "--project", out], studio):
-            sys.exit("GENERATE: mastering failed (loudness target not reached)")
-
-    # 4. visual review
-    cfg = json.load(open(os.path.join(out, "config.json"), encoding="utf-8"))
-    aspect = a.aspect or cfg.get("aspect", "9:16")
-    run([py, os.path.join(here, "review_frames.py"), "--project", out, "--aspect", aspect], studio)
-
-    # 5. QC gates — seam continuity + a written report. Reported every run; fatal under --strict.
-    sg = run([py, os.path.join(here, "seam_gate.py"), "--project", out, "--auto"]
-             + (["--strict"] if a.strict else []), studio)
-    run([py, os.path.join(here, "render_report.py"), "--project", out], studio)
-    if a.strict and sg:
-        sys.exit("GENERATE: seam_gate failed — a cut carries no shared subject")
-
-    # 5b. style lock. An INVALID lock is always fatal: it means an approved
-    #     reference no longer matches, so the look has drifted from what a human
-    #     signed off. A MISSING lock only warns — approval is a human act and
-    #     cannot be generated here.
-    sl = run([py, os.path.join(here, "style_lock.py"), "verify", "--project", out], studio)
-    if sl == 1:
-        sys.exit("GENERATE: style lock INVALID — the approved look has drifted")
-    if sl == 2:
-        print("GENERATE: no style lock for this project, so style drift cannot be "
-              "detected. After accepting frames, create one:\n"
-              "  python tools/style_lock.py snapshot --project %s --frames 1.0,4.2 "
-              '--character inkbean --approved-by "<your words>"' % out)
-
-    print("\nGENERATE: DONE ->", out)
-    print("  video :", os.path.join(out, "build", "video_silent.mp4"))
-    if a.audio and cfg.get("voiceover"):
-        print("  final :", os.path.join(out, "out"))
-    print("  review:", os.path.join(out, "build", "review"))
+    ap.add_argument("--aspect", choices=["16:9", "9:16"], help="override the story aspect before compilation")
+    ap.add_argument("--strict", action="store_true")
+    args = ap.parse_args()
+    py, here = sys.executable, ROOT / "tools"
+    out = Path(args.out).resolve()
+    try:
+        story = json.loads(Path(args.story).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        return fail("read story", str(exc))
+    if args.aspect:
+        story["aspect"] = args.aspect
+    # Compile from a temporary source so --aspect changes the actual project, not just review.
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="generate-") as tmp:
+        source = Path(tmp) / "story.json"
+        source.write_text(json.dumps(story, ensure_ascii=False), encoding="utf-8")
+        code = run([py, here / "director.py", "--story", source, "--out", out])
+    if code:
+        return fail("director", code)
+    venv = Path.home() / ".faceless-shorts/venv/Scripts/python.exe"
+    runner = str(venv) if venv.exists() else py
+    if args.audio:
+        for stage, cmd in [
+            ("narration", [runner, here / "narrate.py", "--project", out]),
+            ("sound design", [py, here / "sound_design.py", "--project", out]),
+        ]:
+            code = run(cmd)
+            if code:
+                return fail(stage, code)
+    code = run([py, "-u", here / "render_gate.py", "--project", out])
+    if code:
+        return fail("render gate", code)
+    if args.audio:
+        for stage, cmd in [
+            ("mix", [runner, ROOT / "audio/mix.py", "--project", out]),
+            ("master", [py, here / "master.py", "--project", out]),
+        ]:
+            code = run(cmd)
+            if code:
+                return fail(stage, code)
+    cfg = json.loads((out / "config.json").read_text(encoding="utf-8"))
+    video = out / "build/video_silent.mp4"
+    if args.audio:
+        candidates = sorted((out / "out").glob("*.mp4")) if (out / "out").exists() else []
+        if len(candidates) != 1:
+            return fail("delivery selection", f"expected one mixed mp4, found {candidates}")
+        video = candidates[0]
+    # Style check validates the manifest AND compares current renders, before the report.
+    code = run([py, here / "style_lock.py", "check", "--project", out])
+    if code == 1:
+        return fail("style lock drift/invalid manifest", code)
+    if code == 2:
+        print("GENERATE: no human-approved style lock; visual acceptance remains pending.")
+    elif code:
+        return fail("style lock", code)
+    code = run([py, here / "review_frames.py", "--project", out, "--video", video, "--aspect", cfg["aspect"]])
+    if code:
+        return fail("frame review", code)
+    code = run([py, here / "seam_gate.py", "--project", out, "--auto", "--json", out / "build/seams.json"]
+               + (["--strict"] if args.strict else []))
+    if args.strict and code:
+        return fail("seam gate", code)
+    code = run([py, here / "render_report.py", "--project", out, "--video", video]
+               + (["--strict-motion"] if args.strict else []))
+    if code:
+        return fail("render report / motion QC", code)
+    print("\nGENERATE: technical pipeline complete ->", video)
+    print("Human review is still required; no approval was inferred.")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

@@ -13,7 +13,7 @@
 //   look      [x,y]  gaze direction, screen space
 //   blink      0..1  1 = shut
 //   talk       0..1  speech amplitude, only used when mouthOpen is not set explicitly
-import { E, V, mood, S, rr, seg, circle, ring, alpha, shade, mix, rng } from '/engine/core.js';
+import { E, V, mood, S, rr, seg, circle, ring, alpha, shade, mix, rng, linGrad } from '/engine/core.js';
 import { POSES } from '/engine/rig2d.js';
 import { sketchSeg, sketchCircle } from '/chars/sketch.js';
 import { drawMarker } from '/chars/markers.js';
@@ -61,7 +61,11 @@ function drawHead(g, cx, cy, R, f, M, seed, rimSide, marker, col) {
   const mk = marker ? { back: marker.back === undefined ? -1 : marker.back, kind: marker.kind, col } : null;
   if (mk) drawMarker(g, mk.kind, cx, cy, R, mk.col, mk.back, 'behind');
   sketchCircle(g, cx, cy, R, R * 0.13, INK, seed, HEAD_INK);
-  g.save(); g.strokeStyle = M.rim; g.lineWidth = R * 0.11; g.lineCap = 'round';
+  // A dark head on a dark set has almost no edge. A faint full-circle rim lifts the
+  // whole silhouette without brightening the face, which would break the ink style.
+  g.save(); g.strokeStyle = alpha(M.rim, 0.22); g.lineWidth = R * 0.05;
+  g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke(); g.restore();
+  g.save(); g.strokeStyle = M.rim; g.lineWidth = R * 0.12; g.lineCap = 'round';
   // radius R, not R*1.09 — the rim straddles the silhouette instead of floating off it as a banana
   g.beginPath(); g.arc(cx, cy, R, rimSide < 0 ? -2.35 : -0.85, rimSide < 0 ? -0.75 : 0.75); g.stroke();
   g.restore();
@@ -159,14 +163,52 @@ export function beanFace(g, cx, cy, R, o) {
   // puts the bun on the wrong side of the head, which is the exact drift this file exists to stop.
   const mk = markerOf(o);
   if (mk && mk.back === undefined) mk.back = -(o.facing === undefined ? -1 : o.facing);
-  drawHead(g, cx, cy, R, faceOf(o), M, seed, o.rimSide === undefined ? -1 : o.rimSide, mk,
+  const lit = o.rimSide === undefined ? -1 : o.rimSide;
+  // Behind the head, so the chin occludes the neck. Drawing the bust afterwards
+  // pressed a flat slab over the jaw — the "bar of soap" close-up.
+  if (o.shoulders) drawBust(g, cx, cy, R, (o.outfit && o.outfit.color) || '#2f9e8f', M, lit);
+  drawHead(g, cx, cy, R, faceOf(o), M, seed, lit, mk,
            (o.outfit && o.outfit.color) || '#2f9e8f');
-  if (o.shoulders) {
-    const col = (o.outfit && o.outfit.color) || '#2f9e8f';
-    g.save();
-    rr(g, cx - R * 1.25, cy + R * 0.92, R * 2.5, R * 1.4, R * 0.5);
-    g.fillStyle = col; g.fill();
-    g.strokeStyle = INK; g.lineWidth = R * 0.09; g.stroke();
-    g.restore();
+}
+
+// A close-up bust: neck in shadow, sloped shoulders, collar, and a key-to-shadow
+// gradient. A rounded rectangle reads as a slab; a shoulder line reads as a body.
+function drawBust(g, cx, cy, R, col, M, lit) {
+  g.save();
+  g.fillStyle = shade(col, -0.55);                       // neck, under the chin
+  g.beginPath();
+  g.moveTo(cx - R * 0.30, cy + R * 0.60);
+  g.lineTo(cx + R * 0.30, cy + R * 0.60);
+  g.lineTo(cx + R * 0.34, cy + R * 1.08);
+  g.lineTo(cx - R * 0.34, cy + R * 1.08);
+  g.closePath(); g.fill();
+
+  g.beginPath();                                          // torso + shoulder slope
+  g.moveTo(cx - R * 1.90, cy + R * 3.60);
+  g.lineTo(cx - R * 1.44, cy + R * 1.86);
+  g.quadraticCurveTo(cx - R * 1.30, cy + R * 1.20, cx - R * 0.74, cy + R * 1.06);
+  g.quadraticCurveTo(cx - R * 0.36, cy + R * 0.98, cx - R * 0.33, cy + R * 0.80);
+  g.lineTo(cx + R * 0.33, cy + R * 0.80);
+  g.quadraticCurveTo(cx + R * 0.36, cy + R * 0.98, cx + R * 0.74, cy + R * 1.06);
+  g.quadraticCurveTo(cx + R * 1.30, cy + R * 1.20, cx + R * 1.44, cy + R * 1.86);
+  g.lineTo(cx + R * 1.90, cy + R * 3.60);
+  g.closePath();
+  g.fillStyle = linGrad(g, cx + lit * R * 1.5, cy + R * 1.0, cx - lit * R * 1.5, cy + R * 3.2,
+                        [shade(col, 0.12), col, shade(col, -0.44)]);
+  g.fill();
+  g.strokeStyle = INK; g.lineWidth = R * 0.075; g.stroke();
+
+  g.strokeStyle = shade(col, -0.50); g.lineWidth = R * 0.07; g.lineCap = 'round';
+  for (const sgn of [-1, 1]) {                            // collar / lapels
+    g.beginPath();
+    g.moveTo(cx + sgn * R * 0.33, cy + R * 0.86);
+    g.lineTo(cx + sgn * R * 0.60, cy + R * 1.32);
+    g.stroke();
   }
+  g.strokeStyle = alpha(M.rim, 0.55); g.lineWidth = R * 0.055;   // lit shoulder edge
+  g.beginPath();
+  g.moveTo(cx + lit * R * 0.74, cy + R * 1.06);
+  g.quadraticCurveTo(cx + lit * R * 1.30, cy + R * 1.20, cx + lit * R * 1.44, cy + R * 1.86);
+  g.stroke();
+  g.restore();
 }

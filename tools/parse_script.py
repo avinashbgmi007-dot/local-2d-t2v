@@ -70,7 +70,10 @@ def spread_words(cues, total):
         acc = c["start"]
         for t, w in zip(toks, weights):
             d = span * w / sum(weights)
-            words.append({"word": t, "start": round(acc, 3), "end": round(acc + d * 0.92, 3)})
+            rec = {"word": t, "start": round(acc, 3), "end": round(acc + d * 0.92, 3)}
+            if c.get("speaker"):
+                rec["speaker"] = str(c["speaker"])
+            words.append(rec)
             acc += d
     return words
 
@@ -91,7 +94,15 @@ def main():
     elif ext == ".json":
         d = json.loads(txt)
         if isinstance(d, dict) and "words" in d:
-            words = [{"word": w.get("word") or w.get("text"), "start": to_sec(w["start"]), "end": to_sec(w["end"])} for w in d["words"]]
+            words = []
+            for w in d["words"]:
+                rec = {"word": w.get("word") or w.get("text"),
+                       "start": to_sec(w["start"]), "end": to_sec(w["end"])}
+                # A cast speaker travels with the word; dropping it here would send
+                # every mouth back to the first figure on screen.
+                if w.get("speaker"):
+                    rec["speaker"] = str(w["speaker"])
+                words.append(rec)
             cues = []
         else:
             seg = d.get("segments", d) if isinstance(d, dict) else d

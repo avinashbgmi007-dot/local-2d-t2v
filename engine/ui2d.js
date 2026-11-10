@@ -80,12 +80,119 @@ export function endScreen(g, t, o = {}) {
   cast.forEach((of, i) => { const k = ease.out(prog(t, 0.3 + i * 0.08, 0.7 + i * 0.08)); drawFigure(g, { x: E.W / 2 + (i - (n - 1) / 2) * gap, y: y0 + (1 - k) * 40, s: V(0.9, 1.05), facing: 1, outfit: of, pose: POSES.relaxed, expr: 'smile', alpha: k, rim: { color: rim, dir: [0, 1] } }); });
 }
 // Word-level captions (great for 9:16). Shows a 3–4 word phrase, current word highlighted.
+// ---------- captions ----------
+// Phrase-aware subtitles. The old version sliced the word list into fixed blocks
+// of four and shrank the type until it fit, which broke mid-phrase ("THEN TAKE /
+// IT") and produced unreadably small text. This groups by PHRASE — punctuation,
+// speaker change, pause, length — wraps to another line instead of shrinking
+// below a legible floor, and lays a scrim behind the block so it survives a busy
+// background. The drawn box is published for the caption/face-overlap gate.
+let CAPTION_CACHE = { words: null, key: null, chunks: [] };
+
+// A card is a PHRASE, not a fixed word count. Splitting "That is not the same
+// thing." after four words produced "THAT IS NOT THE" — a dangling determiner and
+// a broken thought. So: group by sentence first, let line-wrapping handle width,
+// and only split an over-long sentence, at a boundary that is not a function word.
+const CARD_STOP = /[^\s](?:[.?!\u2026,;:])(?:["'\u201d\u2019)\]]*)$/;
+const FUNCTION_WORD = new Set(('the a an of to and but or nor is are was were be been am '
+  + 'not no my your his her its our their in on at for with from by as that this these those '
+  + 'i you he she it we they').split(' '));
+const cardChars = ws => ws.reduce((a, w) => a + w.text.length + 1, 0) - 1;
+
+export function captionChunks(words, max = 4, maxChars = 24) {
+  const key = `${max}|${maxChars}`;
+  if (CAPTION_CACHE.words === words && CAPTION_CACHE.key === key) return CAPTION_CACHE.chunks;
+  // 1. sentence/clause groups, also broken on speaker change or a real pause
+  const groups = []; let cur = [];
+  const flush = () => { if (cur.length) { groups.push(cur); cur = []; } };
+  for (const w of words) {
+    const txt = String(w.word ?? '').trim(); if (!txt) continue;
+    const spk = w.speaker || null;
+    const gap = cur.length ? w.start - cur[cur.length - 1].end : 0;
+    if (cur.length && (spk !== (cur[0].speaker || null) || gap > 0.55)) flush();
+    cur.push({ ...w, text: txt, speaker: spk });
+    if (CARD_STOP.test(txt)) flush();
+  }
+  flush();
+  // 2. only genuinely long groups are split; wrapping handles the rest
+  const hardWords = Math.max(max * 2, 7), hardChars = Math.max(Math.round(maxChars * 1.9), 34);
+  const chunks = [];
+  for (const g of groups) {
+    const parts = Math.max(1, Math.ceil(g.length / hardWords), Math.ceil(cardChars(g) / hardChars));
+    if (parts === 1) { chunks.push(g); continue; }
+    const size = Math.ceil(g.length / parts);
+    let at = 0;
+    while (at < g.length) {
+      let stop = Math.min(g.length, at + size);
+      // never end a card on "the"/"of"/"and": nudge the boundary to a content word
+      if (stop < g.length) {
+        for (let k = stop; k > at + 1; k--) {
+          const bare = g[k - 1].text.toLowerCase().replace(/[^a-z']/g, '');
+          if (!FUNCTION_WORD.has(bare)) { stop = k; break; }
+        }
+      }
+      chunks.push(g.slice(at, stop)); at = stop;
+    }
+  }
+  const timed = chunks.map(ws => ({ words: ws, start: ws[0].start, end: ws[ws.length - 1].end }));
+  // Resolve every IN first, then bound each OUT by the next card's IN, so cards
+  // cannot overlap (an overlap made the earlier card win and the next read late).
+  timed.forEach(c => { c.in = Math.max(0, c.start - 0.06); });
+  timed.forEach((c, i) => {
+    const next = timed[i + 1];
+    const limit = next ? next.in - 0.01 : c.end + 0.50;
+    c.out = Math.max(c.in + 0.04, Math.min(c.end + 0.30, limit));
+  });
+  CAPTION_CACHE = { words, key, chunks: timed };
+  return timed;
+}
+
 export function captions(g, globalT, o = {}) {
-  const words = E.words; if (!words.length) return; const { y = V(E.H - 150, E.H * 0.79), size = V(58, 74), max = 4, color = '#ffffff', hi = S().ui.gold } = o;
-  let i = -1; for (let k = words.length - 1; k >= 0; k--) if (globalT >= words[k].start - 0.05) { if (globalT <= words[k].end + 0.35) i = k; break; } if (i < 0) return;
-  const st = Math.floor(i / max) * max, group = words.slice(st, st + max); const strs = group.map(w => w.word.trim().toUpperCase());
-  const w0 = strs.map(s => measure(g, s, size)).reduce((a, b) => a + b, 0) + size * 0.3 * (strs.length - 1);
-  const sz = size * Math.min(1, (E.W * 0.88) / w0);   // shrink long phrases to fit the frame
-  const gap = sz * 0.3, widths = strs.map(s => measure(g, s, sz)), total = widths.reduce((a, b) => a + b, 0) + gap * (strs.length - 1);
-  let x = E.W / 2 - total / 2; strs.forEach((s, k) => { const cur = st + k === i; const pop = cur ? 1 + 0.08 * ease.out(prog(globalT, group[k].start, group[k].start + 0.12)) : 1; g.save(); g.translate(x + widths[k] / 2, y); g.scale(pop, pop); text(g, s, 0, 0, { size: sz, color: cur ? hi : color, stroke: sz * 0.16, strokeColor: 'rgba(0,0,0,.85)' }); g.restore(); x += widths[k] + gap; });
+  const words = E.words; if (!words.length) return;
+  const { y = V(E.H - 150, E.H * 0.79), size = V(58, 74), max = 4, maxChars = 24,
+          color = '#ffffff', hi = S().ui.gold, scrim = 0.42, upper = true } = o;
+  const chunks = captionChunks(words, max, maxChars);
+  const c = chunks.find(c => globalT >= c.in && globalT <= c.out);
+  if (!c) { if (typeof window !== 'undefined') window.CAPTION_BOX = null; return; }
+  const strs = c.words.map(w => upper ? w.text.toUpperCase() : w.text);
+  const limit = E.W * 0.86;
+  // Only a single over-long WORD may shrink the type; phrases wrap instead.
+  let sz = size;
+  const longest = Math.max(...strs.map(s => measure(g, s, sz)));
+  if (longest > limit) sz = size * limit / longest;
+  const gap = sz * 0.3, widths = strs.map(s => measure(g, s, sz));
+  const lines = []; let cur = [], curW = 0;
+  strs.forEach((s, k) => {
+    const add = cur.length ? gap + widths[k] : widths[k];
+    if (cur.length && curW + add > limit) { lines.push({ idx: cur, w: curW }); cur = []; curW = 0; }
+    curW += cur.length ? gap + widths[k] : widths[k];
+    cur.push(k);
+  });
+  if (cur.length) lines.push({ idx: cur, w: curW });
+  const lh = sz * 1.18, blockH = lines.length * lh, top = y - blockH / 2;
+  const maxW = Math.max(...lines.map(l => l.w));
+  const padX = sz * 0.42, padY = sz * 0.30;
+  const bx = E.W / 2 - maxW / 2 - padX, by = top - padY;
+  const bw = maxW + padX * 2, bh = blockH + padY * 2;
+  if (scrim > 0) {
+    g.save(); g.fillStyle = alpha('#05070d', scrim);
+    rr(g, bx, by, bw, bh, sz * 0.28); g.fill(); g.restore();
+  }
+  let active = 0;
+  c.words.forEach((w, k) => { if (globalT >= w.start - 0.02) active = k; });
+  lines.forEach((ln, li) => {
+    let x = E.W / 2 - ln.w / 2; const yy = top + lh * (li + 0.5);
+    ln.idx.forEach(k => {
+      const isCur = k === active;
+      const pop = isCur ? 1 + 0.08 * ease.out(prog(globalT, c.words[k].start, c.words[k].start + 0.12)) : 1;
+      g.save(); g.translate(x + widths[k] / 2, yy); g.scale(pop, pop);
+      text(g, strs[k], 0, 0, { size: sz, color: isCur ? hi : color,
+                              stroke: sz * 0.16, strokeColor: 'rgba(0,0,0,.85)' });
+      g.restore(); x += widths[k] + gap;
+    });
+  });
+  if (typeof window !== 'undefined') {
+    window.CAPTION_BOX = { x: bx, y: by, w: bw, h: bh, size: sz, lines: lines.length,
+                           text: strs.join(' '), speaker: c.words[0].speaker || null };
+  }
 }

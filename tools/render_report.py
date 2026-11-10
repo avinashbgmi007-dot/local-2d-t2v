@@ -29,8 +29,8 @@ def sha256(path):
 
 def probe(video):
     p = subprocess.run(['ffprobe', '-v', 'error', '-show_entries',
-                        'stream=width,height,r_frame_rate,codec_name,nb_frames:format=duration,size',
-                        '-of', 'json', video], capture_output=True, text=True)
+                        'stream=codec_type,width,height,r_frame_rate,codec_name,nb_frames:format=duration,size',
+                        '-select_streams', 'v:0', '-of', 'json', video], capture_output=True, text=True)
     if p.returncode != 0:
         sys.exit(f'ffprobe failed on {video}: {p.stderr[-400:]}')
     d = json.loads(p.stdout)
@@ -41,9 +41,19 @@ def probe(video):
             'duration': float(d['format']['duration']), 'bytes': int(d['format']['size'])}
 
 
+def has_audio(video):
+    p = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries',
+                        'stream=index', '-of', 'json', video], capture_output=True, text=True)
+    if p.returncode:
+        raise RuntimeError(p.stderr)
+    return bool(json.loads(p.stdout).get('streams'))
+
+
 def loudness(video):
     p = subprocess.run(['ffmpeg', '-v', 'info', '-i', video, '-af', 'volumedetect', '-vn',
                         '-f', 'null', '-'], capture_output=True, text=True)
+    if p.returncode:
+        return {'error': p.stderr[-400:]}
     out = {}
     for line in p.stderr.splitlines():
         for k in ('mean_volume', 'max_volume'):
@@ -77,7 +87,7 @@ def lufs(video):
     return {'error': 'could not measure loudness'}
 
 
-def motion(video):
+def motion(video, project):
     """Reuse the shipped audit rather than reimplementing its metric."""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # motion_audit needs numpy; a bare system interpreter usually lacks it, so prefer the kit venv.
@@ -85,13 +95,20 @@ def motion(video):
     # passes — a QC gate that invents failures is worse than no gate.
     venv = os.path.expanduser('~/.faceless-shorts/venv/Scripts/python.exe')
     py = venv if os.path.exists(venv) else sys.executable
-    p = subprocess.run([py, os.path.join('tools', 'motion_audit.py'), video, '--json',
-                        os.path.join(os.path.dirname(video) if os.path.dirname(video) else '.', 'motion.json')],
+    j = os.path.join(project, 'build', 'motion.json')
+    # Remove any stale report BEFORE running the audit, then read only this run's output.
+    if os.path.exists(j):
+        os.remove(j)
+    p = subprocess.run([py, os.path.join('tools', 'motion_audit.py'), video, '--json', j],
                        cwd=root, capture_output=True, text=True)
-    j = os.path.join(root, os.path.dirname(video), 'motion.json') if os.path.dirname(video) else None
+    if p.returncode not in (0, 1):
+        return {'exit': p.returncode, 'verdict': 'NOT RUN', 'windows': 0, 'min_motion': None,
+                'median_motion': None, 'issues': [], 'error': (p.stderr or p.stdout or '')[-400:],
+                'note': 'audit did not run; this is not a motion pass'}
     d = {}
-    if j and os.path.exists(j):
-        d = json.load(open(j, encoding='utf-8'))
+    if os.path.exists(j):
+        with open(j, encoding='utf-8') as fh:
+            d = json.load(fh)
     windows = d.get('windows', [])
     err = ''
     if p.returncode != 0 and not windows:
@@ -115,6 +132,7 @@ def main():
     ap.add_argument('--project', required=True)
     ap.add_argument('--video', help='defaults to the single mp4 in <project>/out')
     ap.add_argument('--character', default='')
+    ap.add_argument('--strict-motion', action='store_true')
     ap.add_argument('--approved-by', default='', help="the owner's verbatim acceptance, if any")
     a = ap.parse_args()
     P = a.project
@@ -139,6 +157,7 @@ def main():
     voice = cfg.get('voiceover') or story.get('voiceover')
     vpath = os.path.join(P, voice) if voice and not os.path.isabs(voice) else voice
     info = probe(vid)
+    audio_present = has_audio(vid)
     rep = {
         'schema': 'aitrends-render-report-v1',
         'project': os.path.basename(P), 'title': cfg.get('title'),
@@ -152,11 +171,14 @@ def main():
         'bytes': info['bytes'], 'shot_count': len(story.get('shots', [])),
         'music_plan': [s.get('mood') for s in story.get('music', [])],
         'sfx_cues': sum(len(s.get('sfx', [])) for s in story.get('shots', [])),
-        'audio': loudness(vid), 'lufs': lufs(vid), 'motion': motion(vid), 'style_lock': lock,
+        'audio': loudness(vid) if audio_present else {'not_applicable': 'silent video'}, 'lufs': lufs(vid) if audio_present else {'not_applicable': 'silent video has no audio stream'}, 'motion': motion(vid, P), 'style_lock': lock,
         'character': a.character or (lock or {}).get('character'),
         'human_review': 'required; technical checks are not acceptance',
         'approved_by': a.approved_by or None,
     }
+    if a.strict_motion and rep['motion']['verdict'] != 'OK':
+        print('STRICT MOTION QC FAIL:', rep['motion']['verdict'], rep['motion'].get('error') or rep['motion']['issues'])
+        return 1
     dst = os.path.join(P, 'build', 'report.json')
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     json.dump(rep, open(dst, 'w', encoding='utf-8'), indent=1)
@@ -174,7 +196,7 @@ def main():
               f'TP {lu["true_peak_dbtp"]:.2f} dBTP · LRA {lu["lra_lu"]:.1f} LU · '
               f'error {err:+.2f} LU')
     else:
-        print(f'  loudness NOT MEASURED — {lu.get("error") or "unavailable"}')
+        print(f'  loudness NOT MEASURED — {lu.get("error") or lu.get("not_applicable") or "unavailable"}')
     mo = rep['motion']
     if mo['verdict'] == 'NOT RUN':
         print(f'  motion NOT RUN — {mo.get("error") or "motion_audit unavailable"}')
@@ -188,4 +210,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main() or 0)

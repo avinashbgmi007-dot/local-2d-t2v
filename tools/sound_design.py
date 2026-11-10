@@ -45,7 +45,14 @@ def main():
         cues = s.setdefault("sfx", [])
         has = {c.get("name") for c in cues}
         dur = float(s["end"]) - float(s["start"])
-        pos = ((s.get("params") or {}).get("pose") or "").lower()
+        # Template projects carry params.pose as a LIST (one entry per figure);
+        # legacy projects carry a scalar, sometimes at the top level. Normalise
+        # both instead of calling .lower() on a list and crashing the whole pass.
+        raw_pose = (s.get("params") or {}).get("pose")
+        if raw_pose is None:
+            raw_pose = s.get("pose") or ""
+        pose_values = raw_pose if isinstance(raw_pose, list) else [raw_pose]
+        pos = " ".join(str(v) for v in pose_values if isinstance(v, str)).lower()
 
         # a cut needs a transition sound or the edit reads as a slide change
         if i > 0 and (s.get("in") or {}).get("type", "cut") == "cut" and dur > 0.55:

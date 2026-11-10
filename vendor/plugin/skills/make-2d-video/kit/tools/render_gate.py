@@ -1,84 +1,65 @@
 #!/usr/bin/env python3
-"""
-render_gate.py — hard-fail wrapper around render.mjs.
+"""Validate a project, stream a render, and fail on any error signal.
 
-WHY: render.mjs collects per-shot exceptions into window.ERRORS and PRINTS them
-("N shot error(s):") but does NOT set a non-zero exit code for shot errors
-(only uncaught exceptions hit `catch` -> "RENDER FAILED:" -> exitCode=1).
-For unattended / CI / "any AI, input->output" use that is unsafe: a broken
-render would look successful. This wrapper runs render.mjs, scrapes its output
-for every error signal, and exits 1 if ANY is found.
-
-It does NOT modify render.mjs (that file is protected by the merge ledger).
-
-USAGE
-    python tools/render_gate.py --project projects/foo
-    python tools/render_gate.py --project projects/foo -- --scale 0.5 --workers 4
-    python tools/render_gate.py --selftest          # verify detection logic
-Exit: 0 = clean; 1 = render failed OR shot errors printed.
+render.mjs now also hard-fails natively; this wrapper remains defense in depth and
+keeps long renders observable instead of buffering all progress until completion.
+  python tools/render_gate.py --project P -- --scale .5
+  python tools/render_gate.py --selftest
 """
 import argparse
 import re
 import subprocess
 import sys
+from pathlib import Path
 
-ERROR_PATTERNS = [
-    re.compile(r"\bshot error\(s\):"),
-    re.compile(r"^\s*shot error:", re.M),
-    re.compile(r"\[pageerror\]"),
-    re.compile(r"Player failed to boot"),
-    re.compile(r"RENDER FAILED:"),
-    re.compile(r"WARNING:.*no scene file"),
-]
+try:
+    from .validate_project import validate_project
+except ImportError:
+    from validate_project import validate_project
+
+ROOT = Path(__file__).resolve().parents[1]
+ERROR_PATTERNS = [re.compile(p, re.I | re.M) for p in [
+    r"\bshot error(?:\(s\))?:", r"\[pageerror\]", r"\[page\].*(?:ERROR|missing)",
+    r"Player failed to boot", r"RENDER FAILED:", r"IMPORT ERROR", r"WARNING:.*no scene file"]]
 
 
 def scan(text):
-    hits = []
-    for pat in ERROR_PATTERNS:
-        for m in pat.finditer(text or ""):
-            hits.append(m.group(0).strip())
-    return hits
+    return [m.group(0).strip() for pat in ERROR_PATTERNS for m in pat.finditer(text or "")]
 
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--project")
     ap.add_argument("--selftest", action="store_true")
     args, extra = ap.parse_known_args()
-
     if args.selftest:
-        sample = ("ok\n2 shot error(s):\n  ReferenceError: x is not defined\n"
-                  "  shot error: boom\n[pageerror] nope\nRENDER FAILED: fatal")
+        sample = "2 shot error(s):\n shot error: boom\n[pageerror] nope\nRENDER FAILED: fatal\nIMPORT ERROR x\n[page] font missing"
         hits = scan(sample)
-        print("SELFTEST detected:", hits)
-        assert len(hits) >= 4, f"expected >=4 signals, got {hits}"
-        assert scan("all good\nDone: out.mp4") == [], "false positive on clean output"
-        print("SELFTEST PASS")
-        return 0
-
+        assert len(hits) >= 6, hits
+        assert not scan("all good\nDone: out.mp4")
+        print("SELFTEST PASS:", hits); return 0
     if not args.project:
-        sys.exit("ERROR: --project <dir> is required (or use --selftest).")
-
-    cmd = ["node", "render.mjs", "--project", args.project] + [a for a in extra if a != "--"]
-    print("GATE RUN:", " ".join(cmd))
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    out = proc.stdout or ""
-    sys.stdout.write(out)
-    sys.stdout.flush()
-
-    hits = scan(out)
-    if proc.returncode != 0:
-        print(f"\nGATE: render.mjs exited {proc.returncode} -> FAIL")
-        sys.exit(1)
-    if hits:
-        print(f"\nGATE: {len(hits)} error signal(s) printed despite exit 0 "
-              f"-> FAIL (silent-failure case)")
-        for h in hits[:12]:
-            print("   -", h)
-        sys.exit(1)
-    print("\nGATE: clean (exit 0, no error signals) -> PASS")
-    sys.exit(0)
+        ap.error("--project required (or --selftest)")
+    errors, warnings = validate_project(args.project)
+    for warning in warnings:
+        print("WARN", warning)
+    if errors:
+        print("GATE INVALID:\n  " + "\n  ".join(errors)); return 2
+    cmd = ["node", str(ROOT / "render.mjs"), "--project", args.project] + [a for a in extra if a != "--"]
+    print("GATE RUN:", " ".join(cmd), flush=True)
+    hits = []
+    try:
+        proc = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        for line in proc.stdout:
+            sys.stdout.write(line); sys.stdout.flush()
+            hits.extend(scan(line))
+        code = proc.wait()
+    except OSError as exc:
+        print("GATE FAILED:", exc); return 1
+    if code or hits:
+        print(f"GATE FAIL (exit {code}, {len(hits)} error signals)"); return 1
+    print("GATE PASS (exit 0, no error signals)"); return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

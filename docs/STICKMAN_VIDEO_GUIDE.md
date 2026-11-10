@@ -37,7 +37,7 @@ No AI, no network, no randomness. Any tool, or no tool at all, can produce the J
 | `director.py` | story JSON → `cast.js`, `blocking.js`, `sets/room.js`, `scenes/shots/*.js` |
 | `narrate.py` | Kokoro TTS → `build/voice.wav` + `timeline/words.json`, and **retimes every shot to its measured speech** (a shot lasts as long as its line, not a fixed grid) |
 | `sound_design.py` | whoosh on every hard cut, footsteps on walks, riser into flash/zoom, ambience bed |
-| `render_gate.py` | runs `render.mjs` and **hard-fails on any shot error** — `render.mjs` itself exits 0 even when a shot throws |
+| `render_gate.py` | validates the project and streams `render.mjs`; both the renderer and wrapper hard-fail on shot/import/boot errors |
 | `mix.py` | music + sfx + loudness normalise (−14 LUFS) + mux |
 | `review_frames.py` | frames + a checklist for the review only eyes can do |
 | `seam_gate.py` | does anything carry across each cut? `--auto` honours a declared `cut_intent` |
@@ -116,7 +116,7 @@ bash scripts/selftest.sh       # prints "SELFTEST PASSED"  (2-4 min)
 
 ```bash
 cd "$HOME/video-studio/aitrends-2d-studio"
-python tools/verify_kit.py     # must say "29/29 files verified."
+python tools/verify_kit.py     # must say "44/44 files verified."
 npm install
 npx playwright install chromium
 python -m pip install numpy scipy faster-whisper
@@ -432,15 +432,15 @@ They then run §1 → §3 → §4 → §5 and never need this conversation again
 
 | Command | Purpose |
 |---|---|
-| `node render.mjs --project <p> --sheet --scale 0.5` | contact sheet for QC (engine, unmodified) |
-| `node render.mjs --project <p>` | full render (engine, unmodified) |
+| `node render.mjs --project <p> --sheet --scale 0.5` | contact sheet for QC; missing scenes/shot errors exit nonzero |
+| `node render.mjs --project <p>` | full render; atomic output publication, exact frame ranges |
 | `"$PY" tools/render_cached.py --project <p>` | per-shot cached render |
 | `"$PY" audio/mix.py --project <p>` | music + SFX + duck + mux |
 | `"$PY" tools/motion_audit.py <video>` | dead-stretch detector |
 | `"$PY" tools/seam_gate.py --project <p> [--auto]` | cut-carrier check: does every cut carry a person, prop or room? Default mode is fixed-vocabulary; `--auto` discovers entities from the project source and honours `cut_intent` |
 | `"$PY" tools/style_lock.py snapshot\|verify\|check --project <p>` | character drift gate |
 | `"$PY" tools/render_report.py --project <p>` | per-episode audit record |
-| `"$PY" tools/verify_kit.py` | pin check: confirms `engine/`, `audio/` and `package.json` are unchanged |
+| `"$PY" tools/verify_kit.py` | pin check: 44 pinned runtime files match the tested kit |
 | `"$PY" tools/doctor.py` | environment check |
 
 Editorial companions: `plugin/skills/make-2d-video/references/directing.md` (treatment, variety rule),
@@ -452,8 +452,9 @@ Editorial companions: `plugin/skills/make-2d-video/references/directing.md` (tre
 
 **Standing rule:** an external repo or kit is raw material. Nothing here replaces our renderer, our
 Kokoro voice, our Whisper timing, or our project structure. Items were taken only where they add a
-capability the local pipeline did not have. Everything merged is additive — **no file in `engine/`,
-`audio/sfx.py`, `audio/mix.py` or `render.mjs` was modified.**
+capability the local pipeline did not have. Earlier merges were additive. The 2026-11-08 reliability pass deliberately changed `render.mjs`
+(failure handling, validation, atomic output, path containment) while leaving `engine/`, `audio/sfx.py`
+and `audio/mix.py` untouched; see `docs/REPOSITORY_AUDIT.md`. Pins and the vendored kit were updated together.
 
 ### Taken
 

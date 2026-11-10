@@ -111,12 +111,19 @@ def cmd_verify(a):
     if not m.get('approved_by'):
         bad.append('no approved_by record')
     refs = m.get('references', [])
-    if len(refs) != len({r['path'] for r in refs}):
+    if any(not isinstance(r, dict) or not isinstance(r.get('path'), str) for r in refs) or len(refs) != len({r['path'] for r in refs}):
         bad.append('reference paths are not distinct')
     if len(refs) < m.get('required', 1):
         bad.append(f'{len(refs)} references present, manifest requires {m.get("required")}')
+    if not isinstance(refs, list) or not refs:
+        bad.append('references must be a non-empty list')
+        refs = []
     root = os.path.abspath(P)
     for r in refs:
+        if not isinstance(r, dict) or not all(k in r for k in ('path', 'sha256', 'width', 'height', 'time')):
+            bad.append('malformed reference record'); continue
+        if not isinstance(r['path'], str):
+            bad.append('reference path must be a string'); continue
         fp = os.path.normpath(os.path.join(root, r['path']))
         if not fp.startswith(root + os.sep) or not os.path.isfile(fp):
             bad.append(f'{r["path"]}: escapes the project or is missing'); continue
@@ -138,8 +145,12 @@ def cmd_verify(a):
 
 
 def cmd_check(a):
+    status = cmd_verify(a)
+    if status:
+        return status
     P = a.project
-    m = json.load(open(manifest_path(P), encoding='utf-8'))
+    with open(manifest_path(P), encoding='utf-8') as fh:
+        m = json.load(fh)
     drift = []
     times = [str(x['time']) for x in m['references']]
     for r, (t, cand) in zip(m['references'], render_times(P, times)):

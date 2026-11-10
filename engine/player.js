@@ -1,6 +1,6 @@
 // engine/player.js — loads a project, maps global time -> shot, renders frames deterministically.
 // window.renderFrame(frameIndex) draws one frame onto #main. Used by render.mjs (headless).
-import { E, V, setStyle, getShot, clamp, ease, prog, alpha, text, FONTS } from './core.js';
+import { E, V, setStyle, getShot, clamp, ease, prog, alpha, text, FONTS, speakerAt, activeSpeakerAt } from './core.js';
 import { STYLES } from './styles.js';
 import { captions } from './ui2d.js';
 
@@ -21,11 +21,14 @@ async function boot() {
   const cfg = await (await fetch(`${PROJ}/config.json`)).json();
   const story = await (await fetch(`${PROJ}/story/shots.json`)).json();
   let words = []; try { const r = await fetch(`${PROJ}/timeline/words.json`); if (r.ok) words = await r.json(); } catch {}
+  // Measured per-speaker mouth envelope (tools/speech_track.py). Optional: without
+  // it the engine falls back to word windows, still routed by speaker.
+  let speech = null; try { const r = await fetch(`${PROJ}/timeline/speech.json`); if (r.ok) { const s = await r.json(); if (s && s.tracks) speech = s; } } catch {}
   const vertical = (cfg.aspect || '16:9') === '9:16';
   const short = RES[cfg.resolution || '1080p'] || 1080, long = Math.round((short * 16) / 9 / 2) * 2;
   const scale = +(q.get('scale') || 1);
   const outW = Math.round(((vertical ? short : long) * scale) / 2) * 2, outH = Math.round(((vertical ? long : short) * scale) / 2) * 2;
-  Object.assign(E, { vertical, W: vertical ? 1080 : 1920, H: vertical ? 1920 : 1080, fps: cfg.fps || 24, cfg, words: words.words || words, shots: story.shots, outW, outH });
+  Object.assign(E, { vertical, W: vertical ? 1080 : 1920, H: vertical ? 1920 : 1080, fps: cfg.fps || 24, cfg, words: words.words || words, shots: story.shots, speech, outW, outH });
   E.PX = outW / E.W;
   setStyle(q.get('style') || cfg.style || 'dusk');
   await loadFonts();
@@ -40,6 +43,7 @@ async function boot() {
   const dur = story.duration || E.shots[E.shots.length - 1].end;
   window.DURATION = dur; window.TOTAL_FRAMES = Math.ceil(dur * E.fps); window.OUT = [outW, outH];
   window.SHOT_LIST = E.shots.map(s => ({ id: s.id, start: s.start, end: s.end, ok: !!getShot(s.id) }));
+  window.SPEECH_INFO = speech ? { fps: speech.fps, speakers: speech.speakers, measured: speech.measured || [] } : null;
   window.READY = true;
 }
 
@@ -87,6 +91,12 @@ const barVal = (s) => (typeof (s?.bars ?? E.cfg.bars) === 'number' ? (s.bars ?? 
 
 window.renderFrame = function (f) {
   const t = f / E.fps, i = shotIndexAt(t), shot = E.shots[i], lt = t - shot.start;
+  // Per-frame mouth audit: every figure that asks for a talk amount is recorded,
+  // so a test can assert the LISTENER stayed shut without eyeballing pixels.
+  window.SPEECH_FRAME = {};
+  window.PROP_FRAME = [];
+  window.SPEECH_EXPECT = speakerAt(t, null);
+  window.SPEECH_ACTIVE = activeSpeakerAt(t);
   drawShot(bufA, shot, lt);
   const tr = shot.in || { type: 'cut' }, tdur = tr.dur ?? (tr.type === 'whip' ? 0.35 : 0.5);
   const W = main.width, H = main.height; mg.setTransform(1, 0, 0, 1, 0, 0); mg.globalAlpha = 1; mg.globalCompositeOperation = 'source-over';

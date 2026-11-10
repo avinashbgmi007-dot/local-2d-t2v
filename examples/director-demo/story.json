@@ -52,7 +52,7 @@
    "facing2": -1,
    "camZ0": 1.0,
    "camZ1": 1.05,
-   "bg": "midnight",
+   "bg": "night",
    "in": {
     "type": "fade",
     "dur": 0.5
@@ -81,7 +81,7 @@
     -0.15
    ],
    "facing": 1,
-   "bg": "midnight",
+   "bg": "night",
    "in": {
     "type": "cut"
    },
@@ -270,7 +270,7 @@
    "facing2": -1,
    "camZ0": 1.06,
    "camZ1": 1.0,
-   "bg": "midnight",
+   "bg": "night",
    "in": {
     "type": "dip",
     "dur": 0.4
