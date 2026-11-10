@@ -9,6 +9,22 @@ and screenshotted, so there is no API key, no quota, no watermark and no per-vid
 10.8 s @ 1080p 9:16 with narration, music and 16 foley cues: 26 s render, ~55 s end to end.
 **Last updated:** 2026-11-08.
 
+> **CORRECTION 2026-11-10** (verified against disk; read-only audit, no video action).
+> §0 calls `director.py` "a deterministic template compiler" and the stage table implies
+> a template registry. On disk `tools/director.py:457` is ONE `SHOT_JS` emitter with four
+> `SIZE` branches (`insert/close/wide/med`); there are **zero** `template` keys in any
+> `story/shots.json` and no `scenes/templates.js`. The 12 named archetypes exist only as a
+> written spec in `MINI_SERIES_TEMPLATE_PLAN.md:155`. Measured state: **26 project
+> directories**, **16 finished `out/*.mp4`**, exactly **one** `build/report.json`
+> (`cine_release`) with `style_lock: null` / `approved_by: null`. The §2 relocation to
+> `C:\Users\<you>\video-studio` has still not been done.
+> New additive QC tools (2026-11-10): `tools/scene_coverage.py` (static shot-registration
+> proof), `tools/approval_gate.py` + `tools/record_approval.py` (human approval as a
+> video-hash-bound enforced state), `tools/selftest_gates.py`. `generate.py` now fails on
+> every QC stage's non-zero exit; `review_frames.py` reviews the delivered `out/*.mp4`;
+> `render_report.py --approved-by` is REFUSED. Protected paths unchanged,
+> `verify_kit.py` still 29/29. No video was generated, rendered or processed.
+
 ---
 
 ## 0. The one thing to understand before you start

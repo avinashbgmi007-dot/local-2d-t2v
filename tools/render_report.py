@@ -10,6 +10,15 @@ engine; nothing in engine/ was modified.
   python tools/render_report.py --project projects/<slug> [--video out/<Title>.mp4]
 
 Writes projects/<slug>/build/report.json and prints a one-screen summary.
+
+CHANGED 2026-11-10 (independent falsifier):
+  * `--approved-by` is REFUSED. The old flag let any generation run forge a
+    passing approval. Only tools/record_approval.py may set approval state.
+  * An existing approval is PRESERVED only when the new video_sha256 equals the
+    hash that was approved. Re-rendering resets approval to pending, so an old
+    acceptance can never be reused for different bytes.
+  * probe() now selects a video stream rather than streams[0] (a muxed MP4 can
+    list audio first), and all file handles are closed.
 """
 import argparse, hashlib, json, os, re, subprocess, sys
 
@@ -34,7 +43,7 @@ def probe(video):
     if p.returncode != 0:
         sys.exit(f'ffprobe failed on {video}: {p.stderr[-400:]}')
     d = json.loads(p.stdout)
-    st = d['streams'][0]
+    st = next((s for s in d['streams'] if 'width' in s), d['streams'][0])
     num, den = st['r_frame_rate'].split('/')
     return {'codec': st['codec_name'], 'width': int(st['width']), 'height': int(st['height']),
             'fps': float(num) / float(den), 'frames': int(st.get('nb_frames') or 0),
@@ -81,8 +90,6 @@ def motion(video):
     """Reuse the shipped audit rather than reimplementing its metric."""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # motion_audit needs numpy; a bare system interpreter usually lacks it, so prefer the kit venv.
-    # Without this the audit silently fails and the report used to cry "ISSUES" about a video that
-    # passes — a QC gate that invents failures is worse than no gate.
     venv = os.path.expanduser('~/.faceless-shorts/venv/Scripts/python.exe')
     py = venv if os.path.exists(venv) else sys.executable
     p = subprocess.run([py, os.path.join('tools', 'motion_audit.py'), video, '--json',
@@ -91,7 +98,8 @@ def motion(video):
     j = os.path.join(root, os.path.dirname(video), 'motion.json') if os.path.dirname(video) else None
     d = {}
     if j and os.path.exists(j):
-        d = json.load(open(j, encoding='utf-8'))
+        with open(j, encoding='utf-8') as fh:
+            d = json.load(fh)
     windows = d.get('windows', [])
     err = ''
     if p.returncode != 0 and not windows:
@@ -110,13 +118,36 @@ def motion(video):
             'note': 'change rate only; see docs/MOTION_BASELINE.md — NOT a liveliness metric'}
 
 
+def prior_approval(dst, new_hash):
+    """Keep a recorded approval ONLY if the delivered bytes are unchanged."""
+    if not os.path.exists(dst):
+        return {}
+    try:
+        with open(dst, encoding='utf-8') as fh:
+            old = json.load(fh)
+    except (ValueError, OSError):
+        return {}
+    if (old.get('approval_state') == 'approved'
+            and old.get('approved_by')
+            and old.get('approved_at')
+            and old.get('approved_video_sha256') == new_hash):
+        return {k: old[k] for k in ('approved_by', 'approved_at', 'approval_state',
+                                    'approved_video_sha256', 'approved_reviewer')
+                if k in old}
+    return {}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--project', required=True)
     ap.add_argument('--video', help='defaults to the single mp4 in <project>/out')
     ap.add_argument('--character', default='')
-    ap.add_argument('--approved-by', default='', help="the owner's verbatim acceptance, if any")
+    ap.add_argument('--approved-by', default='',
+                    help='DEPRECATED and refused; use tools/record_approval.py')
     a = ap.parse_args()
+    if a.approved_by:
+        sys.exit('REFUSED: --approved-by can forge an approval from a generation run. '
+                 'A human must watch the film, then use tools/record_approval.py.')
     P = a.project
     vid = a.video
     if not vid:
@@ -126,12 +157,15 @@ def main():
             sys.exit(f'could not pick one video from {outdir} (found {cands}); pass --video')
         vid = os.path.join(outdir, cands[0])
 
-    cfg = json.load(open(os.path.join(P, 'config.json'), encoding='utf-8'))
-    story = json.load(open(os.path.join(P, 'story', 'shots.json'), encoding='utf-8'))
+    with open(os.path.join(P, 'config.json'), encoding='utf-8') as fh:
+        cfg = json.load(fh)
+    with open(os.path.join(P, 'story', 'shots.json'), encoding='utf-8') as fh:
+        story = json.load(fh)
     lock = None
     lpath = os.path.join(P, 'story', 'style-lock.json')
     if os.path.exists(lpath):
-        m = json.load(open(lpath, encoding='utf-8'))
+        with open(lpath, encoding='utf-8') as fh:
+            m = json.load(fh)
         lock = {'character': m.get('character'), 'style': m.get('style'),
                 'references': len(m.get('references', [])), 'approved_by': m.get('approved_by'),
                 'status': m.get('status')}
@@ -139,11 +173,12 @@ def main():
     voice = cfg.get('voiceover') or story.get('voiceover')
     vpath = os.path.join(P, voice) if voice and not os.path.isabs(voice) else voice
     info = probe(vid)
+    vhash = sha256(vid)
     rep = {
         'schema': 'aitrends-render-report-v1',
         'project': os.path.basename(P), 'title': cfg.get('title'),
         'video': os.path.relpath(vid, P).replace('\\', '/'),
-        'video_sha256': sha256(vid),
+        'video_sha256': vhash,
         'voice_sha256': sha256(vpath) if vpath and os.path.exists(vpath) else None,
         'voice_rate': 'unchanged; leading/trailing padding only',
         'aspect': cfg.get('aspect'), 'resolution': cfg.get('resolution'), 'style': cfg.get('style'),
@@ -155,11 +190,14 @@ def main():
         'audio': loudness(vid), 'lufs': lufs(vid), 'motion': motion(vid), 'style_lock': lock,
         'character': a.character or (lock or {}).get('character'),
         'human_review': 'required; technical checks are not acceptance',
-        'approved_by': a.approved_by or None,
+        'approved_by': None, 'approval_state': 'pending',
+        'approved_at': None, 'approved_video_sha256': None,
     }
     dst = os.path.join(P, 'build', 'report.json')
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    json.dump(rep, open(dst, 'w', encoding='utf-8'), indent=1)
+    rep.update(prior_approval(dst, vhash))
+    with open(dst, 'w', encoding='utf-8') as fh:
+        json.dump(rep, fh, indent=1)
 
     print(f'{dst}\n  {rep["title"]}')
     print(f'  {rep["width"]}x{rep["height"]} {rep["fps"]:.2f} fps · {rep["frames"]} frames · '
@@ -181,6 +219,7 @@ def main():
     else:
         print(f'  motion {mo["verdict"]} ({mo["windows"]} windows, min {mo["min_motion"]})')
     print(f'  style lock: {rep["style_lock"] or "none — not yet approved"}')
+    print(f'  approval  : {rep["approval_state"]} (approved_by={rep["approved_by"]})')
     print(f'  human_review: {rep["human_review"]}')
     if mo['issues']:
         for i in mo['issues'][:6]:
