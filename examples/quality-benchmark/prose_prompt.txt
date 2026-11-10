@@ -1,0 +1,14 @@
+# MICRO DRAMA — AI-trend scene: "you let the AI write our fight?" (phone as the object)
+Title: Prompt
+Set: room
+Voices: LEX=af_nova, SAM=am_eric
+
+[wide] LEX and SAM stand in the dark room.
+LEX says: Did you really paste my texts into it?
+[close] SAM says: It was just advice.
+SAM holds the phone.
+[med] LEX takes the phone.
+[close] LEX says: It wrote our whole fight for you.
+[insert] the phone for 1.2 seconds.
+[close] SAM says: At least it was honest.
+[wide] LEX and SAM stand in the dark room.

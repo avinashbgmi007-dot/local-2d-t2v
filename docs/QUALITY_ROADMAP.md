@@ -76,9 +76,21 @@ that is `present_file`-ed to the user; brutal honesty; runtime restored via
   MISSING failure). Legacy size shots take top-level scalar who/who2/pose/pose2 (params is
   template-only). Generator puts the prop-relevant actor in `who` (figure 1 holds the prop
   in the generated size path).
-- Backlog now leads: render pending end-card dust; overlapping-dialogue gate; hi/te TTS;
-  frame-QC report in master.py. All 10 main slices DONE — awaiting user steer (e.g. a
-  reference video to score against, or another prose scene to try).
+- USER DELIVERABLES DONE (commit pending): two prose-written micro dramas rendered via
+  SLICE-10 pipeline —
+  1) examples/quality-benchmark/prose_prompt.txt -> drama1/out/Prompt.mp4 (20.0s,
+     AI-trend scene "you let the AI write our fight?", phone seized on screen SAM->LEX
+     @10.21s, insert, button line; -14.12 LUFS PASS)
+  2) examples/quality-benchmark/prose_detective.txt -> drama2/out/The_Last_Entry.mp4
+     (23.2s noir, diary RUTH->DET @9.92s, torn-page clue, REVEAL as last line "It was
+     you. I read it." then wide button; gates PASS)
+  Both: speech audit PASS, continuity PASS, captions highlight stressed words, British
+  voices bm_george/bf_emma for the noir. Served at port 8000 as /Prompt.mp4 and
+  /The_Last_Entry.mp4.
+  Critique: expressions are still static presets (neutral/talk) — acting is the weakest
+  remaining link; insert frames verified by gate counts (drawn every frame) though my
+  sheet sampling missed the insert windows.
+- Backlog: end-card dust render; overlapping-dialogue gate; hi/te TTS; frame-QC report.
 
 ## Definition of "significant change" (loop stop per item)
 

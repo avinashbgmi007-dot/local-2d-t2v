@@ -1,0 +1,16 @@
+# DETECTIVE NOIR — suspense + reveal-at-the-end. The diary (book prop) is the evidence.
+Title: The Last Entry
+Set: room
+Voices: DET=bm_george, RUTH=bf_emma
+
+[wide] DET and RUTH stand in the dark room.
+DET says: The diary ends at midnight.
+[close] RUTH says: So does my alibi.
+RUTH holds the book.
+DET reaches for the book for 1.4 seconds.
+[med] DET takes the book.
+[close] DET says: Page forty was torn out.
+[insert] the book for 1.2 seconds.
+[close] RUTH says: You were not supposed to read that.
+[close] DET says: It was you. I read it.
+[wide] DET and RUTH stand in the dark room.

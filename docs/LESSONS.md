@@ -139,3 +139,15 @@ workspace root). Keep entries concrete and checkable; “make it better” is no
   template shots only); bg must be a MOODS entry ('night'), not 'midnight'.
 - Prose props flow through the SAME ownership machinery as authored stories — "takes"
   emits prop.from/at and the handoff renders on screen (JAY->MIRA at 11.42s).
+
+## 2026-11-08 — two user-requested micro dramas from prose (Prompt + The Last Entry)
+
+- The SLICE-10 grammar is enough for real hook structure: cold-open wide -> accusation ->
+  excuse -> object held -> seized ON SCREEN (from/at) -> smoking-gun close-up -> insert
+  of the object -> button line -> wide bookend. For the thriller the reveal is simply the
+  LAST spoken line before the button — structure over effects.
+- Distinct Kokoro voices per role work well (af_nova/am_eric for the AI-trend pair,
+  bm_george/bf_emma British for noir). Voice casting is a story beat, not a detail.
+- Caption word-highlight tracks the measured word clock — the stressed word lights up.
+- Still weak: facial expressions are static presets per shot; the acting reads through
+  dialogue + framing, not faces. That is the next acting slice if wanted.

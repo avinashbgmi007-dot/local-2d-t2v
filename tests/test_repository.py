@@ -416,6 +416,18 @@ class ProseManifestTests(unittest.TestCase):
         self.assertEqual(take["from"], "JAY")
         self.assertAlmostEqual(take["at"], 0.65)
 
+    def test_drama_prose_files_validate(self):
+        from tools.story_schema import validate_story
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ptm2", "tools/prose_to_manifest.py")
+        m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+        for f in ("examples/quality-benchmark/prose_prompt.txt",
+                  "examples/quality-benchmark/prose_detective.txt"):
+            st = m.parse_prose(open(f, encoding="utf-8").read())
+            e, w = validate_story(st)
+            self.assertEqual(e, [], msg=f"{f}: {e}")
+            self.assertTrue(any(sh.get("prop", {}).get("from") for sh in st["shots"]), msg=f"{f}: no on-screen transfer")
+
     def test_insert_shot_carries_prop(self):
         from tools.story_schema import validate_story
         st = self._parse("JAY holds the book.\n[insert] the book for 1.0 seconds.\n")
