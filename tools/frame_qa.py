@@ -1,9 +1,25 @@
 #!/usr/bin/env python3
+"""frame_qa.py -- per-frame quality assurance for rendered videos.
+
+Report-only: never wired into generate.py. Checks black/white frames, pop (transient
+spike) frames, and frozen runs (SAD-based frame difference).
+
+Resolution: 32x18 (576 px). 8x8 was too coarse -- small animation averaged away.
+Thresholds calibrated on cine_release SAD distribution (see --diag).
+
+Pop detection LIMITATIONS:
+  - Needs both neighbours (i-1 and i+1): first and last frames cannot be pops.
+  - A 2-frame spike is missed (second spike frame has high SAD from first spike,
+    not from prior level).
+  - Only flags spikes where before-after SAD < SAD_POP // 2 (returns to prior level).
+"""
 import argparse, json, os, subprocess, sys
 
-FRAME_W, FRAME_H = 8, 8
+FRAME_W, FRAME_H = 32, 18
 FRAME_SIZE = FRAME_W * FRAME_H
-SAD_FREEZE = 200
+# Calibrated on cine_release at 32x18: true freeze SAD~0, small anim p5=58
+SAD_FREEZE = 50
+# Significant change; pop if the spike returns to prior level (sad_ba < SAD_POP//2)
 SAD_POP = 2000
 
 def run(cmd):
@@ -88,6 +104,151 @@ def in_freeze_window(t, wins):
             return True
     return False
 
+def load_shots(shots_path):
+    if not shots_path or not os.path.exists(shots_path):
+        return []
+    try:
+        data = json.load(open(shots_path, encoding="utf-8"))
+    except Exception:
+        return []
+    return data.get("shots", data if isinstance(data, list) else [])
+
+def nearest_shot(t, shots):
+    for sh in shots:
+        s = float(sh.get("start", 0))
+        e = float(sh.get("end", s))
+        if s - 0.05 <= t <= e + 0.05:
+            return sh, "in-shot"
+    best = None
+    best_dist = float("inf")
+    for sh in shots:
+        for b in (float(sh.get("start", 0)), float(sh.get("end", 0))):
+            if abs(b - t) < best_dist:
+                best_dist = abs(b - t)
+                best = sh
+    return best, "boundary"
+
+def shot_transition_type(sh):
+    if not sh:
+        return "unknown"
+    t = sh.get("in", {})
+    if isinstance(t, dict):
+        return t.get("type", "cut")
+    return "cut"
+
+def analyze_black_runs(black_frames, ts_list, shots):
+    if not black_frames:
+        return []
+    runs = []
+    current = [black_frames[0]]
+    for bf in black_frames[1:]:
+        if bf[0] == current[-1][0] + 1:
+            current.append(bf)
+        else:
+            runs.append(current)
+            current = [bf]
+    runs.append(current)
+    result = []
+    for run in runs:
+        mid_t = run[len(run) // 2][1]
+        sh, loc = nearest_shot(mid_t, shots)
+        trans = shot_transition_type(sh)
+        shot_id = sh.get("id", "?") if sh else "?"
+        classification = "expected" if trans in ("fade", "dip", "flash") else "finding"
+        result.append({
+            "start_idx": run[0][0],
+            "end_idx": run[-1][0],
+            "start_t": run[0][1],
+            "end_t": run[-1][1],
+            "n_frames": len(run),
+            "shot_id": shot_id,
+            "transition": trans,
+            "location": loc,
+            "classification": classification,
+        })
+    return result
+
+def analyze_frames(frames, fps, dur, freeze_wins, shots=None):
+    """Analyze frames and return a findings dict."""
+    n_frames = len(frames)
+    lumas = [sum(f) / len(f) for f in frames]
+    ts_list = [min(i / fps, dur) for i in range(n_frames)]
+    sads = [compute_sad(frames[i], frames[i - 1]) for i in range(1, n_frames)]
+
+    black = [(i, ts_list[i], lumas[i]) for i in range(len(lumas)) if lumas[i] < 8]
+    white = [(i, ts_list[i], lumas[i]) for i in range(len(lumas)) if lumas[i] > 247]
+
+    pops = []
+    if len(sads) > 2:
+        for i in range(1, len(sads) - 1):
+            if sads[i] >= SAD_POP:
+                if i + 1 < len(frames):
+                    sad_ba = compute_sad(frames[i - 1], frames[i + 1])
+                    if sad_ba < SAD_POP // 2:
+                        pops.append((i + 1, ts_list[i + 1], lumas[i], lumas[i + 1]))
+
+    frozen_runs = []
+    frozen_info = []
+    run_start = None
+    if len(sads) > 0:
+        for i in range(len(sads)):
+            if sads[i] < SAD_FREEZE:
+                if run_start is None:
+                    run_start = i
+            else:
+                if run_start is not None:
+                    run_len = i - run_start + 1
+                    if run_len >= 3:
+                        run_ts = ts_list[run_start:run_start + run_len]
+                        exempt = all(in_freeze_window(t, freeze_wins) for t in run_ts)
+                        if not exempt:
+                            if run_len >= 12:
+                                frozen_runs.append((run_start, run_start + run_len - 1, run_ts[0], run_ts[-1], run_len))
+                            else:
+                                frozen_info.append((run_start, run_start + run_len - 1, run_ts[0], run_ts[-1], run_len))
+                    run_start = None
+        if run_start is not None:
+            run_len = len(sads) - run_start + 1
+            if run_len >= 3:
+                run_ts = ts_list[run_start:]
+                exempt = all(in_freeze_window(t, freeze_wins) for t in run_ts)
+                if not exempt:
+                    if run_len >= 12:
+                        frozen_runs.append((run_start, len(sads), run_ts[0], run_ts[-1], run_len))
+                    else:
+                        frozen_info.append((run_start, len(sads), run_ts[0], run_ts[-1], run_len))
+
+    black_runs = analyze_black_runs(black, ts_list, shots or [])
+
+    return {
+        "black": black,
+        "white": white,
+        "pops": pops,
+        "frozen_runs": frozen_runs,
+        "frozen_info": frozen_info,
+        "black_runs": black_runs,
+        "lumas": lumas,
+        "sads": sads,
+        "ts_list": ts_list,
+    }
+
+def sad_distribution(sads):
+    import statistics
+    s = sorted(sads)
+    lines = []
+    lines.append("  SAD distribution (%d transitions):" % len(sads))
+    lines.append("    min=%d max=%d mean=%.0f median=%.0f" % (min(sads), max(sads), statistics.mean(sads), statistics.median(sads)))
+    lines.append("    p5=%d p10=%d p25=%d p50=%d p75=%d p90=%d p95=%d" % (
+        s[int(len(s)*0.05)], s[int(len(s)*0.1)], s[int(len(s)*0.25)],
+        s[int(len(s)*0.5)], s[int(len(s)*0.75)], s[int(len(s)*0.9)],
+        s[int(len(s)*0.95)]))
+    buckets = [0, 10, 25, 50, 100, 200, 500, 1000, 2000, 5000, 10000]
+    lines.append("    histogram (transitions >= threshold):")
+    for b in buckets:
+        c = sum(1 for v in sads if v >= b)
+        lines.append("      >= %6d: %d" % (b, c))
+    return "\n".join(lines)
+
 def pick_video(project):
     outdir = os.path.join(project, "out")
     if os.path.isdir(outdir):
@@ -106,6 +267,7 @@ def main():
     ap.add_argument("--shots", help="path to shots.json for freeze exemption")
     ap.add_argument("--count", type=int, default=0)
     ap.add_argument("--strict", action="store_true")
+    ap.add_argument("--diag", action="store_true", help="print SAD distribution")
     args = ap.parse_args()
 
     video = args.video
@@ -125,6 +287,7 @@ def main():
     dur = float(info["format"]["duration"])
     fps = parse_fps(info)
     freeze_wins = load_freeze_times(shots_path)
+    shots = load_shots(shots_path)
 
     if args.count and args.count > 0:
         ts_list = [dur * (i + 0.5) / args.count for i in range(args.count)]
@@ -135,68 +298,36 @@ def main():
                 sys.exit("luma probe FAILED at t=%.3f" % t)
             rr, gg, bb = r.stdout[:3]
             lumas.append(0.299 * rr + 0.587 * gg + 0.114 * bb)
-        ts_list_out = ts_list
-        sads = []
+        # build minimal result for count mode
+        result = {"black": [(i, ts_list[i], lumas[i]) for i in range(len(lumas)) if lumas[i] < 8],
+                  "white": [(i, ts_list[i], lumas[i]) for i in range(len(lumas)) if lumas[i] > 247],
+                  "pops": [], "frozen_runs": [], "frozen_info": [], "black_runs": [],
+                  "lumas": lumas, "sads": [], "ts_list": ts_list}
         frames = None
     else:
         frames = extract_all_frames(video)
-        n_frames = len(frames)
-        lumas = [sum(f) / len(f) for f in frames]
-        ts_list_out = [i / fps for i in range(n_frames)]
-        ts_list_out = [min(t, dur) for t in ts_list_out]
-        sads = [compute_sad(frames[i], frames[i - 1]) for i in range(1, n_frames)]
+        result = analyze_frames(frames, fps, dur, freeze_wins, shots)
 
-    black = [(i, ts_list_out[i], lumas[i]) for i in range(len(lumas)) if lumas[i] < 8]
-    white = [(i, ts_list_out[i], lumas[i]) for i in range(len(lumas)) if lumas[i] > 247]
-
-    pops = []
-    if frames is not None and len(sads) > 2:
-        for i in range(1, len(sads) - 1):
-            if sads[i] >= SAD_POP:
-                if i + 1 < len(frames):
-                    sad_ba = compute_sad(frames[i - 1], frames[i + 1])
-                    if sad_ba < SAD_POP // 2:
-                        pops.append((i + 1, ts_list_out[i + 1], lumas[i], lumas[i + 1]))
-
-    frozen_runs = []
-    frozen_info = []
-    run_start = None
-    if len(sads) > 0:
-        for i in range(len(sads)):
-            if sads[i] < SAD_FREEZE:
-                if run_start is None:
-                    run_start = i
-            else:
-                if run_start is not None:
-                    run_len = i - run_start + 1
-                    if run_len >= 3:
-                        run_ts = ts_list_out[run_start:run_start + run_len]
-                        exempt = all(in_freeze_window(t, freeze_wins) for t in run_ts)
-                        if not exempt:
-                            if run_len >= 12:
-                                frozen_runs.append((run_start, run_start + run_len - 1, run_ts[0], run_ts[-1], run_len))
-                            else:
-                                frozen_info.append((run_start, run_start + run_len - 1, run_ts[0], run_ts[-1], run_len))
-                    run_start = None
-        if run_start is not None:
-            run_len = len(sads) - run_start + 1
-            if run_len >= 3:
-                run_ts = ts_list_out[run_start:]
-                exempt = all(in_freeze_window(t, freeze_wins) for t in run_ts)
-                if not exempt:
-                    if run_len >= 12:
-                        frozen_runs.append((run_start, len(sads), run_ts[0], run_ts[-1], run_len))
-                    else:
-                        frozen_info.append((run_start, len(sads), run_ts[0], run_ts[-1], run_len))
+    black = result["black"]
+    white = result["white"]
+    pops = result["pops"]
+    frozen_runs = result["frozen_runs"]
+    frozen_info = result["frozen_info"]
+    black_runs = result["black_runs"]
+    lumas = result["lumas"]
+    ts_list_out = result["ts_list"]
+    sads = result["sads"]
 
     n = len(lumas)
-    print("FRAME QA: %s  (dur=%.2fs, frames=%d, fps=%.1f)" % (os.path.basename(video), dur, n, fps))
+    print("FRAME QA: %s  (dur=%.2fs, frames=%d, fps=%.1f, res=%dx%d)" % (os.path.basename(video), dur, n, fps, FRAME_W, FRAME_H))
     print("  black frames : %d" % len(black))
     print("  white frames : %d" % len(white))
     print("  pop frames   : %d" % len(pops))
     print("  frozen runs  : %d  (freeze exemptions loaded: %d)" % (len(frozen_runs), len(freeze_wins)))
     if frozen_info:
         print("  frozen info  : %d (3-11 frame runs, not findings)" % len(frozen_info))
+    if args.diag and sads:
+        print(sad_distribution(sads))
     if black:
         for i, t, l in black[:10]:
             print("    BLACK  t=%.2f luma=%.1f" % (t, l))
@@ -212,8 +343,17 @@ def main():
     if frozen_info:
         for s, e, ts, te, rl in frozen_info[:5]:
             print("    info: short freeze t=%.2f..%.2f (%d frames)" % (ts, te, rl))
+    if black_runs:
+        print("  black runs:")
+        for br in black_runs:
+            status = "expected" if br["classification"] == "expected" else "FINDING"
+            print("    %s: frames %d-%d t=%.2f..%.2f (%d fr) shot=%s transition=%s" % (
+                status, br["start_idx"], br["end_idx"], br["start_t"], br["end_t"],
+                br["n_frames"], br["shot_id"], br["transition"]))
 
-    findings = len(black) + len(white) + len(pops) + len(frozen_runs)
+    # findings: black runs classified as "finding" + white + pops + frozen_runs
+    black_findings = sum(1 for br in black_runs if br["classification"] == "finding")
+    findings = black_findings + len(white) + len(pops) + len(frozen_runs)
     if findings == 0:
         print("FRAME QA: PASS (no unexplained findings)")
         return 0
@@ -221,4 +361,4 @@ def main():
     return 1 if args.strict else 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main())

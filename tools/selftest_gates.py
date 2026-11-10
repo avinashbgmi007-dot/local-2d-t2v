@@ -763,7 +763,12 @@ class FrameQAFullScanTests(unittest.TestCase):
 
 
 class FrameQABoundaryTests(unittest.TestCase):
-    """Boundary tests for frame_qa SAD-based detection thresholds."""
+    """Boundary tests for frame_qa SAD-based detection thresholds.
+
+    These tests call the real classification path (fq.analyze_frames), not just
+    arithmetic on SAD values.  They verify that the classifier produces the
+    expected findings/info split.
+    """
 
     def _make_freeze_clip(self, d, freeze_frames):
         red1 = os.path.join(d, "red1.mp4")
@@ -781,40 +786,29 @@ class FrameQABoundaryTests(unittest.TestCase):
                         "-c", "copy", clip], capture_output=True, check=True)
         return clip
 
-    def test_11_frames_is_info_only(self):
+    def _analyze(self, clip):
         import frame_qa as fq
+        frames = fq.extract_all_frames(clip)
+        info = fq.ffprobe_json(clip)
+        fps = fq.parse_fps(info)
+        dur = float(info["format"]["duration"])
+        return fq.analyze_frames(frames, fps, dur, []), fq
+
+    def test_11_frames_is_info_only(self):
         with tempfile.TemporaryDirectory() as d:
             clip = self._make_freeze_clip(d, 11)
-            frames = fq.extract_all_frames(clip)
-            sads = [fq.compute_sad(frames[i], frames[i-1]) for i in range(1, len(frames))]
-            run_len = 0
-            max_run = 0
-            for s in sads:
-                if s < fq.SAD_FREEZE:
-                    run_len += 1
-                    max_run = max(max_run, run_len)
-                else:
-                    run_len = 0
-            # 11 frozen frames => 10 low-sad transitions; < 12 threshold
-            self.assertGreaterEqual(max_run, 9)
-            self.assertLess(max_run + 1, 12, "11 frames must stay below 12-frame threshold")
+            result, fq = self._analyze(clip)
+            self.assertEqual(len(result["frozen_runs"]), 0,
+                             "11-frame freeze must NOT be a finding")
+            self.assertGreater(len(result["frozen_info"]), 0,
+                               "11-frame freeze must appear as info")
 
     def test_12_frames_is_finding(self):
-        import frame_qa as fq
         with tempfile.TemporaryDirectory() as d:
             clip = self._make_freeze_clip(d, 12)
-            frames = fq.extract_all_frames(clip)
-            sads = [fq.compute_sad(frames[i], frames[i-1]) for i in range(1, len(frames))]
-            run_len = 0
-            max_run = 0
-            for s in sads:
-                if s < fq.SAD_FREEZE:
-                    run_len += 1
-                    max_run = max(max_run, run_len)
-                else:
-                    run_len = 0
-            # 12 frozen frames => 11 low-sad transitions; >= 11 meets threshold
-            self.assertGreaterEqual(max_run + 1, 12, "12 frames must meet 12-frame threshold")
+            result, fq = self._analyze(clip)
+            self.assertGreater(len(result["frozen_runs"]), 0,
+                               "12-frame freeze must be a finding")
 
     def test_single_midclip_pop_detected(self):
         import frame_qa as fq
@@ -825,17 +819,43 @@ class FrameQABoundaryTests(unittest.TestCase):
                             '-vf', "drawbox=x=0:y=0:w=320:h=240:color=white:t=fill:enable='eq(n,24)'",
                             '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
                            capture_output=True, check=True)
-            frames = fq.extract_all_frames(clip)
-            sads = [fq.compute_sad(frames[i], frames[i-1]) for i in range(1, len(frames))]
-            pop_found = False
-            for i in range(1, len(sads) - 1):
-                if sads[i] >= fq.SAD_POP:
-                    if i + 1 < len(frames):
-                        sad_ba = fq.compute_sad(frames[i - 1], frames[i + 1])
-                        if sad_ba < fq.SAD_POP // 2:
-                            pop_found = True
-                            break
-            self.assertTrue(pop_found, "single mid-clip pop should be detected")
+            result, fq = self._analyze(clip)
+            self.assertGreater(len(result["pops"]), 0,
+                               "single mid-clip pop should be detected")
+
+    @unittest.skipUnless(_FFMPEG, "ffmpeg not available")
+    def test_small_motion_not_frozen(self):
+        """A moving element over a static background must NOT be flagged frozen.
+
+        At 8x8 this would false-positive (motion averages away); at 32x18 the
+        SAD stays above SAD_FREEZE.
+        """
+        import frame_qa as fq
+        with tempfile.TemporaryDirectory() as d:
+            clip = os.path.join(d, "motion.mp4")
+            # Generate a 320x240 video with an 80x80 block moving horizontally.
+            # Use raw frames to avoid ffmpeg filter expression issues.
+            W, H = 320, 240
+            N = 48
+            raw = bytearray()
+            for f in range(N):
+                bx = (f * 7) % (W - 80)
+                for y in range(H):
+                    for x in range(W):
+                        if bx <= x < bx + 80 and 80 <= y < 160:
+                            raw.append(200)
+                        else:
+                            raw.append(50)
+            raw_path = os.path.join(d, "raw.gray")
+            with open(raw_path, "wb") as fh:
+                fh.write(raw)
+            subprocess.run(['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'gray8',
+                            '-s', '%dx%d' % (W, H), '-r', '24', '-i', raw_path,
+                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clip],
+                           capture_output=True, check=True)
+            result, fq = self._analyze(clip)
+            self.assertEqual(len(result["frozen_runs"]), 0,
+                             "moving element must not be flagged as frozen")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
