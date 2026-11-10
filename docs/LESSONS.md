@@ -118,3 +118,12 @@ workspace root). Keep entries concrete and checkable; “make it better” is no
   gate caught it (wrong-holder frames), which is exactly what the gate is for.
 - Mid-shot ownership needs all three of: schema fields, interpreter effective-owner,
   gate effective-owner. Missing any one -> gate FAIL, not silent corruption.
+
+## 2026-11-08 — SLICE-9: sound post
+
+- Identical whoosh on every cut is a stuck record: vary seed/pitch/gain per cut.
+- Story beats deserve story foley: an on-screen prop transfer gets a paper swish at
+  exactly prop.at*dur (measured: -17.2 -> -12.0 dB peak in the otherwise silent shot).
+- Music loop -> motifs: rotate the key per plan segment (render_score key + i*5).
+- Kenney CC0 audio is unreachable from the allowlist (kenney.nl blocked, no github
+  audio mirror) — do not retry; audio/sfx.py synthesis is the local foley source.

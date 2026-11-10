@@ -39,7 +39,7 @@ def main():
     st = json.load(open(path, encoding="utf-8"))
     shots = st["shots"]
 
-    added = {"whoosh": 0, "footstep": 0, "riser": 0, "amb": 0}
+    added = {"whoosh": 0, "footstep": 0, "riser": 0, "amb": 0, "swish": 0}
 
     for i, s in enumerate(shots):
         cues = s.setdefault("sfx", [])
@@ -57,8 +57,19 @@ def main():
         # a cut needs a transition sound or the edit reads as a slide change
         if i > 0 and (s.get("in") or {}).get("type", "cut") == "cut" and dur > 0.55:
             if "whoosh" not in has and "swish" not in has:
-                cues.append({"at": 0.04, "name": "whoosh", "gain": WHOOSH_GAIN})
+                # every cut gets a whoosh, but NOT the same whoosh: vary seed/pitch/gain
+                # per cut or the edit reads as a stuck record
+                cues.append({"at": 0.04, "name": "whoosh",
+                             "gain": round(WHOOSH_GAIN + (i % 3) * 1.5, 1),
+                             "seed": 40 + i * 7, "pitch": round(0.9 + (i % 4) * 0.12, 3)})
                 added["whoosh"] += 1
+
+        # an on-screen prop transfer deserves a paper swish at the handoff moment
+        pr = s.get("prop") or {}
+        if pr.get("from") and pr.get("at") and "swish" not in has:
+            cues.append({"at": round(min(float(pr["at"]) * dur, dur - 0.05), 2),
+                         "name": "swish", "gain": -11, "seed": 77, "pitch": 1.2})
+            added["swish"] += 1
 
         # a walk with no footsteps is the classic "sliding character" tell
         if any(w in pos for w in WALK_POSES) and dur > 0.8:
@@ -101,8 +112,8 @@ def main():
         added["amb"] += 1
 
     total_cues = sum(len(s.get("sfx") or []) for s in shots)
-    print("sound design: %d cues total (+%d whoosh, +%d footstep groups, +%d riser, +%d amb)"
-          % (total_cues, added["whoosh"], added["footstep"], added["riser"], added["amb"]))
+    print("sound design: %d cues total (+%d whoosh, +%d footstep groups, +%d riser, +%d amb, +%d swish)"
+          % (total_cues, added["whoosh"], added["footstep"], added["riser"], added["amb"], added["swish"]))
     for s in shots:
         names = ", ".join("%s@%.2f" % (c["name"], float(c.get("at", 0)))
                           for c in (s.get("sfx") or [])[:5])

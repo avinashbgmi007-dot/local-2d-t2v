@@ -139,7 +139,8 @@ def render_score(plan, total, seed=1, key=None):
     for i, s in enumerate(plan):
         st, en = max(0, s["start"]), min(total, s["end"])
         if en - st < 0.5: continue
-        y = render_section(s.get("mood", "mystery"), s.get("intensity", 0.5), en - st + xf, seed + i * 101, key)
+        y = render_section(s.get("mood", "mystery"), s.get("intensity", 0.5), en - st + xf, seed + i * 101,
+                           key if key is None else key + i * 5)  # per-segment key: motif varies, not a loop
         m = len(y); fin = secs(xf if i else 2.5); fo = secs(xf)
         ramp_in = np.sin(np.linspace(0, np.pi / 2, fin)) ** 2
         y[:fin] *= ramp_in[:, None]

@@ -29,7 +29,7 @@ EXPECTED = {
     "tools/narrate.py": "33eb0e904109b4f0",
     "audio/dsp.py": "589d305d94d8acc3",
     "audio/mix.py": "a48273c523b68c3b",
-    "audio/music.py": "2fb3ce1df2fe5c7d",
+    "audio/music.py": "43ec54dd874d2d3f",
     "audio/sfx.py": "2fa56141e2423718",
     "engine/core.js": "f440d7e30a972934",
     "engine/fx2d.js": "d09f93f6d44366fa",

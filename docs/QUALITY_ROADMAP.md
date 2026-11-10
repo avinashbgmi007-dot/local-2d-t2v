@@ -56,7 +56,16 @@ that is `present_file`-ed to the user; brutal honesty; runtime restored via
   Notes/self-critique: templates receive LOCAL shot time (player drawShot) — the
   first version double-subtracted shot.start and the gate caught it (10 wrong-holder
   frames). The gate is what makes a mid-shot transfer safe to ship.
-- Next item: SLICE-9 (sound post: motif score + real foley).
+- SLICE-9 DONE: sound post — per-cut whoosh variation (seed 40+i*7, pitch 0.9-1.26,
+  gain steps) instead of one stuck whoosh; paper 'swish' at the on-screen handoff
+  (b06 prop.from/at -> cue at 0.78s local = 9.00s global; measured peak bump -17.2 ->
+  -12.0 dB in the silent shot); music render_score now rotates the key per plan
+  segment (+5 semitones) so segments are motifs, not one loop. Kenney CC0 files are
+  NOT reachable (kenney.nl not allowlisted; no audio repo under github KenneyNL org)
+  — foley stays synthesized in audio/sfx.py. Gates PASS, master -14.34 LUFS PASS.
+  Notes/self-critique: could not A/B-listen; evidence is cue list + measured
+  transients + loudness, not ear. Score pleasantness remains user-judged.
+- Next item: SLICE-10 (prose -> manifest, text-in/film-out).
 
 ## Definition of "significant change" (loop stop per item)
 
