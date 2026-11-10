@@ -1,0 +1,53 @@
+{
+  "duration": 24.0,
+  "shots": [
+    {
+      "id": "s001",
+      "start": 0.0,
+      "end": 4.2,
+      "line": "The king lifted the corpse onto his shoulder.",
+      "template": "establish-push",
+      "params": { "who": "MAX", "pose": "stand", "expr": "determined", "bg": "midnight", "set": "room", "x": 0.40 }
+    },
+    {
+      "id": "s002",
+      "start": 4.2,
+      "end": 8.4,
+      "line": "A question hung in the night air.",
+      "template": "medium-two-shot",
+      "params": { "who": "MAX", "who2": "JAKE", "pose": "stand", "pose2": "stand", "expr": "neutral", "expr2": "curious", "bg": "midnight", "set": "room", "x": 0.40, "x2": 0.66 }
+    },
+    {
+      "id": "s003",
+      "start": 8.4,
+      "end": 12.0,
+      "line": "He spoke the first word.",
+      "template": "giant-face",
+      "params": { "who": "MAX", "expr": "determined", "bg": "midnight", "facing": 1 }
+    },
+    {
+      "id": "s004",
+      "start": 12.0,
+      "end": 15.0,
+      "line": "A beetle crawled across the bark.",
+      "template": "insert-object",
+      "params": { "x": 0.48, "y": 0.42, "scale": 1.0 }
+    },
+    {
+      "id": "s005",
+      "start": 15.0,
+      "end": 19.0,
+      "line": "",
+      "template": "title-card",
+      "params": { "title": "The King and the Question", "sub": "A Vetala tale", "bg": "midnight" }
+    },
+    {
+      "id": "s006",
+      "start": 19.0,
+      "end": 24.0,
+      "line": "",
+      "template": "end-card",
+      "params": { "title": "Part 2 — the answer", "attribution": "Adapted from the Vetala Panchavimshati", "bg": "midnight" }
+    }
+  ]
+}
