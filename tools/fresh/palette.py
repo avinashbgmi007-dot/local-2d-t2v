@@ -34,18 +34,21 @@ def _readable_color(rng, ink="#15131a", min_contrast=3.0):
 
 
 def generate_palette(concept, series_id=None, episode=None,
-                     set_name=None, bg_mood=None):
+                     set_name=None, bg_mood=None, style=None):
     """Return a validated style-pack dict + a compact identity dict.
 
-    `set_name` / `bg_mood` let the caller supply the location the SCENE
-    implies (fresh/location.py) instead of drawing one at random. They are
-    applied after the draws so the RNG stream — and therefore every colour —
+    `set_name` / `bg_mood` / `style` let the caller supply what the SCENE
+    implies (fresh/location.py) instead of drawing it at random. They are
+    applied AFTER the draws, so the RNG stream — and therefore every colour —
     is unchanged for callers that pass nothing.
     """
     seed = seed_from_concept(concept, series_id, episode)
     rng = Rng(seed)
 
-    style = rng.pick(STYLES)
+    drawn_style = rng.pick(STYLES)
+    # An explicit, legal style wins; otherwise keep the draw so the RNG stream
+    # (and therefore every colour) is unchanged for callers that pass none.
+    style = style if style in STYLES else drawn_style
     mood = rng.pick(MOODS)
     drawn_set = rng.pick(SETS)
     insert_kind = rng.pick(INSERT_KINDS)

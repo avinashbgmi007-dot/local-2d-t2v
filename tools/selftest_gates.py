@@ -20,6 +20,15 @@ STUDIO = os.path.dirname(TOOLS)
 
 # director.py is a script, not a package module.
 import importlib.util as _ilu  # noqa: E402
+
+# generate.py is a script too, and gate_activation() lives there.
+try:
+    _gen_spec = _ilu.spec_from_file_location(
+        "generate_mod", os.path.join(TOOLS, "generate.py"))
+    _gen = _ilu.module_from_spec(_gen_spec)
+    _gen_spec.loader.exec_module(_gen)
+except Exception:
+    _gen = None
 try:
     _dr_spec = _ilu.spec_from_file_location(
         "director_mod", os.path.join(TOOLS, "director.py"))
@@ -103,6 +112,11 @@ try:
     import fresh.audio as _fresh_audio  # noqa: E402
 except ImportError:
     _fresh_audio = None
+
+try:
+    import fresh.captions as _fresh_captions  # noqa: E402
+except ImportError:
+    _fresh_captions = None
 
 try:
     import fresh.cast as _fresh_cast  # noqa: E402
@@ -2561,6 +2575,160 @@ class CastVarietyTests(unittest.TestCase):
         self.assertIn("outfit.build", src)
         self.assertIn("outfit.height", src)
         self.assertIn("=== undefined ? 1", src)
+
+
+class CaptionGroupTests(unittest.TestCase):
+    """A caption group must never span a sentence end or a line break.
+
+    The bug: ui2d.js grouped words by fixed index (floor(i/4)*4), so the group
+    holding the punch line also held the tail of the PREVIOUS sentence. In the
+    delivered joke film a frame read "COMEBACK. TOO MUCH EFFORT." while the
+    punch line had not been spoken - the closing caption leaked into the setup
+    shot and spoiled the joke.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_captions, "fresh.captions is not importable")
+        self.C = _fresh_captions
+
+    def _w(self, *pairs):
+        return [{"word": w, "start": s, "end": e} for w, s, e in pairs]
+
+    def test_a_group_never_spans_a_sentence_end(self):
+        words = self._w(("One", 0.0, 0.2), ("sentence.", 0.2, 0.5),
+                        ("Zero", 0.6, 0.8), ("artists.", 0.8, 1.1))
+        g = self.C.assign_groups(words)
+        self.assertEqual(len({w["g"] for w in g}), 2, g)
+        self.assertNotEqual(g[1]["g"], g[2]["g"])
+
+    def test_a_group_never_spans_a_long_gap(self):
+        words = self._w(("a", 0.0, 0.2), ("b", 0.2, 0.4), ("c", 1.4, 1.6))
+        g = self.C.assign_groups(words)
+        self.assertNotEqual(g[1]["g"], g[2]["g"])
+
+    def test_short_pause_does_not_split(self):
+        words = self._w(("a", 0.0, 0.2), ("b", 0.24, 0.4))
+        g = self.C.assign_groups(words)
+        self.assertEqual(g[0]["g"], g[1]["g"])
+
+    def test_max_words_per_group(self):
+        words = self._w(*[("w%d" % i, i * 0.2, i * 0.2 + 0.18) for i in range(9)])
+        g = self.C.assign_groups(words, max_words=4)
+        sizes = {}
+        for w in g:
+            sizes[w["g"]] = sizes.get(w["g"], 0) + 1
+        self.assertLessEqual(max(sizes.values()), 4, sizes)
+
+    def test_groups_are_contiguous_and_start_at_zero(self):
+        words = self._w(("a", 0.0, 0.2), ("b.", 0.2, 0.4), ("c", 0.6, 0.8))
+        g = self.C.assign_groups(words)
+        ids = [w["g"] for w in g]
+        self.assertEqual(ids[0], 0)
+        for a, b in zip(ids, ids[1:]):
+            self.assertIn(b - a, (0, 1), ids)
+
+    def test_group_of_a_word_returns_its_whole_group(self):
+        words = self._w(("a", 0.0, 0.2), ("b", 0.2, 0.4), ("c.", 0.4, 0.6),
+                        ("d", 0.8, 1.0))
+        g = self.C.assign_groups(words)
+        grp = self.C.group_of(g, 2)
+        self.assertEqual([w["word"] for w in grp], ["a", "b", "c."])
+
+    def test_group_of_falls_back_when_words_have_no_group(self):
+        """Films narrated before this change carry no `g`; they must still
+        render, using the old fixed-width grouping instead of raising."""
+        words = self._w(*[("w%d" % i, i * 0.2, i * 0.2 + 0.18) for i in range(8)])
+        grp = self.C.group_of(words, 5)
+        self.assertEqual([w["word"] for w in grp], ["w4", "w5", "w6", "w7"])
+
+    def test_ui2d_reads_the_group_id(self):
+        with open(os.path.join(STUDIO, "engine", "ui2d.js"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("w.g", src, "ui2d.js still groups by fixed index")
+
+
+class DerivedStyleTests(unittest.TestCase):
+    """The look must follow the story, like the location and the cast do.
+
+    Measured before this: 29 of 31 films rendered `midnight`, because
+    generate_palette drew the style at random from five names and every
+    hand-authored story hardcoded "midnight". A wedding and a detective story
+    were graded identically.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(LOC, "fresh.location is not importable")
+        self.assertIsNotNone(_fresh_story, "fresh.story is not importable")
+        self.ST = _fresh_story
+
+    def test_style_follows_the_theme(self):
+        self.assertEqual(LOC.derive_style("a wedding at the beach", "outdoor", "golden"), "golden")
+        self.assertEqual(LOC.derive_style("a phone that will not stop ringing", "room", "night"), "neon")
+        self.assertEqual(LOC.derive_style("a fairy tale about a lost dog", "room", "day"), "storybook")
+        self.assertEqual(LOC.derive_style("a detective finds a letter", "office", "night"), "midnight")
+
+    def test_style_falls_back_to_the_background_mood(self):
+        self.assertEqual(LOC.derive_style("something happens", "room", "golden"), "golden")
+        self.assertEqual(LOC.derive_style("something happens", "outdoor", "day"), "dusk")
+
+    def test_style_is_always_a_real_style(self):
+        for c in ("", "a chef", "rain at school", "a spaceship", "a funeral",
+                  "a crowd gathers", "the last bus"):
+            self.assertIn(LOC.derive_style(c, "room", "night"),
+                          ("dusk", "midnight", "golden", "neon", "storybook"), c)
+
+    def test_generated_stories_do_not_all_render_midnight(self):
+        styles = {self.ST.concept_to_story(c)["style"] for c in
+                  ("a chef opens a tiny restaurant", "a wedding in the rain",
+                   "a phone that will not stop ringing", "a fairy tale about a lost dog",
+                   "the last bus never comes", "a detective finds a letter")}
+        self.assertGreaterEqual(len(styles), 3, "styles barely vary: %s" % styles)
+
+    def test_style_is_deterministic(self):
+        a = self.ST.concept_to_story("a chef opens a tiny restaurant")["style"]
+        b = self.ST.concept_to_story("a chef opens a tiny restaurant")["style"]
+        self.assertEqual(a, b)
+
+    def test_a_series_pins_its_style(self):
+        styles = {self.ST.concept_to_story("episode %d" % e, series_id="s1",
+                                           episode=e)["style"] for e in (1, 2, 3)}
+        self.assertEqual(len(styles), 1, styles)
+
+
+class GateActivationTests(unittest.TestCase):
+    """`--strict` must turn the built gates ON, not just change their wording.
+
+    Two gates were built and never called: frame_qa had no caller unless the
+    operator remembered --frame-qa, and render_report's --fail-on-issues had
+    ZERO callers anywhere, so a motion defect still produced a green run.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_gen, "tools/generate.py is not importable")
+        self.G = _gen
+
+    def test_default_run_activates_nothing(self):
+        act = self.G.gate_activation(False, False)
+        self.assertEqual(act, {"frame_qa": False, "fail_on_issues": False})
+
+    def test_strict_activates_both_gates(self):
+        act = self.G.gate_activation(True, False)
+        self.assertEqual(act, {"frame_qa": True, "fail_on_issues": True})
+
+    def test_frame_qa_flag_is_still_honoured_without_strict(self):
+        act = self.G.gate_activation(False, True)
+        self.assertEqual(act, {"frame_qa": True, "fail_on_issues": False})
+
+    def test_strict_passes_fail_on_issues_to_render_report(self):
+        with open(os.path.join(TOOLS, "generate.py"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("--fail-on-issues", src)
+        self.assertIn("act[\"fail_on_issues\"]", src)
+
+    def test_strict_help_says_it_activates_the_gates(self):
+        with open(os.path.join(TOOLS, "generate.py"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("activates every gate", src)
 
 
 if __name__ == "__main__":

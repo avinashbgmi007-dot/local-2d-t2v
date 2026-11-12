@@ -83,9 +83,16 @@ export function endScreen(g, t, o = {}) {
 export function captions(g, globalT, o = {}) {
   const words = E.words; if (!words.length) return; const { y = V(E.H - 150, E.H * 0.79), size = V(58, 74), max = 4, color = '#ffffff', hi = S().ui.gold } = o;
   let i = -1; for (let k = words.length - 1; k >= 0; k--) if (globalT >= words[k].start - 0.05) { if (globalT <= words[k].end + 0.35) i = k; break; } if (i < 0) return;
-  const st = Math.floor(i / max) * max, group = words.slice(st, st + max); const strs = group.map(w => w.word.trim().toUpperCase());
+  // Group by the id narrate.py assigned (fresh/captions.py): a caption line
+  // must never span a sentence end or a shot break. Falls back to the old
+  // fixed-index grouping for films narrated before `g` existed.
+  let group; const gid = words[i].g;
+  if (gid === undefined) { const st = Math.floor(i / max) * max; group = words.slice(st, st + max); }
+  else group = words.filter(w => w.g === gid);
+  const curIdx = group.indexOf(words[i]);
+  const strs = group.map(w => w.word.trim().toUpperCase());
   const w0 = strs.map(s => measure(g, s, size)).reduce((a, b) => a + b, 0) + size * 0.3 * (strs.length - 1);
   const sz = size * Math.min(1, (E.W * 0.88) / w0);   // shrink long phrases to fit the frame
   const gap = sz * 0.3, widths = strs.map(s => measure(g, s, sz)), total = widths.reduce((a, b) => a + b, 0) + gap * (strs.length - 1);
-  let x = E.W / 2 - total / 2; strs.forEach((s, k) => { const cur = st + k === i; const pop = cur ? 1 + 0.08 * ease.out(prog(globalT, group[k].start, group[k].start + 0.12)) : 1; g.save(); g.translate(x + widths[k] / 2, y); g.scale(pop, pop); text(g, s, 0, 0, { size: sz, color: cur ? hi : color, stroke: sz * 0.16, strokeColor: 'rgba(0,0,0,.85)' }); g.restore(); x += widths[k] + gap; });
+  let x = E.W / 2 - total / 2; strs.forEach((s, k) => { const cur = k === curIdx; const pop = cur ? 1 + 0.08 * ease.out(prog(globalT, group[k].start, group[k].start + 0.12)) : 1; g.save(); g.translate(x + widths[k] / 2, y); g.scale(pop, pop); text(g, s, 0, 0, { size: sz, color: cur ? hi : color, stroke: sz * 0.16, strokeColor: 'rgba(0,0,0,.85)' }); g.restore(); x += widths[k] + gap; });
 }

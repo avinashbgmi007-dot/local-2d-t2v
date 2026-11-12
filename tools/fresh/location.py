@@ -263,3 +263,62 @@ def derive_dressing(set_name, concept, seed=None):
     if not d["rug"]:
         d["rug"] = rng.pick([False, False, True]) if set_name == "room" else False
     return d
+
+# ---------------------------------------------------------------------------
+# Style: the fifth decision that was never derived.
+#
+# generate_palette drew the style at random from five names, and every
+# hand-authored story hardcoded "midnight" — 29 of 31 films rendered the same
+# grade. A wedding and a detective story looked identical. Style is a
+# consequence of the story, exactly like the location, so it is derived the
+# same way: theme keywords first, then the background mood as fallback.
+# ---------------------------------------------------------------------------
+_THEME_STYLE = (
+    # whimsical first: a fairy tale must not be graded as a crime scene
+    ("storybook", ("fairy", "tale", "fable", "dream", "magic", "magical", "wish",
+                   "dragon", "princess", "prince", "kid", "kids", "child",
+                   "children", "toy", "toys", "story", "bedtime", "wonder",
+                   "cartoon", "silly", "joke", "funny", "punchline")),
+    ("neon", ("phone", "screen", "computer", "code", "ai", "app", "robot",
+              "machine", "digital", "cyber", "internet", "game", "arcade",
+              "club", "party", "concert", "neon", "disco", "video", "wifi",
+              "notification", "text", "texts", "scroll", "online")),
+    ("golden", ("wedding", "sunset", "sunrise", "beach", "summer", "dawn",
+                "hope", "hopeful", "proposal", "garden", "picnic", "birthday",
+                "celebration", "bride", "groom", "holiday", "vacation")),
+    ("midnight", ("detective", "mystery", "secret", "crime", "midnight",
+                  "shadow", "shadows", "hunt", "clue", "case", "suspect",
+                  "murder", "dark", "haunted", "ghost", "night")),
+    ("dusk", ("rain", "rainy", "funeral", "goodbye", "memory", "memories",
+              "letter", "alone", "lonely", "autumn", "winter", "evening",
+              "silence", "quiet", "empty", "lost", "miss", "missing", "walk")),
+)
+
+# Fallback when the text names no theme at all: the grade follows the light.
+_MOOD_STYLE = {
+    "day": "dusk",
+    "golden": "golden",
+    "dusk": "dusk",
+    "night": "midnight",
+    "storm": "midnight",
+    "void": "midnight",
+    "interiorWarm": "golden",
+    "interiorCool": "dusk",
+}
+
+
+def derive_style(concept, set_name=None, bg_mood=None):
+    """Return the style (grade) the story implies. Always a real style name.
+
+    Keyword hits are SCORED, not first-match: "a wedding in the rain" should be
+    a warm film with bad weather, not a funeral.
+    """
+    toks = _tokens(concept)
+    best, best_n = None, 0
+    for name, words in _THEME_STYLE:
+        n = _score(toks, words)
+        if n > best_n:
+            best, best_n = name, n
+    if best:
+        return best
+    return _MOOD_STYLE.get(bg_mood, "midnight")

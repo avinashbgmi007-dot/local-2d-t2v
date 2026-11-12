@@ -67,6 +67,19 @@ def load_cfg(out):
         return json.load(fh)
 
 
+def gate_activation(strict, frame_qa):
+    """Decide which QC gates actually RUN. Pure, so it is testable.
+
+    `--strict` is the operator saying "tell me if anything is wrong", so it
+    must turn the gates ON rather than only change their wording. Until
+    2026-11-13 both were built and unreachable in practice: frame_qa needed a
+    second flag nobody passed, and render_report's --fail-on-issues had ZERO
+    callers, so a motion defect still produced a green run.
+    """
+    return {"frame_qa": bool(strict or frame_qa),
+            "fail_on_issues": bool(strict)}
+
+
 def frame_qa_cmd(here, out, strict):
     """Build the frame_qa command. Pure, so wiring is testable without a video."""
     cmd = [sys.executable, os.path.join(here, "frame_qa.py"), "--project", out]
@@ -138,8 +151,9 @@ def main():
     ap.add_argument("--audio", action="store_true")
     ap.add_argument("--aspect", default=None)
     ap.add_argument("--strict", action="store_true",
-                    help="fail on QC warnings (dead cuts), story-contract errors, "
-                         "and on a missing style lock")
+                    help="activates every gate and fails on QC warnings: story-"
+                         "contract errors, motion issues, frame_qa defects, dead "
+                         "cuts and a missing style lock")
     ap.add_argument("--require-approval", action="store_true",
                     help="also run approval_gate.py at the end; exit 1 if no human accepted")
     ap.add_argument("--fresh", default=None,
@@ -261,12 +275,16 @@ def main():
     if sg:
         sys.exit("GENERATE: seam_gate failed (exit %d) -- a cut carries no shared "
                  "subject, or the project is malformed" % sg)
-    if run([py, os.path.join(here, "render_report.py"), "--project", out], studio):
-        sys.exit("GENERATE: render report failed")
+    act = gate_activation(a.strict, a.frame_qa)
+    rr_cmd = [py, os.path.join(here, "render_report.py"), "--project", out]
+    if act["fail_on_issues"]:
+        rr_cmd.append("--fail-on-issues")
+    if run(rr_cmd, studio):
+        sys.exit("GENERATE: render report failed (a motion issue is fatal under --strict)")
 
-    # 6a. opt-in freeze/pop detection. frame_qa.py returns 1 only with --strict,
-    #     so this is report-only by default and cannot break an existing run.
-    if a.frame_qa:
+    # 6a. freeze/pop detection. Runs under --strict or --frame-qa; frame_qa.py
+    #     itself only returns 1 with --strict, so a plain run stays report-only.
+    if act["frame_qa"]:
         if run(frame_qa_cmd(here, out, a.strict), studio):
             sys.exit("GENERATE: frame_qa found unexplained frame defects")
 

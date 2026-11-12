@@ -37,13 +37,31 @@ EXPECTED = {
     "tools/parse_script.py": "5163cf3162b2579b",
     "tools/transcribe.py": "ecd48d05a6655d13",
 }
+# Files this repo has deliberately changed after install. Each one needs a
+# reason: verify_kit exists to catch ACCIDENTAL drift, so an undocumented
+# mismatch must still fail. A silent exception here would defeat the tool.
+DELIBERATE = {
+    "audio/music.py":
+        "short-clip clamp: k could be 0, where out[-0:] selected the whole array",
+    "engine/ui2d.js":
+        "caption grouping by sentence/gap id from fresh/captions.py; the old "
+        "fixed-index grouping let a caption span two shots and spoil a punch line",
+}
+
 bad = 0
+diverged = 0
 for rel, want in EXPECTED.items():
     p = os.path.join(ROOT, *rel.split("/"))
     if not os.path.exists(p):
         print(f"MISSING   {rel}"); bad += 1; continue
     got = hashlib.sha256(open(p, "rb").read().replace(b"\r\n", b"\n").strip()).hexdigest()[:16]
     if got != want:
-        print(f"MISMATCH  {rel}"); bad += 1
-print(f"{len(EXPECTED) - bad}/{len(EXPECTED)} files verified." + ("" if not bad else "  Copy the files listed above again from the plugin's kit folder, then run this again."))
+        if rel in DELIBERATE:
+            print(f"DIVERGED  {rel}  -- deliberate: {DELIBERATE[rel]}"); diverged += 1
+        else:
+            print(f"MISMATCH  {rel}"); bad += 1
+ok = len(EXPECTED) - bad - diverged
+print(f"{ok}/{len(EXPECTED)} files match the kit" +
+      (f", {diverged} deliberately diverged (documented above)" if diverged else "") +
+      ("" if not bad else "  MISMATCH means accidental drift: copy those files again from the plugin kit folder, or add them to DELIBERATE with a reason."))
 sys.exit(1 if bad else 0)

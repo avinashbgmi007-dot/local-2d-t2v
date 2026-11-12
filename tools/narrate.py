@@ -23,8 +23,12 @@ import argparse
 import json
 import os
 import re
+import sys
 import numpy as np
 from scipy.io import wavfile
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fresh.captions import assign_groups  # noqa: E402
 
 MIN_SHOT = 0.90          # a shot is never shorter than this
 SILENT_MIN = 0.80        # shortest designed silent beat
@@ -154,6 +158,11 @@ def main():
 
     tl = os.path.join(P, "timeline")
     os.makedirs(tl, exist_ok=True)
+    # Group the words into caption LINES here, not in the renderer. ui2d.js
+    # used to slice by fixed index, so a caption could hold the tail of one
+    # line and the head of the next — the delivered joke film showed
+    # "COMEBACK. TOO MUCH EFFORT." before the punch line was spoken.
+    words = assign_groups(words)
     json.dump(words, open(os.path.join(tl, "words.json"), "w", encoding="utf-8"), indent=1)
 
     # ── rescale the music plan so its arc still spans the film ──────────────

@@ -12,7 +12,7 @@ from .audio import derive_music, derive_amb, derive_accent_sfx, mood_for
 from .cast import (derive_cast_names, derive_cast_size, derive_heads,
                    derive_body, SERIES_CAST)
 from .location import (derive_location, derive_top, derive_roles,
-                        derive_prop)
+                        derive_prop, derive_style)
 
 
 def concept_to_story(concept, series_id=None, episode=None, title=None):
@@ -32,11 +32,14 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     # Derived from `theme`, so a series keeps one location across episodes
     # without a flag to forget.
     loc = derive_location(theme)
+    look = derive_style(theme, loc["set"], loc["mood"])
     series_pal = (generate_palette(series_seed, series_id, None,
-                                   set_name=loc["set"], bg_mood=loc["mood"])
+                                   set_name=loc["set"], bg_mood=loc["mood"],
+                                   style=look)
                   if series_id else None)
     ep_pal = generate_palette(concept, series_id, episode,
-                              set_name=loc["set"], bg_mood=loc["mood"])
+                              set_name=loc["set"], bg_mood=loc["mood"],
+                              style=look)
     ident = ep_pal["identity"]
     rng = Rng(ident["seed"] + "|shape")
 
