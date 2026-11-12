@@ -119,6 +119,11 @@ except ImportError:
     _fresh_captions = None
 
 try:
+    import fresh.acting as _fresh_acting  # noqa: E402
+except ImportError:
+    _fresh_acting = None
+
+try:
     import fresh.cast as _fresh_cast  # noqa: E402
 except ImportError:
     _fresh_cast = None
@@ -2850,6 +2855,103 @@ class SetSpecAgreementTests(unittest.TestCase):
             src = fh.read()
         self.assertIn("set_name=", src)
         self.assertIn("story_set", src)
+
+
+class ActingTests(unittest.TestCase):
+    """Bodies must act, not just talk.
+
+    Every generated film wrote pose="stand" for every character in every shot,
+    so the only movement in the picture was the mouth. The renderer already had
+    20 poses, a non-skating walk (director.py:135 walkAt) and word-landed
+    gestures (director.py:128 poseAt) - nothing asked for them.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_acting, "fresh.acting is not importable")
+        self.assertIsNotNone(_fresh_story_schema, "fresh.story_schema is missing")
+        self.assertIsNotNone(_fresh_shapes, "fresh.shapes is not importable")
+        self.A = _fresh_acting
+
+    def test_every_shape_role_has_a_pose(self):
+        """A missing role silently falls back to ONE pose - the original bug."""
+        for name, sh in _fresh_shapes.SHAPES.items():
+            for b in sh["beats"]:
+                role = b.get("role")
+                self.assertIn(role, self.A._ROLE_POSE,
+                              "shape %s role %r has no pose" % (name, role))
+
+    def test_every_derived_pose_is_in_the_rig_vocabulary(self):
+        for role in self.A._ROLE_POSE:
+            self.assertIn(self.A.derive_pose(role, "a line"),
+                          _fresh_story_schema.POSES, role)
+
+    def test_the_pose_follows_the_beat_role(self):
+        poses = {self.A.derive_pose(r, "a line") for r in
+                 ("establish", "problem", "turn", "opposition", "action", "payoff")}
+        self.assertGreaterEqual(len(poses), 4, poses)
+
+    def test_a_gesture_lands_on_a_word_that_is_in_the_line(self):
+        line = "Don't touch it."
+        g = self.A.derive_gesture("turn", line, seed="s1")
+        self.assertIsNotNone(g)
+        self.assertIn(g["pose"], _fresh_story_schema.POSES)
+        self.assertIn(g["word"], [w.strip(".,!?\u2019'").lower() for w in line.split()], g)
+
+    def test_a_close_up_gets_no_gesture(self):
+        """A close shot crops to the head: an arm gesture would be off-screen."""
+        self.assertIsNone(self.A.derive_gesture("turn", "Don't touch it.",
+                                                seed="s", size="close"))
+        self.assertIsNotNone(self.A.derive_gesture("turn", "Don't touch it.",
+                                                   seed="s", size="med"))
+
+    def test_a_silent_beat_gets_no_gesture(self):
+        self.assertIsNone(self.A.derive_gesture("action", "", seed="s"))
+        self.assertIsNone(self.A.derive_gesture("action", None, seed="s"))
+
+    def test_only_wide_shots_walk(self):
+        self.assertIsNone(self.A.derive_walk("establish", "close", "s"))
+        self.assertIsNone(self.A.derive_walk("establish", "insert", "s"))
+        w = self.A.derive_walk("establish", "wide", "s")
+        self.assertIsNotNone(w)
+        self.assertNotEqual(w["from"], w["to"], "a walk that does not move is a skate")
+
+    def test_a_walk_stays_inside_the_frame(self):
+        for role in ("establish", "bookend", "action", "shared", "attempt"):
+            w = self.A.derive_walk(role, "wide", "seed-%s" % role)
+            if not w:
+                continue
+            for k in ("from", "to"):
+                self.assertGreaterEqual(w[k], 0.05)
+                self.assertLessEqual(w[k], 0.95)
+
+    def test_transitions_are_not_all_cuts(self):
+        self.assertEqual(self.A.derive_transition("establish", 0)["type"], "fade")
+        kinds = {self.A.derive_transition(r, 1)["type"]
+                 for r in self.A._ROLE_POSE}
+        self.assertGreater(len(kinds), 1, "every transition is a cut: %s" % kinds)
+
+    def test_generated_shots_do_not_all_stand_still(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids")
+        poses = {s.get("pose") for s in d["shots"] if s.get("pose")}
+        self.assertGreater(len(poses), 1, "one pose for the whole film: %s" % poses)
+
+    def test_a_generated_film_actually_walks_somewhere(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids")
+        self.assertTrue(any(s.get("walk") for s in d["shots"]), "no shot moves a body")
+
+    def test_a_gesture_is_never_a_no_op(self):
+        """A gesture whose pose equals the base pose animates nothing."""
+        d = _fresh_story.concept_to_story("a fairy tale about three kids")
+        for s in d["shots"]:
+            if s.get("gesture"):
+                self.assertNotEqual(s["gesture"]["pose"], s.get("pose"), s["id"])
+            if s.get("gesture2"):
+                self.assertNotEqual(s["gesture2"]["pose"], s.get("pose2"), s["id"])
+
+    def test_acting_is_deterministic(self):
+        a = _fresh_story.concept_to_story("a chef opens a tiny restaurant")["shots"]
+        b = _fresh_story.concept_to_story("a chef opens a tiny restaurant")["shots"]
+        self.assertEqual(a, b)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,8 @@ from .cast import (derive_cast_names, derive_cast_size, derive_heads,
                    derive_body, SERIES_CAST)
 from .location import (derive_location, derive_top, derive_roles,
                         derive_prop, derive_style)
+from .acting import (derive_pose, derive_gesture, derive_walk,
+                     derive_transition)
 
 
 def concept_to_story(concept, series_id=None, episode=None, title=None):
@@ -127,24 +129,46 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     for i, b in enumerate(beats):
         s = {"id": "s%03d" % (i + 1), "size": b["size"], "hold": b["hold"],
              "line": b["line"] or "", "bg": mood_used, "set": set_used,
-             "in": {"type": "cut"}}
-        if i == 0:
-            s["in"] = {"type": "fade", "dur": 0.5}
+             "in": derive_transition(b["role"], i)}
         if b.get("intent"):
             s["cut_intent"] = b["intent"]
+        # The BODY acts, from the beat. `pose="stand"` for every character in
+        # every shot was the whole performance: only the mouth moved. Poses,
+        # word-landed gestures and walks all existed in the renderer and nothing
+        # in the story layer ever asked for them.
+        pose_a = derive_pose(b["role"], b["line"])
+        pose_b = derive_pose(b["role"], b["line"])
+        walk = derive_walk(b["role"], b["size"], seed=ident["seed"])
         if b["who"] == "A":
-            s.update(who=names[0], x=0.40, pose="stand", facing=1)
+            s.update(who=names[0], x=0.40, pose=pose_a, facing=1)
+            g = derive_gesture(b["role"], b["line"], seed=ident["seed"],
+                               size=b["size"])
+            # A gesture whose pose IS the base pose animates nothing.
+            if g and g["pose"] != pose_a:
+                s["gesture"] = g
         elif b["who"] == "B":
-            s.update(who=names[1], x=0.62, pose="stand", facing=-1)
+            s.update(who=names[1], x=0.62, pose=pose_b, facing=-1)
+            g = derive_gesture(b["role"], b["line"], seed=ident["seed"] + "|b",
+                               size=b["size"])
+            if g and g["pose"] != pose_b:
+                s["gesture2"] = g
         elif b["who"] == "AB":
-            s.update(who=names[0], x=0.36, pose="stand", facing=1,
-                     who2=names[1], x2=0.68, pose2="stand", facing2=-1)
+            s.update(who=names[0], x=0.36, pose=pose_a, facing=1,
+                     who2=names[1], x2=0.68, pose2=pose_b, facing2=-1)
+            # Only ONE of the two gestures: two people pointing at once reads as
+            # a chorus, not a conversation.
+            g = derive_gesture(b["role"], b["line"], seed=ident["seed"],
+                               size=b["size"])
+            if g and g["pose"] != pose_a:
+                s["gesture"] = g
             # A group story puts the third figure in the wide two-hander. Wide
             # only: at med/close three bodies collide (measured on the office
             # still, where two already hid the desk).
             if len(names) > 2 and b["size"] == "wide":
                 s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
                          scale3=0.94)
+        if walk and b["who"] in ("A", "AB"):
+            s["walk"] = walk
         if b.get("expr"):
             s["expr"] = b["expr"]
         if b.get("exprTo"):
