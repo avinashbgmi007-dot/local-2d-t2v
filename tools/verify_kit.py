@@ -46,6 +46,10 @@ DELIBERATE = {
     "engine/ui2d.js":
         "caption grouping by sentence/gap id from fresh/captions.py; the old "
         "fixed-index grouping let a caption span two shots and spoil a punch line",
+    "audio/mix.py":
+        "a cue may be positioned as a fraction of its shot (`u`), not only in "
+        "seconds (`at`); without this a freeze cue played on the cut instead of "
+        "on the hold",
 }
 
 bad = 0

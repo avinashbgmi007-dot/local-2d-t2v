@@ -151,3 +151,29 @@ def derive_accent_sfx(concept):
         if rx.search(low):
             return name if name in ACCENT_SFX else None
     return None
+
+
+def resolve_cue_u(shots):
+    """Turn every `u` (fraction of the shot) into `at` (seconds).
+
+    A cue may be authored as a fraction so it survives retiming -- the freeze
+    sits at u=0.86 whatever the shot's final length. The mixer reads seconds,
+    so the conversion has to happen once the duration is known. Skipping it put
+    the freeze sound on the CUT instead of on the hold.
+    """
+    n = 0
+    for sh in shots or []:
+        if not isinstance(sh, dict):
+            continue
+        try:
+            dur = float(sh.get("end", 0)) - float(sh.get("start", 0))
+        except (TypeError, ValueError):
+            continue
+        for c in sh.get("sfx") or []:
+            if not isinstance(c, dict):
+                continue
+            if c.get("u") is not None and c.get("at") is None:
+                c["at"] = round(float(c["u"]) * dur, 3)
+                c.pop("u", None)
+                n += 1
+    return n

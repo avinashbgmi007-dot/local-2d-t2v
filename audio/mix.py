@@ -67,7 +67,15 @@ def main():
         bed = np.zeros((n, 2), np.float32); hits = np.zeros((n, 2), np.float32); cache = {}
         cues = []
         for s in story["shots"]:
-            for c in s.get("sfx", []) or []: cues.append({**c, "t": s["start"] + float(c.get("at", 0))})
+            for c in s.get("sfx", []) or []:
+                # `u` is a fraction of the shot; `at` is seconds. Resolving `u`
+                # here too keeps the mixer correct when a project is rendered
+                # without running the retimer first.
+                _d = float(s["end"]) - float(s["start"])
+                _at = c.get("at")
+                if _at is None and c.get("u") is not None:
+                    _at = float(c["u"]) * _d
+                cues.append({**c, "t": s["start"] + float(_at or 0)})
             if s.get("amb"):
                 am = s["amb"]; ln = s["end"] - s["start"]
                 key = (am["name"], am.get("seed", 1)); base = cache.get(key)

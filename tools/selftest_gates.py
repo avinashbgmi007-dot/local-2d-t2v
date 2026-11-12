@@ -3159,6 +3159,43 @@ class DerivedSubjectTests(unittest.TestCase):
                              "%s repeats a close-up on %s" % (ordered[ep - 1], closes))
 
 
+class CuePositionTests(unittest.TestCase):
+    """A cue authored as a fraction of its shot must land on that fraction.
+
+    The freeze sits at u=0.86, but audio/mix.py reads `at` in seconds, so the
+    freeze sound played at 0.00 -- on the cut -- while the picture held 1.29s
+    later. The mixer and the retimer both resolve it now.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_audio, "fresh.audio is not importable")
+        self.A = _fresh_audio
+
+    def test_u_becomes_seconds_of_the_shot(self):
+        shots = [{"id": "s1", "start": 7.62, "end": 9.12,
+                  "sfx": [{"u": 0.86, "name": "freeze", "gain": -18}]}]
+        n = self.A.resolve_cue_u(shots)
+        self.assertEqual(n, 1)
+        self.assertAlmostEqual(shots[0]["sfx"][0]["at"], 1.29, places=2)
+        self.assertNotIn("u", shots[0]["sfx"][0])
+
+    def test_an_authored_at_is_never_overwritten(self):
+        shots = [{"id": "s1", "start": 0, "end": 2.0,
+                  "sfx": [{"at": 0.4, "u": 0.9, "name": "hit"}]}]
+        self.assertEqual(self.A.resolve_cue_u(shots), 0)
+        self.assertEqual(shots[0]["sfx"][0]["at"], 0.4)
+
+    def test_a_generated_freeze_carries_u_not_seconds(self):
+        """The story cannot know the final duration, so it must emit `u`."""
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        shot = next(s for s in d["shots"] if s.get("freeze"))
+        cue = next(c for c in shot["sfx"] if c["name"] == "freeze")
+        self.assertIn("u", cue)
+        self.assertNotIn("at", cue)
+        self.assertGreaterEqual(float(cue["u"]), 0.70)
+
+
 class FreezeAndRepeatTests(unittest.TestCase):
     """Owner: "from 7-8 frame freezed and that continuity happened at 10-11".
 

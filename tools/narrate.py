@@ -174,6 +174,17 @@ def main():
         st["music"][-1]["end"] = round(total, 3)
 
     st["duration"] = round(total, 3)
+
+    # Resolve cue positions given as a FRACTION of the shot. A freeze is
+    # positioned at u=0.86 of the shot, but audio/mix.py only reads `at` in
+    # seconds -- so the freeze sound played at 0.00, on the cut, instead of on
+    # the hold. The retimer is the first place the final duration exists.
+    try:
+        from fresh.audio import resolve_cue_u
+        resolve_cue_u(st.get("shots"))
+    except ImportError:
+        pass
+
     json.dump(st, open(os.path.join(P, "story", "shots.json"), "w", encoding="utf-8"), indent=1)
 
     cfg["duration"] = round(total, 3)
