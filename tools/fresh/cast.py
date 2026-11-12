@@ -171,3 +171,51 @@ def derive_body(seed, index):
     hlo, hhi = hbands[int(index) % len(hbands)]
     return {"build": round(rng.range(blo, bhi), 3),
             "height": round(rng.range(hlo, hhi), 3)}
+
+
+# ── readability against the SET ──────────────────────────────────────────────
+# Legs were always `shade_hex(body, -0.42)`: a fixed darkening. On a dark wall
+# that is the wall's own value, so the legs merge into the background. Measured
+# on 12 generated films: 15 of 26 cast members sat below CIE76 delta-E 30 from
+# their wall or floor, and one pair was 9.6 (effectively invisible). A rendered
+# still showed "only one green leg" for the same reason.
+LEG_FLOOR_DE = 30.0     # legs vs wall: clearly a different colour
+LEG_GROUND_DE = 18.0    # legs vs floor: still readable where they meet
+
+
+def legs_that_read(body, wall, floor=None, base=None):
+    """Pick a leg colour that reads against the wall (and the floor).
+
+    Stays in the body's own family -- a trouser colour, not a random hue -- by
+    walking a ladder of shades: the historical -0.42 first (so nothing changes
+    when it already reads), then lighter and darker steps. Deterministic: the
+    ladder is fixed, so the same inputs always give the same legs.
+    """
+    from .core import shade_hex, delta_e
+    cands = [base or shade_hex(body, -0.42)]
+    cands += [shade_hex(body, a) for a in (-0.28, -0.58, 0.18, 0.32, 0.46, 0.60)]
+    best, best_score = cands[0], -1.0
+    for c in cands:
+        dw = delta_e(c, wall)
+        df = delta_e(c, floor) if floor else LEG_GROUND_DE
+        if dw >= LEG_FLOOR_DE and df >= LEG_GROUND_DE:
+            return c
+        score = min(dw, df * 1.6)
+        if score > best_score:
+            best, best_score = c, score
+    return best
+
+
+def cast_contrast(cast, wall, floor=None):
+    """[(name, metric, ok)] -- the numbers behind the leg choice."""
+    from .core import delta_e
+    out = []
+    for nm, ch in (cast or {}).items():
+        body, legs = ch.get("color"), ch.get("legs")
+        if not (body and legs):
+            continue
+        dw = min(delta_e(body, wall), delta_e(legs, wall))
+        df = min(delta_e(legs, floor), delta_e(body, floor)) if floor else 999.0
+        out.append((nm, round(min(dw, df), 1),
+                    dw >= LEG_FLOOR_DE and df >= LEG_GROUND_DE))
+    return out

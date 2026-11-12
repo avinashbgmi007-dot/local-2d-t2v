@@ -244,8 +244,22 @@ def main():
                 story_bg = _p0.get("bg") or _st.get("bg")
             except Exception:
                 pass
-            write_set_spec(a.fresh, ss_path, series_id=a.series, episode=a.episode,
-                           set_name=story_set, mood=story_bg)
+            # The palette episode 1 resolved, so a series keeps its colours.
+            # Without it the wall is re-drawn from a seed that contains the
+            # episode number, and the set changes between episodes.
+            _pin_pal = None
+            if a.series:
+                try:
+                    from fresh.series import pin_path, read_pin
+                    _pin_pal = (read_pin(pin_path(studio, a.series)) or {}).get("palette")
+                except Exception:
+                    _pin_pal = None
+            # Episode 1 draws from the SERIES seed so that the wall it pins is
+            # the wall later episodes inherit; story.py makes the same choice
+            # when it picks leg colours, so the two cannot disagree.
+            _ep = None if (a.series and not _pin_pal) else a.episode
+            write_set_spec(a.fresh, ss_path, series_id=a.series, episode=_ep,
+                           set_name=story_set, mood=story_bg, palette=_pin_pal)
             print("GENERATE: set spec ->", ss_path,
                   "(set=%s bg=%s)" % (story_set, story_bg))
         except Exception as e:

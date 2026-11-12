@@ -2546,12 +2546,33 @@ class CastVarietyTests(unittest.TestCase):
                         _fresh_core.delta_e(cols[i], cols[j]), 20,
                         "%s: two characters share a hue %s/%s" % (c, cols[i], cols[j]))
 
-    def test_legs_are_a_darker_shade_of_the_same_person(self):
+    def test_legs_read_against_the_wall_and_stay_in_the_body_hue(self):
+        """The old rule was "legs are darker than the body".
+
+        That rule is what made legs vanish: a fixed darkening lands on the
+        wall's own value when the wall is dark. Measured on 12 films, one pair
+        was delta-E 9.6 from the wall -- effectively invisible. The invariant
+        is readability, with the hue kept so it still reads as trousers.
+        """
+        import colorsys
+        def hue(h):
+            r, g, b = (v / 255.0 for v in _fresh_core.hex_to_rgb(h))
+            return colorsys.rgb_to_hls(r, g, b)[0] * 360.0
+        checked = 0
         for c, d in self._casts():
+            wall = (d.get("palette") or {}).get("wall")
+            if not wall:
+                continue
             for nm, v in d["cast"].items():
-                self.assertLess(_fresh_core.rel_luminance(v["legs"]),
-                                _fresh_core.rel_luminance(v["color"]),
-                                "%s/%s: legs are not darker than the body" % (c, nm))
+                dw = _fresh_core.delta_e(v["legs"], wall)
+                self.assertGreaterEqual(
+                    dw, 28.0, "%s/%s: legs sit %.1f from the wall" % (c, nm, dw))
+                dh = abs(hue(v["legs"]) - hue(v["color"]))
+                dh = min(dh, 360 - dh)
+                self.assertLess(dh, 14.0,
+                                "%s/%s: legs are a different hue, not a shade" % (c, nm))
+                checked += 1
+        self.assertGreater(checked, 0, "no cast was checked")
 
     def test_a_multi_character_cast_is_never_bald(self):
         for c, d in self._casts():
@@ -3157,6 +3178,65 @@ class DerivedSubjectTests(unittest.TestCase):
                 continue
             self.assertEqual(len(set(closes)), len(closes),
                              "%s repeats a close-up on %s" % (ordered[ep - 1], closes))
+
+
+class CastSetReadabilityTests(unittest.TestCase):
+    """A body that is the colour of the wall is not a body.
+
+    Legs were `shade_hex(body, -0.42)` -- always darker, so on a dark wall they
+    landed on the wall's own value. Measured before the fix: 15 of 26 cast
+    members under CIE76 delta-E 30 from their wall or floor, worst 9.6.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_cast, "fresh.cast is not importable")
+        self.C = _fresh_cast
+        self.SC = _fresh_story_schema
+
+    def test_legs_clear_a_dark_wall(self):
+        legs = self.C.legs_that_read("#8a5cc0", "#2b2f45", "#1a1c28")
+        self.assertGreaterEqual(_fresh_core.delta_e(legs, "#2b2f45"), 28.0)
+
+    def test_legs_clear_a_light_wall(self):
+        legs = self.C.legs_that_read("#3a3a52", "#e8e2d4", "#cfc6b4")
+        self.assertGreaterEqual(_fresh_core.delta_e(legs, "#e8e2d4"), 28.0)
+
+    def test_a_reading_leg_is_left_alone(self):
+        """The historical shade is kept when it already reads."""
+        body, wall = "#c94f6d", "#1b2030"
+        base = _fresh_core.shade_hex(body, -0.42)
+        self.assertEqual(self.C.legs_that_read(body, wall, None), base)
+
+    def test_the_gate_rejects_a_cast_that_merges_into_the_wall(self):
+        d = _fresh_story.concept_to_story("a chef burns the sauce")
+        d["palette"]["wall"] = d["cast"][next(iter(d["cast"]))]["legs"]
+        errs, warns = self.SC.validate_story(d)
+        self.assertTrue(any("merge into the set" in x for x in warns), warns)
+
+    def test_the_gate_rejects_an_overridden_sky(self):
+        """The engine sky is a gradient stop list; a hex throws."""
+        d = _fresh_story.concept_to_story("a commuter misses the last bus")
+        d["palette"]["sky"] = "#88ccff"
+        errs, warns = self.SC.validate_story(d)
+        self.assertTrue(any("sky" in x for x in errs), errs)
+
+    def test_a_series_keeps_its_wall_across_episodes(self):
+        a = _fresh_story.concept_to_story("the proposal", series_id="wall_series", episode=1)
+        b = _fresh_story.concept_to_story("the funeral", series_id="wall_series", episode=2)
+        self.assertEqual(a.get("palette"), b.get("palette"),
+                         "the series changed wallpaper between episodes")
+
+    def test_most_generated_films_are_readable(self):
+        bad = []
+        for c in ("a chef burns the sauce", "a commuter misses the last bus",
+                  "a guard walks the wall at night", "a detective waits in the rain",
+                  "a jar that never empties", "a thief in the market"):
+            d = _fresh_story.concept_to_story(c)
+            for nm, v, ok in self.C.cast_contrast(d["cast"], d["palette"]["wall"],
+                                                  d["palette"]["floor"]):
+                if not ok:
+                    bad.append((c, nm, v))
+        self.assertLessEqual(len(bad), 1, bad)
 
 
 class CuePositionTests(unittest.TestCase):

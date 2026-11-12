@@ -19,7 +19,7 @@ BG_MOODS = ["midnight", "golden", "dusk", "night", "storm", "interiorWarm",
 
 
 def generate_set_spec(concept, series_id=None, episode=None, set_name=None,
-                      mood=None, pack_id="fresh"):
+                      mood=None, pack_id="fresh", palette=None):
     seed = seed_from_concept(concept, series_id, episode)
     rng = Rng(seed)
     pal = generate_palette(concept, series_id, episode)
@@ -51,6 +51,14 @@ def generate_set_spec(concept, series_id=None, episode=None, set_name=None,
         "practical": _role(60, 0.45, 0.75, 0.62, 0.80),
         "dark": "#15131a",
     }
+    # A SERIES keeps the colours episode 1 resolved. The wall was re-drawn per
+    # episode (the seed contains the episode number), so a series changed
+    # wallpaper every week -- and, once legs are chosen against the wall, its
+    # trousers with it. `palette` comes from series/<id>.json.
+    if isinstance(palette, dict) and palette.get("wall"):
+        for _k in ("wall", "floor", "accent", "practical", "dark"):
+            if palette.get(_k):
+                palette[_k] = palette[_k]
     # A collision would silently collapse two roles back into one.
     # `sky` is deliberately NOT overridden: in the engine mood it is an array
     # of gradient stops, so a single hex made backdrop() call linGrad with a

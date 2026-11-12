@@ -10,6 +10,7 @@ from .palette import generate_palette
 from .core import Rng, shade_hex
 from .audio import derive_music, derive_amb, derive_accent_sfx, mood_for
 from .cast import (derive_cast_names, derive_cast_size, derive_heads,
+                   legs_that_read, cast_contrast,
                    derive_body, SERIES_CAST)
 from .location import (derive_location, derive_top, derive_roles,
                         derive_prop, derive_style)
@@ -106,10 +107,29 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
     cast_heads = derive_heads(cast_seed, len(names),
                               allow_none=(len(names) == 1),
                               roles=roles, set_name=set_used)
+    # The wall the renderer will actually paint, resolved from the SAME call
+    # generate.py makes later, so the two cannot disagree. Legs used to be a
+    # blind `shade(body, -0.42)`: on a dark wall that is the wall's own value and
+    # the legs vanish (measured: 15 of 26 cast members under delta-E 30 from
+    # their wall or floor, worst 9.6).
+    try:
+        from .sets import generate_set_spec
+        _pin_pal = pin.get("palette") if isinstance(pin, dict) else None
+        # Episode 1 of a series must resolve the SAME wall later episodes will
+        # inherit, so it is drawn from the series seed, not the episode seed.
+        # Otherwise ep1 gets a wall the pin then freezes for everyone else.
+        _ep = None if (series_id and not _pin_pal) else episode
+        _wall = generate_set_spec(theme, series_id, _ep,
+                                  set_name=set_used, mood=mood_used,
+                                  palette=_pin_pal)["palette"]
+    except Exception:
+        _wall = {}
     cast = {}
     for i, nm in enumerate(names):
-        entry = {"color": colors[i % len(colors)], "top": tops[i % len(tops)],
-                 "legs": shade_hex(colors[i % len(colors)], -0.42),
+        body = colors[i % len(colors)]
+        entry = {"color": body, "top": tops[i % len(tops)],
+                 "legs": legs_that_read(body, _wall.get("wall") or body,
+                                        _wall.get("floor")),
                  "head": cast_heads[i % len(cast_heads)]}
         if entry["head"] != "none":
             entry["headColor"] = colors[(i + 1) % len(colors)]
@@ -300,7 +320,31 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
             else:
                 w["to"] = round(min(0.92, max(0.08, end)), 3)
                 w["from"] = round(min(0.92, max(0.08, w["to"] - d)), 3)
-            s["walk"] = w
+            # The path must not pass THROUGH somebody. A group film puts the
+            # third figure at x3=0.12, and YARA's walk started at 0.088 and
+            # walked straight through her: measured on the first still, two
+            # bodies merged into one blob at the left edge. Start on the near
+            # side of the nearest blocker instead, and drop a walk too short to
+            # read.
+            lo, hi = sorted((w["from"], w["to"]))
+            others = [float(s[k]) for k in ("x2", "x3") if s.get(k) is not None]
+            for o in others:
+                # Crossing, OR starting inside another body: a mirrored wide
+                # began YARA's walk 0.09 from the third figure, which overlaps
+                # at this scale even though the path never crosses her.
+                if abs(o - w["to"]) <= 0.06:
+                    continue
+                if lo - 0.02 <= o <= hi + 0.02 or abs(w["from"] - o) < 0.13:
+                    if w["to"] > o:
+                        lo = max(lo, o + 0.15)
+                    else:
+                        hi = min(hi, o - 0.15)
+            if hi - lo >= 0.07:
+                w["from"], w["to"] = (round(lo, 3), round(hi, 3)) \
+                    if w["to"] > w["from"] else (round(hi, 3), round(lo, 3))
+                s["walk"] = w
+            else:
+                s.pop("walk", None)
         if b.get("expr"):
             s["expr"] = b["expr"]
         if b.get("exprTo"):
@@ -349,6 +393,11 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
     story = {"title": title, "aspect": "9:16", "resolution": "1080p", "fps": 24,
              "style": style_used, "set": set_used, "chars": "inkbean",
              "cast": cast, "shots": shots, "music": music}
+    if _wall:
+        # The story now carries the colours it will be painted with, so a
+        # readability check needs no second derivation, and the series pin has
+        # something to freeze.
+        story["palette"] = {k: v for k, v in _wall.items() if k != "dark"}
     if subject_blk:
         # Story-level declaration: the picture and the dialogue now name the
         # same thing, and validate_story refuses a film that names a creature

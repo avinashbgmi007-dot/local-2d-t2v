@@ -58,7 +58,7 @@ camY0 camY1 gesture gesture2 walk prop freeze set insertKind subject in sfx amb 
 acting notes cut_intent""".split())
 
 STORY_KEYS = frozenset("""title aspect resolution fps style set chars cast shots
-music fadeIn fadeOut derive subject""".split())
+music fadeIn fadeOut derive subject palette""".split())
 
 # --- derive block (owner spec, 2026-11-12) --------------------------------
 # "If I name a location, use it. Otherwise derive location/cast/audio from the
@@ -295,6 +295,47 @@ def validate_repeat_framing(d, e, w):
     return None
 
 
+def validate_palette_and_cast(d, e, w):
+    """The cast must be visible against the wall it is drawn on.
+
+    Legs were a blind `shade_hex(body, -0.42)`; on a dark wall that is the
+    wall's own value, so they vanished. Measured on 12 generated films: 15 of
+    26 cast members sat below CIE76 delta-E 30 from their wall or floor, worst
+    9.6. This is checkable from the JSON alone, like validate_subject.
+    """
+    pal = d.get("palette")
+    if pal is None:
+        return None
+    if not isinstance(pal, dict):
+        e.append("palette: must be an object")
+        return None
+    for k in ("wall", "floor", "accent", "practical"):
+        v = pal.get(k)
+        if not (isinstance(v, str) and len(v) == 7 and v.startswith("#")):
+            e.append("palette.%s must be #rrggbb" % k)
+    if "sky" in pal:
+        # engine sky is a gradient array; a hex crashes backdrop()
+        e.append("palette.sky is not overridable -- the engine sky is a "
+                 "gradient stop list and a single hex throws")
+        return None
+    wall, floor = pal.get("wall"), pal.get("floor")
+    if not (isinstance(wall, str) and isinstance(floor, str)):
+        return None
+    from .core import delta_e
+    for nm, ch in (d.get("cast") or {}).items():
+        if not isinstance(ch, dict):
+            continue
+        body, legs = ch.get("color"), ch.get("legs")
+        if not (body and legs):
+            continue
+        dw = min(delta_e(body, wall), delta_e(legs, wall))
+        df = min(delta_e(body, floor), delta_e(legs, floor))
+        if dw < 25.0 or df < 15.0:
+            w.append("%s: reads %.0f from the wall and %.0f from the floor -- "
+                     "the body may merge into the set" % (nm, dw, df))
+    return None
+
+
 def validate_story(d):
     """Return (errors, warnings). Errors block a --fresh film; warnings inform."""
     e, w = [], []
@@ -307,6 +348,7 @@ def validate_story(d):
     validate_subject(d, e, w)
     validate_freeze(d, e, w)
     validate_repeat_framing(d, e, w)
+    validate_palette_and_cast(d, e, w)
 
     shots = d.get("shots")
     if not isinstance(shots, list) or not shots:

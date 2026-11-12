@@ -149,7 +149,10 @@ def write_pin(path, story, series_id=None):
             mood = sh["bg"]
             break
     pin = {"series_id": series_id, "set": story.get("set"),
-           "style": story.get("style"), "mood": mood}
+           "style": story.get("style"), "mood": mood,
+           # Without this a series re-drew its wall every episode: the seed
+           # contains the episode number, so the wallpaper changed weekly.
+           "palette": story.get("palette")}
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(pin, fh, indent=1)
