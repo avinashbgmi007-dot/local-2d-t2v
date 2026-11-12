@@ -44,11 +44,21 @@ def generate_set_spec(concept, series_id=None, episode=None, set_name=None,
                           pal_rng.range(s_lo, s_hi),
                           pal_rng.range(l_lo, l_hi))
 
+    # Saturation and value bands, widened 2026-11-13 on measurement. The old
+    # wall was 12-30% saturation at 34-46% lightness -- a narrow, grey band --
+    # and the delivered frames measured 0.21 mean saturation against 0.47 in the
+    # reference shorts, with a tonal spread of 0.119 against 0.20. A colour
+    # grade multiplies detail; it cannot invent a range the palette never had.
+    # The bands are wider on BOTH axes (chroma and value) so the wall is a
+    # colour and the floor is visibly darker than it, which is what carries
+    # local contrast. Legs are re-chosen against the new wall by
+    # cast.legs_that_read, and validate_palette_and_cast catches a cast that
+    # merges into it.
     palette = {
-        "wall": _role(0, 0.12, 0.30, 0.34, 0.46),
-        "floor": _role(180, 0.16, 0.40, 0.14, 0.24),
-        "accent": _role(150, 0.55, 0.85, 0.48, 0.66),
-        "practical": _role(60, 0.45, 0.75, 0.62, 0.80),
+        "wall": _role(0, 0.26, 0.50, 0.30, 0.58),
+        "floor": _role(180, 0.22, 0.46, 0.10, 0.26),
+        "accent": _role(150, 0.60, 0.90, 0.46, 0.68),
+        "practical": _role(60, 0.50, 0.82, 0.60, 0.82),
         "dark": "#15131a",
     }
     # A SERIES keeps the colours episode 1 resolved. The wall was re-drawn per

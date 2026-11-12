@@ -62,6 +62,17 @@ import scene_coverage          # noqa: E402  (committed; hard import so a break 
 import approval_gate           # noqa: E402
 import record_approval         # noqa: E402
 import render_gate             # noqa: E402
+
+try:
+    import numpy as np
+except ImportError:           # numpy lives in the managed interpreter
+    np = None
+
+_grade = None
+try:
+    import grade as _grade    # noqa: E402
+except ImportError:
+    _grade = None
 import review_frames           # noqa: E402
 try:
     import project                # noqa: E402
@@ -3178,6 +3189,74 @@ class DerivedSubjectTests(unittest.TestCase):
                 continue
             self.assertEqual(len(set(closes)), len(closes),
                              "%s repeats a close-up on %s" % (ordered[ep - 1], closes))
+
+
+class GradeTests(unittest.TestCase):
+    """The colour grade, and the fitted numbers it must not drift from.
+
+    Measured before it existed: our delivered frames were at 0.49x the
+    saturation, 0.67x the tonal range and 0.56x the local contrast of the
+    reference shorts. The grade is the fitted curve from
+    mromidev/claude-animated-shorts (MIT), so its constants are a contract.
+    """
+
+    def setUp(self):
+        global _grade
+        if _grade is None:
+            import grade as _g
+            _grade = _g
+        self.G = _grade
+
+    def test_the_fitted_presets_do_not_drift(self):
+        """A re-fit is allowed; an accidental edit is not."""
+        day = self.G.GRADES["day"]
+        self.assertEqual(tuple(round(v, 4) for v in day["ky"]),
+                         (0.0345, 0.1828, 0.3812, 0.6605, 0.8814, 0.9631, 1.0))
+        self.assertEqual(tuple(round(v, 4) for v in day["sat"]), (0.9831, 1.2727, 1.4573))
+        self.assertEqual(day["vig"], (0.10, 0.45))
+        gold = self.G.GRADES["golden"]
+        self.assertEqual(tuple(round(v, 4) for v in gold["ky"]),
+                         (0.0311, 0.1877, 0.4017, 0.6754, 0.8750, 0.9582, 1.0))
+
+    def test_the_tone_curve_never_reverses(self):
+        """Monotone tangents exist so the curve cannot band a sky."""
+        for name in ("day", "golden"):
+            lut = self.G.curve_lut(self.G.GRADES[name]["ky"])
+            diffs = np.diff(lut)
+            self.assertTrue((diffs >= -1e-6).all(),
+                            "%s curve reverses at %d" % (name, int(np.argmin(diffs))))
+
+    def test_the_curve_keeps_black_and_white(self):
+        lut = self.G.curve_lut(self.G.GRADES["day"]["ky"])
+        self.assertLess(lut[0], 0.06)          # black is lifted slightly, not crushed
+        self.assertGreater(lut[-1], 0.995)     # white stays white
+
+    def test_it_raises_saturation(self):
+        # a mid-value, low-chroma patch: what our flat sets actually produce
+        px = np.full((32, 32, 3), (120, 110, 140), dtype=np.uint8)
+        before = self.G.frame_metrics(px)["sat"]
+        after = self.G.frame_metrics(self.G.Grader("day").apply(px))["sat"]
+        self.assertGreater(after, before * 1.05,
+                           "sat %.3f -> %.3f" % (before, after))
+
+    def test_amount_zero_is_identity(self):
+        px = np.random.RandomState(0).randint(0, 255, (16, 16, 3), dtype=np.uint8)
+        out = self.G.Grader("day", amount=0.0).apply(px)
+        self.assertLess(int(np.abs(out.astype(int) - px.astype(int)).max()), 2)
+
+    def test_the_vignette_darkens_the_corner_more_than_the_centre(self):
+        m = self.G.vignette_mask(64, 64, 0.10, 0.45)
+        self.assertLess(m[0, 0], m[32, 32])
+        self.assertAlmostEqual(float(m[32, 32]), 1.0, places=3)
+
+    def test_a_graded_frame_is_measured_not_assumed(self):
+        px = np.zeros((64, 64, 3), dtype=np.uint8)
+        px[:, :32] = (90, 70, 120)
+        px[:, 32:] = (150, 140, 90)
+        before = self.G.frame_metrics(px)
+        after = self.G.frame_metrics(self.G.Grader("day").apply(px))
+        self.assertGreater(after["lum_std"], before["lum_std"])
+        self.assertGreater(after["colours"], before["colours"])
 
 
 class CastSetReadabilityTests(unittest.TestCase):

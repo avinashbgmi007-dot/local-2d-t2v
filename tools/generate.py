@@ -162,6 +162,10 @@ def main():
     ap.add_argument("--episode", type=int, default=None, help="episode number for fresh generation")
     ap.add_argument("--preview", action="store_true",
                     help="also render a 20s preview clip (build/preview.mp4) for quick review")
+    ap.add_argument("--grade", default="auto", choices=("auto", "day", "golden"),
+                    help="colour grade preset (default: auto from the story mood)")
+    ap.add_argument("--no-grade", action="store_true",
+                    help="skip the colour grade (the picture stays flat)")
     ap.add_argument("--frame-qa", action="store_true",
                     help="opt-in: run frame_qa.py freeze/pop detection (fatal only with --strict)")
     ap.add_argument("--workers", type=int, default=0,
@@ -313,6 +317,21 @@ def main():
             sys.exit("GENERATE: mix failed")
         if run([py, os.path.join(here, "master.py"), "--project", out], studio):
             sys.exit("GENERATE: mastering failed (loudness target not reached)")
+
+    # 4b. colour grade. The renderer is flat by construction: measured on the
+    #     delivered frames it sat at 0.49x the saturation and 0.67x the tonal
+    #     range of the reference shorts. This pass is the fitted grade from
+    #     mromidev/claude-animated-shorts (MIT) -- a 7-knot tone curve, zone
+    #     saturation, split tone and vignette. It runs BEFORE the visual review
+    #     so the review judges the picture that actually ships.
+    if not a.no_grade:
+        if run([py, os.path.join(here, "grade.py"), "--project", out,
+                "--preset", a.grade, "--in-place"], studio):
+            # FATAL, not degraded: an ungraded picture is the flat look this
+            # pass exists to remove, and shipping it silently is how the last
+            # three defects reached the owner.
+            sys.exit("GENERATE: colour grade failed -- the deliverable would "
+                     "ship flat; fix grade.py or pass --no-grade deliberately")
 
     # 5. visual review -- fatal on measurable defects (previously ignored).
     cfg = load_cfg(out)
