@@ -52,3 +52,16 @@ def derive_cast_names(concept, seed=None, count=2):
     count = max(1, min(int(count), len(NAME_POOL)))
     rng = Rng((seed or seed_from_concept(concept)) + "|cast")
     return tuple(rng.sample(NAME_POOL, count))
+
+# A group scene needs a third body on screen. These are the words that imply
+# one; everything else stays a two-hander. director.py supports who3, so the
+# only missing piece was the story layer placing it.
+_GROUP_WORDS = ("crowd", "family", "team", "wedding", "party", "friends",
+                "group", "everyone", "village", "class", "crew", "trio",
+                "three", "gang", "audience", "queue", "neighbours", "neighbors")
+
+
+def derive_cast_size(concept):
+    """2 by default, 3 when the concept implies a group."""
+    low = str(concept or "").lower()
+    return 3 if any(w in low for w in _GROUP_WORDS) else 2

@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from .palette import generate_palette
 from .core import Rng
 from .audio import derive_music, derive_amb, derive_accent_sfx, mood_for
-from .cast import derive_cast_names, SERIES_CAST
+from .cast import derive_cast_names, derive_cast_size, SERIES_CAST
 from .location import (derive_location, derive_top, derive_roles,
                         derive_prop)
 
@@ -65,7 +65,8 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     if series_id:
         names = list(SERIES_CAST)
     else:
-        names = list(derive_cast_names(concept, seed=ident["seed"]))
+        names = list(derive_cast_names(concept, seed=ident["seed"],
+                                       count=derive_cast_size(concept)))
     # Wardrobe follows the role the story names, then the room. `theme` again,
     # so a series does not re-dress its cast between episodes.
     tops = [derive_top(set_used, r, i)
@@ -120,6 +121,12 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
         elif b["who"] == "AB":
             s.update(who=names[0], x=0.36, pose="stand", facing=1,
                      who2=names[1], x2=0.68, pose2="stand", facing2=-1)
+            # A group story puts the third figure in the wide two-hander. Wide
+            # only: at med/close three bodies collide (measured on the office
+            # still, where two already hid the desk).
+            if len(names) > 2 and b["size"] == "wide":
+                s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
+                         scale3=0.94)
         if b.get("expr"):
             s["expr"] = b["expr"]
         if b.get("exprTo"):

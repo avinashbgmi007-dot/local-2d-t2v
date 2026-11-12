@@ -2361,5 +2361,40 @@ class DerivedLocationTests(unittest.TestCase):
                          "kitchen")
 
 
+class ThirdCharacterTests(unittest.TestCase):
+    """A group scene needs a third figure. director.py already supports who3
+    (line 948), so the only thing missing was the story layer placing one —
+    until now every shape only ever named A and B, so a third cast member
+    would have been dead data.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_story, "fresh.story is not importable")
+
+    def test_group_concept_gets_a_third_character(self):
+        d = _fresh_story.concept_to_story("a crowd gathers for the wedding")
+        self.assertEqual(len(d["cast"]), 3, list(d["cast"]))
+
+    def test_solo_concept_stays_at_two(self):
+        d = _fresh_story.concept_to_story("a lost dog")
+        self.assertEqual(len(d["cast"]), 2, list(d["cast"]))
+
+    def test_third_character_is_actually_placed_in_a_shot(self):
+        d = _fresh_story.concept_to_story("a crowd gathers for the wedding")
+        third = list(d["cast"])[2]
+        placed = [s for s in d["shots"] if s.get("who3") == third]
+        self.assertTrue(placed, "cast has 3 but no shot places the third")
+
+    def test_third_character_shot_passes_the_contract(self):
+        d = _fresh_story.concept_to_story("a crowd gathers for the wedding")
+        errs, _ = _fresh_story_schema.validate_story(d)
+        self.assertEqual(errs, [])
+
+    def test_three_character_story_is_deterministic(self):
+        a = _fresh_story.concept_to_story("a crowd gathers for the wedding")
+        b = _fresh_story.concept_to_story("a crowd gathers for the wedding")
+        self.assertEqual(a, b)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
