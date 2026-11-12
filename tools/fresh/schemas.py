@@ -16,6 +16,9 @@ FACES = {"glasses", "sunglasses", "none"}
 
 BACKGROUNDS = {"light", "mid", "dark"}
 SCHEMES = {"analogous", "complementary", "split", "triad"}
+# Roles a project may re-skin. `sky` is excluded on purpose (see validate_set_spec).
+OVERRIDE_ROLES = ("wall", "floor", "accent", "practical", "dark")
+
 ROLES = ("wall", "floor", "sky", "accent", "practical", "dark")
 
 # A set module is imported as `import { <name> } from '../sets/<name>.js'`, so
@@ -152,7 +155,7 @@ def validate_set_spec(d):
     if not isinstance(d, dict):
         return ["set spec: must be an object"]
     e += _unknown(d, {"set", "location", "seed", "pack", "palette", "props",
-                      "time", "bg"}, "set spec")
+                      "time", "bg", "dressing"}, "set spec")
     if not SET_NAME_RE.match(str(d.get("set", ""))):
         e.append("set spec: 'set' must be a valid JS identifier "
                  "[a-z][a-z0-9_]* (it becomes scenes/sets/<set>.js)")
@@ -160,9 +163,17 @@ def validate_set_spec(d):
     if not isinstance(pal, dict):
         e.append("set spec: 'palette' must be an object")
     else:
-        for r in ROLES:
+        # `sky` is a gradient ARRAY in the engine mood, so a single hex here
+        # crashed the renderer ("stops.forEach is not a function"). Sky varies
+        # through the background mood; only these roles may be overridden.
+        if "sky" in pal:
+            e.append("set spec: palette.sky must not be set — the engine's sky "
+                     "is a gradient array; it varies via the background mood")
+        for r in OVERRIDE_ROLES:
             if not is_hex(pal.get(r)):
                 e.append(f"set spec: palette.{r} must be #rrggbb")
+    if "dressing" in d and not isinstance(d["dressing"], dict):
+        e.append("set spec: 'dressing' must be an object")
     if not isinstance(d.get("props"), list):
         e.append("set spec: 'props' must be a list")
     for k in ("location", "seed", "pack", "time", "bg"):

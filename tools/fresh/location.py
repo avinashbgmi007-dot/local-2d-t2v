@@ -43,7 +43,8 @@ _LOCATION_WORDS = (
                  "commute", "sky", "alley", "rooftop", "field")),
     ("room", ("bed", "bedroom", "sleep", "sleeping", "home", "house",
               "apartment", "room", "sofa", "mirror", "letter", "door", "lamp",
-              "wake", "wakes", "pillow", "window", "bathroom")),
+              "wake", "wakes", "pillow", "window", "bathroom", "library",
+              "study", "bookshelf", "armchair", "living")),
 )
 
 _TIME_WORDS = (
@@ -197,3 +198,68 @@ def derive_roles(concept, count=2):
                 found.append(w)
                 break
     return (found + [None] * count)[:count]
+
+# ---------------------------------------------------------------------------
+# Dressing: geometry is a choice, not four fixed drawings.
+#
+# The set templates were static: the same room, the same furniture, forever.
+# These toggles are derived from the concept (a garden grows a plant, a library
+# grows shelves) and injected into the emitted JS as PROJECT_DRESSING, exactly
+# like the palette. DEFAULTS are deliberately OFF for everything decorative, so
+# a project without a spec — cine_release — reproduces the old picture exactly.
+# ---------------------------------------------------------------------------
+DRESSING_DEFAULTS = {
+    "window": True,
+    "blinds": 0,
+    "art": 0,
+    "shelf": False,
+    "plant": False,
+    "rug": False,
+    "floor": "planks",
+}
+
+_DRESSING_WORDS = (
+    ("plant", ("garden", "flower", "flowers", "plant", "plants", "forest",
+               "spring", "greenhouse", "park", "tree", "trees")),
+    ("shelf", ("book", "books", "library", "read", "reading", "shelf",
+               "study", "archive", "record")),
+    ("art", ("art", "painting", "paintings", "gallery", "poster", "posters",
+             "museum", "picture", "portrait", "photo", "photos")),
+    ("rug", ("cozy", "cosy", "home", "living", "warm", "carpet", "rug",
+             "winter", "blanket")),
+)
+
+
+def derive_dressing(set_name, concept, seed=None):
+    """Return the dressing toggles for this location, derived from the story.
+
+    Deterministic: the same concept always yields the same room, because a QC
+    failure has to be reproducible.
+    """
+    d = dict(DRESSING_DEFAULTS)
+    low = str(concept or "").lower()
+    rng = Rng(str(seed or seed_from_concept(concept)) + "|dress")
+
+    for key, words in _DRESSING_WORDS:
+        if any(w in low for w in words):
+            # art is a COUNT (0/1/2), the rest are booleans
+            d[key] = 2 if (key == "art" and low.count("art") > 1) else (1 if key == "art" else True)
+
+    # A room with no window is a basement: only when the story says so.
+    if any(w in low for w in ("basement", "cellar", "underground", "bunker")):
+        d["window"] = False
+
+    # A shift/office day wants blinds; otherwise the window is bare.
+    if set_name in ("office",) or any(w in low for w in ("blinds", "shift")):
+        d["blinds"] = 14
+
+    # Floor material follows the room, not the dice.
+    d["floor"] = "tiles" if set_name in ("kitchen", "office") else "planks"
+
+    # Only fill what the story did not decide, and only from the seeded stream,
+    # so an unrelated concept does not silently dress like a garden.
+    if not d["art"]:
+        d["art"] = rng.pick([0, 0, 1])
+    if not d["rug"]:
+        d["rug"] = rng.pick([False, False, True]) if set_name == "room" else False
+    return d

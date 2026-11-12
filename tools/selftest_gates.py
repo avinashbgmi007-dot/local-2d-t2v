@@ -2323,15 +2323,23 @@ class DerivedLocationTests(unittest.TestCase):
         self.assertIsNotNone(_fresh_cast, "fresh.cast missing")
         self.assertEqual(len(_fresh_cast.derive_cast_names("a wedding in the rain")), 2)
 
-    def test_set_palette_has_six_distinct_roles_not_two(self):
+    def test_set_palette_has_distinct_roles_not_two(self):
         """sets.py mapped wall=sky=practical and floor=accent to the same two
         identity colours, so every set was two hues repeated. Measured in a
         render: pink wall over a magenta floor, near-indistinguishable."""
         spec = _fresh_sets.generate_set_spec("a chef opens a tiny restaurant")
         pal = spec["palette"]
-        self.assertEqual(len(set(pal.values())), 6, pal)
+        self.assertEqual(len(set(pal.values())), 5, pal)
         self.assertGreaterEqual(_fresh_core.delta_e(pal["wall"], pal["floor"]), 10.0)
         self.assertGreaterEqual(_fresh_core.delta_e(pal["wall"], pal["accent"]), 20.0)
+
+    def test_palette_never_overrides_the_sky_array(self):
+        """`sky` is an ARRAY of stops in the engine mood. Overriding it with a
+        single hex made backdrop() call linGrad with a string and crash:
+        "stops.forEach is not a function". Sky varies via the mood instead."""
+        pal = _fresh_sets.generate_set_spec("a garden with flowers")["palette"]
+        self.assertNotIn("sky", pal)
+        self.assertEqual(len(set(pal.values())), 5, pal)
 
     def test_set_palette_roles_are_stable_for_one_concept(self):
         a = _fresh_sets.generate_set_spec("a chef opens a tiny restaurant")["palette"]
@@ -2394,6 +2402,68 @@ class ThirdCharacterTests(unittest.TestCase):
         a = _fresh_story.concept_to_story("a crowd gathers for the wedding")
         b = _fresh_story.concept_to_story("a crowd gathers for the wedding")
         self.assertEqual(a, b)
+
+
+class DressingTests(unittest.TestCase):
+    """Geometry is a choice, not four fixed drawings. A room's dressing is
+    derived from the concept (a garden gets a plant, a library gets shelves)
+    and injected like the palette, so a project without a spec keeps the exact
+    old look — cine_release must not move.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(LOC, "fresh.location is not importable")
+        self.assertIsNotNone(DR, "tools/director.py is not importable")
+        self.LOC = LOC
+
+    def test_dressing_is_deterministic(self):
+        a = self.LOC.derive_dressing("room", "a garden party")
+        b = self.LOC.derive_dressing("room", "a garden party")
+        self.assertEqual(a, b)
+
+    def test_dressing_has_every_key_with_a_legal_value(self):
+        d = self.LOC.derive_dressing("room", "a garden party")
+        self.assertEqual(set(d), set(self.LOC.DRESSING_DEFAULTS))
+        self.assertIn(d["floor"], ("planks", "tiles"))
+        self.assertIn(d["art"], (0, 1, 2))
+        for k in ("shelf", "plant", "rug", "window"):
+            self.assertIsInstance(d[k], bool, k)
+
+    def test_the_story_turns_dressing_on(self):
+        self.assertTrue(self.LOC.derive_dressing("room", "a garden with flowers")["plant"])
+        self.assertTrue(self.LOC.derive_dressing("room", "a library full of books")["shelf"])
+        self.assertGreaterEqual(self.LOC.derive_dressing("room", "a gallery of paintings")["art"], 1)
+
+    def test_dressing_differs_between_concepts(self):
+        a = self.LOC.derive_dressing("room", "a garden with flowers")
+        b = self.LOC.derive_dressing("room", "a library full of books")
+        self.assertNotEqual(a, b)
+
+    def test_no_spec_means_no_extra_dressing(self):
+        """Null must reproduce the pre-2026-11-13 picture exactly."""
+        d = self.LOC.DRESSING_DEFAULTS
+        self.assertEqual(d["art"], 0)
+        self.assertFalse(d["shelf"])
+        self.assertFalse(d["plant"])
+        self.assertFalse(d["rug"])
+        self.assertTrue(d["window"])
+
+    def test_every_emitted_set_can_actually_dress(self):
+        """Assert on the EMITTED file, not the source template: injection is
+        what ships, and a template alone proves nothing."""
+        for tmpl in (DR.SET_JS, DR.SET_KITCHEN_JS, DR.SET_OUTDOOR_JS, DR.SET_OFFICE_JS):
+            js = DR.render_set_js(tmpl, None, {"plant": True})
+            self.assertIn("from './dressing.js'", js)
+            self.assertIn("dressing(g, D, M, GY, CX);", js)
+            self.assertIn('"plant": true', js)
+            self.assertNotIn("__PROJECT_DRESSING__", js)
+            self.assertNotIn("__PROJECT_PALETTE__", js)
+
+    def test_emitted_js_carries_the_dressing_literal(self):
+        js = DR.render_set_js("const D = __PROJECT_DRESSING__;", None, {"plant": True})
+        self.assertIn('"plant": true', js)
+        self.assertNotIn("__PROJECT_DRESSING__", js)
+        self.assertIn("null", DR.render_set_js("const D = __PROJECT_DRESSING__;", None, None))
 
 
 if __name__ == "__main__":

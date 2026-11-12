@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from .core import Rng, seed_from_concept, hsl_to_hex
 from .palette import generate_palette
+from .location import derive_dressing
 from .schemas import validate_set_spec, require_valid
 
 LOCATIONS = ["room", "kitchen", "outdoor", "office"]
@@ -46,13 +47,16 @@ def generate_set_spec(concept, series_id=None, episode=None, set_name=None,
     palette = {
         "wall": _role(0, 0.12, 0.30, 0.34, 0.46),
         "floor": _role(180, 0.16, 0.40, 0.14, 0.24),
-        "sky": _role(30, 0.30, 0.60, 0.58, 0.78),
         "accent": _role(150, 0.55, 0.85, 0.48, 0.66),
         "practical": _role(60, 0.45, 0.75, 0.62, 0.80),
         "dark": "#15131a",
     }
     # A collision would silently collapse two roles back into one.
-    _keys = ("wall", "floor", "sky", "accent", "practical")
+    # `sky` is deliberately NOT overridden: in the engine mood it is an array
+    # of gradient stops, so a single hex made backdrop() call linGrad with a
+    # string and crash ("stops.forEach is not a function"). Sky varies through
+    # the background mood instead, which is already derived from the scene.
+    _keys = ("wall", "floor", "accent", "practical")
     for _i, _k in enumerate(_keys):
         _nudge = 0
         while palette[_k] in [palette[o] for o in _keys if o != _k] and _nudge < 24:
@@ -69,6 +73,9 @@ def generate_set_spec(concept, series_id=None, episode=None, set_name=None,
     spec = {
         "set": set_name,
         "location": set_name,
+        # furniture is a choice, not a fixed drawing: these toggles are read by
+        # director.py and injected into the emitted set JS as PROJECT_DRESSING.
+        "dressing": derive_dressing(set_name, concept, seed),
         "seed": seed,
         "pack": pack_id + "_" + set_name,
         "palette": palette,
