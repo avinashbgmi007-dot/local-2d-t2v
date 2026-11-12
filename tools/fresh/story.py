@@ -15,6 +15,7 @@ from .location import (derive_location, derive_top, derive_roles,
                         derive_prop, derive_style)
 from .acting import (derive_pose, derive_gesture, derive_walk,
                      derive_transition)
+from .subject import derive_subject
 
 
 def concept_to_story(concept, series_id=None, episode=None, title=None):
@@ -109,7 +110,18 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
         shape_name = rng.pick(ordered)
     shape = SHAPES[shape_name]
     subject = subject_of(concept)
-    insert_kind = insert_for(concept)
+    # The SUBJECT is the thing the film is about. `subject_of` already puts the
+    # noun in the dialogue; until 2026-11-13 nothing put it on screen, so eight
+    # shots said "the dragon" over an empty office. A creature is the only
+    # subject the renderer can draw today (chars/creature.js); an abstract noun
+    # returns None and the film keeps the insert/prop path rather than inventing
+    # an animal for "regret".
+    subject_blk = derive_subject(concept, subject)
+    # The creature takes the fourth cast colour: the cast can use at most three
+    # (A, B, who3), so this hue is always unused and the subject never reads as
+    # a recoloured person.
+    creature_color = colors[3 % len(colors)]
+    insert_kind = "creature" if subject_blk else insert_for(concept)
     # The prop follows the room (3 kinds render), not the insert request alone.
     prop_kind = derive_prop(set_used, insert_kind)
     beats = fill(shape, subject, names[0], names[1])
@@ -139,22 +151,30 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
         pose_a = derive_pose(b["role"], b["line"])
         pose_b = derive_pose(b["role"], b["line"])
         walk = derive_walk(b["role"], b["size"], seed=ident["seed"])
+        # Blocking: the subject occupies the right third of a wide frame, so the
+        # cast is pulled left to leave it room. Without the shift the second
+        # figure stands inside the creature.
+        # Three bodies plus a creature do not fit on a 9:16 axis at the old
+        # spacing: measured on the first dragon still, the third figure stood
+        # inside the first. A subject shifts the cast right and opens a slot.
+        xs = {"a": 0.30, "b": 0.52, "ab": (0.30, 0.52)} if subject_blk else \
+             {"a": 0.40, "b": 0.62, "ab": (0.36, 0.68)}
         if b["who"] == "A":
-            s.update(who=names[0], x=0.40, pose=pose_a, facing=1)
+            s.update(who=names[0], x=xs["a"], pose=pose_a, facing=1)
             g = derive_gesture(b["role"], b["line"], seed=ident["seed"],
                                size=b["size"])
             # A gesture whose pose IS the base pose animates nothing.
             if g and g["pose"] != pose_a:
                 s["gesture"] = g
         elif b["who"] == "B":
-            s.update(who=names[1], x=0.62, pose=pose_b, facing=-1)
+            s.update(who=names[1], x=xs["b"], pose=pose_b, facing=-1)
             g = derive_gesture(b["role"], b["line"], seed=ident["seed"] + "|b",
                                size=b["size"])
             if g and g["pose"] != pose_b:
                 s["gesture2"] = g
         elif b["who"] == "AB":
-            s.update(who=names[0], x=0.36, pose=pose_a, facing=1,
-                     who2=names[1], x2=0.68, pose2=pose_b, facing2=-1)
+            s.update(who=names[0], x=xs["ab"][0], pose=pose_a, facing=1,
+                     who2=names[1], x2=xs["ab"][1], pose2=pose_b, facing2=-1)
             # Only ONE of the two gestures: two people pointing at once reads as
             # a chorus, not a conversation.
             g = derive_gesture(b["role"], b["line"], seed=ident["seed"],
@@ -163,10 +183,23 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
                 s["gesture"] = g
             # A group story puts the third figure in the wide two-hander. Wide
             # only: at med/close three bodies collide (measured on the office
-            # still, where two already hid the desk).
+            # still, where two already hid the desk). With a creature on the
+            # right, the third body takes the empty left slot instead of
+            # standing inside the creature.
             if len(names) > 2 and b["size"] == "wide":
-                s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
-                         scale3=0.94)
+                if subject_blk:
+                    s.update(who3=names[2], x3=0.10, pose3="stand", facing3=1,
+                             scale3=0.94)
+                else:
+                    s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
+                             scale3=0.94)
+        # The subject stands in the wide shot, facing the cast. Wide only: at
+        # med it would sit behind a single face, and at close it would be a
+        # texture rather than a character.
+        if subject_blk and b["size"] == "wide":
+            s["subject"] = {"kind": subject_blk["kind"], "x": 0.84,
+                            "facing": -1, "scale": subject_blk["scale"],
+                            "color": creature_color}
         if walk and b["who"] in ("A", "AB"):
             s["walk"] = walk
         if b.get("expr"):
@@ -178,6 +211,13 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
             s["insertKind"] = insert_kind
             s.pop("bg", None)
             s.pop("set", None)
+            # The insert is where the viewer gets to SEE the subject. Without
+            # this param the creature insert branch has nothing to draw and the
+            # old beetle returns.
+            if subject_blk:
+                s["subject"] = {"kind": subject_blk["kind"], "x": 0.5,
+                                "facing": -1, "scale": subject_blk["scale"],
+                                "color": creature_color}
         else:
             # an insert draws no set, so it must not carry a room bed either
             s["amb"] = {"name": amb_name, "gain": -26}
@@ -197,6 +237,14 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     story = {"title": title, "aspect": "9:16", "resolution": "1080p", "fps": 24,
              "style": style_used, "set": set_used, "chars": "inkbean",
              "cast": cast, "shots": shots, "music": music}
+    if subject_blk:
+        # Story-level declaration: the picture and the dialogue now name the
+        # same thing, and validate_story refuses a film that names a creature
+        # and never shows it.
+        story["subject"] = {"kind": subject_blk["kind"],
+                            "scale": subject_blk["scale"],
+                            "noun": subject_blk["noun"],
+                            "color": creature_color}
     errs, _ = validate_story(story)
     if errs:
         raise ValueError("fresh story violates the contract: " + "; ".join(errs))

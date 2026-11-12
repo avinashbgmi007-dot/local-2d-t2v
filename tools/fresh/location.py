@@ -19,12 +19,28 @@ import re
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from .core import Rng, seed_from_concept
+from .subject import CREATURE_WORDS
 
 SETS = ["room", "kitchen", "outdoor", "office"]
 
 # Interior vs exterior decides whether a background mood is a room palette
 # (interiorWarm / interiorCool) or a sky palette (day/golden/dusk/night).
 INTERIOR = ("room", "kitchen", "office")
+
+# A story about a dragon is not an office story. Before this, "a fairy tale
+# about three kids who find a dragon" scored ZERO on every location list and
+# fell through to a seeded draw that landed on `office` — so the film about a
+# dragon was shot in an office. Wild and mythic nouns now point outside; a
+# domestic pet (cat, dog) deliberately does NOT, because "the cat knocks the
+# mug off the desk" is an interior story.
+_WILD_KINDS = ("dragon", "wolf", "horse", "bear", "bird", "fish")
+_MYTHIC = tuple(w for kind, ws in CREATURE_WORDS if kind in _WILD_KINDS
+                for w in ws) + (
+    "fairy", "tale", "tales", "magic", "magical", "kingdom", "castle", "knight",
+    "wizard", "witch", "quest", "myth", "myths", "legend", "folklore", "forest",
+    "jungle", "cave", "island", "village", "valley", "river", "desert",
+    "adventure", "wilderness", "campfire",
+)
 
 # Keywords are matched on WORD BOUNDARIES, never as substrings: substring
 # matching made "happens" match "app" in fresh/audio.py on 2026-11-12.
@@ -40,7 +56,7 @@ _LOCATION_WORDS = (
     ("outdoor", ("bus", "train", "station", "platform", "street", "road",
                  "park", "garden", "rain", "snow", "walk", "walking", "outside",
                  "city", "sea", "beach", "mountain", "tree", "trees", "journey",
-                 "commute", "sky", "alley", "rooftop", "field")),
+                 "commute", "sky", "alley", "rooftop", "field") + _MYTHIC),
     ("room", ("bed", "bedroom", "sleep", "sleeping", "home", "house",
               "apartment", "room", "sofa", "mirror", "letter", "door", "lamp",
               "wake", "wakes", "pillow", "window", "bathroom", "library",

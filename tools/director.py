@@ -63,7 +63,11 @@ import { E, V, ease, prog, clamp, lerp, shade, alpha, wordTime, talkAmount } fro
 import { drawFigure, pose, posesAt, walkPose, blendPose } from '/engine/rig2d.js';
 import { drawInkBean } from '/chars/inkbean.js';
 import { PRESETS, mixFaces } from '/chars/acting.js';
+// The story's SUBJECT. Re-exported so a shot has one import for "how a body is
+// drawn", whether that body is a person or the thing the film is about.
+import { drawCreature, drawCreatureMacro } from '/chars/creature.js';
 import { CAST } from './cast.js';
+export { drawCreature, drawCreatureMacro };
 
 // character rig: 'stick' = rig2d stick figures, 'inkbean' = the hand-drawn ink-bean rig
 export const INKBEAN = __INKBEAN__;
@@ -751,7 +755,8 @@ import { face, EXPR, breathe, pose } from '/engine/rig2d.js';
 import { beanFace } from '/chars/inkbean.js';
 import * as FX from '/engine/fx2d.js';
 import { CAST } from '../cast.js';
-import { person, speak, blinkAt, exprAt, faceAt, wordAt, poseAt, walkAt, holdProp, outfitOf, INKBEAN, S_WIDE, S_MED } from '../blocking.js';
+import { person, speak, blinkAt, exprAt, faceAt, wordAt, poseAt, walkAt, holdProp, outfitOf, INKBEAN, S_WIDE, S_MED,
+         drawCreature, drawCreatureMacro } from '../blocking.js';
 import { room } from '../sets/room.js';
 import { kitchen } from '../sets/kitchen.js';
 import { outdoor } from '../sets/outdoor.js';
@@ -902,6 +907,24 @@ registerShot('__ID__', { draw(g, t, info) {
       return;
     }
 
+    // THE SUBJECT, in macro. An insert exists to show the object the line names.
+    // Before this branch every unrecognised insert drew the same beetle, so a
+    // film about a dragon cut to a close-up of an insect.
+    if (p.insertKind === 'creature' && p.subject) {
+      // Size from the FRAME, not from a constant: the subject is a 150-unit-wide
+      // drawing, so 0.86 of the frame width is the largest it can be without
+      // its head leaving the picture.
+      const cs = (E.W * 0.86 / 150) * (p.subject.scale || 1) * (1 + 0.03 * e);
+      const cc = p.subject.color || '#4a4458';
+      drawCreatureMacro(g, {
+        kind: p.subject.kind, x: cx, y: cy + E.H * 0.30, s: cs,
+        facing: p.subject.facing ?? -1, t: tv, color: cc, dark: shade(cc, -0.45),
+      });
+      glow(g, cx, cy + E.H * 0.02, 340 * s, '#ffd9a8', 0.16);
+      FX.dust(g, tv, { count: 12, color: '#cfe0ff', a: 0.16 });
+      return;
+    }
+
     // motion trail, then a soft key light so the body separates from the plate
     for (let i = 3; i >= 1; i--) circle(g, fx - i * 26 * s, fy + Math.sin(tv * 4.4 - i * 0.6) * 12 * s, 7 * s, alpha('#cfe0ff', 0.13 / i));
     glow(g, fx, fy - 10 * s, 150 * s, '#9fb6e0', 0.22);
@@ -1024,6 +1047,19 @@ registerShot('__ID__', { draw(g, t, info) {
   const FC1 = W1 ? W1.facing : (p.facing ?? 1);
 
   layer(g, cam, 1, (g) => {
+    // THE SUBJECT stands in the scene. Drawn before the cast so the people read
+    // in front of it, and only when the story declares one: an undeclared
+    // subject must not appear, or every film gains a random animal.
+    if (p.subject) {
+      const sc = p.subject.color || '#4a4458';
+      drawCreature(g, {
+        kind: p.subject.kind,
+        x: E.W * (p.subject.x ?? 0.84), y: GY + V(8, 6),
+        s: FS * 1.35 * (p.subject.scale || 1),
+        facing: p.subject.facing ?? -1, t: tv,
+        color: sc, dark: shade(sc, -0.45),
+      });
+    }
     person(g, who, {
       x: X1, y: GY + gdy, s: FS, face: F1, seedBase: 1,
       moodName: p.bg || 'midnight',
@@ -1107,7 +1143,7 @@ PARAM_KEYS = (
     "talk2", "bg", "camZ0", "camZ1", "camX0", "camX1", "camY0", "camY1",
     "atWord", "gesture", "gesture2", "walk", "prop", "freeze",
     "who3", "pose3", "expr3", "exprTo3", "x3", "facing3", "scale3", "look3", "talk3",
-    "set", "insertKind",
+    "set", "insertKind", "subject",
 )
 
 DEMO_STORY = {

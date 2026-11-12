@@ -11,6 +11,8 @@ Vocabularies are copied from source, not invented. FreshStorySchemaTests
 """
 import math
 
+from .subject import CREATURE_KINDS
+
 # engine/rig2d.js:8 POSES
 POSES = frozenset("""stand relaxed talk explain point pointUp wave cheer handsOnHead
 crossArms think shrug holdFront phone reach sad facepalm ready crouch sit sitBack
@@ -32,7 +34,7 @@ MOODS = frozenset("""day golden dusk night storm interiorWarm interiorCool void"
 
 SETS = frozenset("room kitchen outdoor office".split())   # director.py SETS map
 PROPS = frozenset("mug book phone".split())               # director.py:1024
-INSERT_KINDS = frozenset("card screen phone document photo".split())  # director.py:592-667
+INSERT_KINDS = frozenset("card screen phone document photo creature".split())  # director.py:592-667
 SIZES = frozenset("wide med close insert".split())        # director.py:1005
 DECLARED_INTENT = frozenset("reverse match intentional declared eyeline".split())  # tools/seam_gate.py:62
 
@@ -52,11 +54,11 @@ AUDIO_EXT = (".wav", ".mp3", ".ogg", ".flac", ".m4a")
 SHOT_KEYS = frozenset("""id size line hold dur start end who who2 who3 x x2 x3 y
 pose pose2 pose3 expr exprTo expr2 exprTo2 expr3 exprTo3 at atWord look look2 look3
 facing facing2 facing3 scale scale2 scale3 talk2 talk3 bg camZ0 camZ1 camX0 camX1
-camY0 camY1 gesture gesture2 walk prop freeze set insertKind in sfx amb scene
+camY0 camY1 gesture gesture2 walk prop freeze set insertKind subject in sfx amb scene
 acting notes cut_intent""".split())
 
 STORY_KEYS = frozenset("""title aspect resolution fps style set chars cast shots
-music fadeIn fadeOut derive""".split())
+music fadeIn fadeOut derive subject""".split())
 
 # --- derive block (owner spec, 2026-11-12) --------------------------------
 # "If I name a location, use it. Otherwise derive location/cast/audio from the
@@ -147,6 +149,68 @@ def validate_derive(d, e, w):
                  "set wins and location will not be derived" % d.get("set"))
 
 
+def validate_subject(d, e, w):
+    """The film must SHOW what it talks about, and only what it declared.
+
+    Owner report 2026-11-13: eight shots said "the dragon", every frame showed
+    two men in an office. Every other gate passed, because none of them compared
+    the dialogue to the picture. This is that comparison, and it is deliberately
+    the strictest possible version:
+
+      * a declared subject must be drawable (kind in chars/creature.js KINDS);
+      * at least one shot must actually carry it, or the story is a lie;
+      * a shot may not carry a creature the story never declared (that would put
+        a random animal in a film about an office).
+    """
+    subj = d.get("subject")
+    kind = None
+    if subj is not None:
+        if not isinstance(subj, dict):
+            e.append("story: 'subject' must be an object with a 'kind'")
+            return None
+        kind = subj.get("kind")
+        if kind not in CREATURE_KINDS:
+            e.append("story: subject.kind=%r is not drawable (chars/creature.js KINDS: %s)"
+                     % (kind, ", ".join(CREATURE_KINDS)))
+            kind = None
+        sc = subj.get("scale", 1.0)
+        if not isinstance(sc, (int, float)) or not (0.3 <= float(sc) <= 2.5):
+            e.append("story: subject.scale=%r is outside 0.3-2.5" % (sc,))
+
+    shots = d.get("shots") or []
+    carried = 0
+    for s in shots:
+        if not isinstance(s, dict):
+            continue
+        sh = s.get("subject")
+        if sh is None:
+            if s.get("insertKind") == "creature":
+                e.append("%s: insertKind='creature' with no subject param -> the "
+                         "insert has nothing to draw" % s.get("id"))
+            continue
+        if not isinstance(sh, dict):
+            e.append("%s: subject must be an object" % s.get("id"))
+            continue
+        if sh.get("kind") not in CREATURE_KINDS:
+            e.append("%s: subject.kind=%r is not drawable" % (s.get("id"), sh.get("kind")))
+            continue
+        if kind is not None and sh.get("kind") != kind:
+            e.append("%s: subject.kind=%r but the story declares %r -> two "
+                     "different creatures in one film"
+                     % (s.get("id"), sh.get("kind"), kind))
+        if kind is None:
+            e.append("%s: shows a %r the story never declared" % (s.get("id"), sh.get("kind")))
+        x = sh.get("x")
+        if x is not None and not (0.0 <= float(x) <= 1.0):
+            e.append("%s: subject.x=%r is off-frame" % (s.get("id"), x))
+        carried += 1
+
+    if kind is not None and not carried:
+        e.append("story: names a %s but NO shot shows it -> the film talks about "
+                 "something the viewer never sees" % kind)
+    return kind
+
+
 def validate_story(d):
     """Return (errors, warnings). Errors block a --fresh film; warnings inform."""
     e, w = [], []
@@ -156,6 +220,7 @@ def validate_story(d):
         if k not in STORY_KEYS:
             e.append("story: unknown key '%s'" % k)
     validate_derive(d, e, w)
+    validate_subject(d, e, w)
 
     shots = d.get("shots")
     if not isinstance(shots, list) or not shots:

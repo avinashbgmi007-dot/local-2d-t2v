@@ -128,6 +128,13 @@ try:
 except ImportError:
     _fresh_cast = None
 
+# The subject is the noun the film talks about. Its own guard, for the same
+# reason as above: a sibling ImportError must not SKIP DerivedSubjectTests.
+try:
+    import fresh.subject as _fresh_subject  # noqa: E402
+except ImportError:
+    _fresh_subject = None
+
 # Same reason as the contract guard above: a sibling fresh.* ImportError must not
 # null _fresh_shapes and silently SKIP FreshShapesTests while the suite is green.
 try:
@@ -2951,6 +2958,111 @@ class ActingTests(unittest.TestCase):
     def test_acting_is_deterministic(self):
         a = _fresh_story.concept_to_story("a chef opens a tiny restaurant")["shots"]
         b = _fresh_story.concept_to_story("a chef opens a tiny restaurant")["shots"]
+        self.assertEqual(a, b)
+
+
+class DerivedSubjectTests(unittest.TestCase):
+    """The film must SHOW what it talks about.
+
+    Owner report 2026-11-13: "they are talking about the dragon and I see
+    something else". Eight shots said "the dragon"; every frame was two adults
+    in an office. The dialogue layer had the noun (`shapes.subject_of`) and the
+    picture layer had no vocabulary for it, and NO gate compared the two.
+    """
+
+    DRAGON = "a fairy tale about three kids who find a dragon"
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_subject, "fresh.subject is not importable")
+        self.assertIsNotNone(_fresh_story_schema, "fresh.story_schema is missing")
+        self.S = _fresh_subject
+
+    def test_vocabulary_matches_the_renderer(self):
+        """The Python list and chars/creature.js KINDS must be the same set.
+
+        The markers defect: twelve advertised names, two implemented, and
+        drawMarker THREW on the rest. A closed vocabulary is only safe if it is
+        the renderer's actual vocabulary.
+        """
+        import re
+        js = open(os.path.join(STUDIO, "chars", "creature.js"),
+                  encoding="utf-8").read()
+        m = re.search(r"export const KINDS = \[([^\]]*)\]", js)
+        self.assertIsNotNone(m, "chars/creature.js no longer exports KINDS")
+        js_kinds = tuple(k.strip().strip("'\"") for k in m.group(1).split(",") if k.strip())
+        self.assertEqual(tuple(self.S.CREATURE_KINDS), js_kinds)
+        for kind in js_kinds:
+            self.assertIn("  %s(g, k, col, dark, light, t)" % kind, js,
+                          "%s is advertised but has no DRAW entry" % kind)
+
+    def test_a_creature_noun_is_recognised(self):
+        self.assertEqual(self.S.creature_kind(self.DRAGON), "dragon")
+        self.assertEqual(self.S.creature_kind("a wolf at the door"), "wolf")
+
+    def test_an_abstract_subject_is_not_invented(self):
+        """'regret' must NOT become a bear. None is the honest answer."""
+        for c in ("regret at 3am", "the algorithm decides", "a commuter misses the bus"):
+            self.assertIsNone(self.S.creature_kind(c), c)
+
+    def test_scale_follows_the_wording(self):
+        self.assertGreater(self.S.creature_scale("a giant dragon"), 1.2)
+        self.assertLess(self.S.creature_scale("a tiny dragon"), 0.8)
+
+    def test_a_dragon_story_puts_a_dragon_on_screen(self):
+        d = _fresh_story.concept_to_story(self.DRAGON)
+        self.assertEqual(d.get("subject", {}).get("kind"), "dragon")
+        carrying = [s for s in d["shots"] if s.get("subject")]
+        self.assertGreaterEqual(len(carrying), 2, "the dragon is in too few frames")
+        self.assertTrue(any(s.get("insertKind") == "creature" for s in d["shots"]),
+                        "no shot lets the viewer SEE the subject")
+
+    def test_a_dragon_story_is_not_shot_in_an_office(self):
+        d = _fresh_story.concept_to_story(self.DRAGON)
+        self.assertNotEqual(d["set"], "office",
+                            "a fairy tale with a dragon landed in an office")
+
+    def test_the_cast_leaves_room_for_the_subject(self):
+        d = _fresh_story.concept_to_story(self.DRAGON)
+        for s in d["shots"]:
+            if s.get("subject") and s.get("who2"):
+                self.assertLess(s["x2"], s["subject"]["x"],
+                                "%s: the second figure stands inside the creature" % s["id"])
+
+    def test_a_plain_story_declares_no_subject(self):
+        d = _fresh_story.concept_to_story("a commuter misses the last bus")
+        self.assertNotIn("subject", d)
+        self.assertFalse([s for s in d["shots"] if s.get("subject")])
+
+    def test_gate_rejects_a_film_that_names_but_never_shows(self):
+        """THE semantic gate. Without it every other gate stayed green."""
+        d = _fresh_story.concept_to_story(self.DRAGON)
+        for s in d["shots"]:
+            s.pop("subject", None)
+            s.pop("insertKind", None)
+        errs, _ = _fresh_story_schema.validate_story(d)
+        self.assertTrue(any("NO shot shows it" in e for e in errs), errs)
+
+    def test_gate_rejects_a_creature_the_story_never_declared(self):
+        d = _fresh_story.concept_to_story("a commuter misses the last bus")
+        d["shots"][0]["subject"] = {"kind": "bear", "x": 0.8}
+        errs, _ = _fresh_story_schema.validate_story(d)
+        self.assertTrue(any("never declared" in e for e in errs), errs)
+
+    def test_gate_rejects_an_undrawable_kind(self):
+        d = _fresh_story.concept_to_story(self.DRAGON)
+        d["subject"]["kind"] = "unicorn"
+        errs, _ = _fresh_story_schema.validate_story(d)
+        self.assertTrue(any("not drawable" in e for e in errs), errs)
+
+    def test_gate_rejects_two_creatures_in_one_film(self):
+        d = _fresh_story.concept_to_story(self.DRAGON)
+        d["shots"][0]["subject"]["kind"] = "wolf"
+        errs, _ = _fresh_story_schema.validate_story(d)
+        self.assertTrue(any("two " in e and "creatures" in e for e in errs), errs)
+
+    def test_subject_is_deterministic(self):
+        a = _fresh_story.concept_to_story(self.DRAGON)["shots"]
+        b = _fresh_story.concept_to_story(self.DRAGON)["shots"]
         self.assertEqual(a, b)
 
 
