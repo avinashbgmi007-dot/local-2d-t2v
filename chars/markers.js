@@ -156,25 +156,32 @@ const MARKERS = {
   },
 
   // A hood: fabric BEHIND the skull and a rim OVER it. Reads at any size.
+  // A hood. First version filled a disc around the whole head and read as a
+  // bowl, so the OVER pass is now a CRESCENT over the crown only: the fabric
+  // must never reach eye level, for the same reason a brim must not.
   hood: {
+    // A COLLAR behind the neck, not a mass around the skull: an ellipse centred
+    // near the head pokes out as a ring and reads as a porthole (measured on the
+    // first two renders). The hood's volume is the crescent over the crown plus
+    // this collar falling to the shoulders.
     behind: (g, cx, cy, R, col, back) => {
       const c = shade(col, -0.34);
       g.fillStyle = c;
-      g.beginPath(); g.ellipse(cx + back * R * 0.10, cy + R * 0.30, R * 1.24, R * 1.36, 0, 0, 7);
+      g.beginPath(); g.ellipse(cx + back * R * 0.05, cy + R * 1.34, R * 1.34, R * 0.40, 0, 0, 7);
       g.fill();
     },
     over: (g, cx, cy, R, col) => {
       const c = shade(col, -0.26);
       g.fillStyle = c;
       g.beginPath();
-      g.moveTo(cx - R * 1.02, cy + R * 0.30);
-      g.quadraticCurveTo(cx - R * 1.02, cy - R * 1.02, cx, cy - R * 1.02);
-      g.quadraticCurveTo(cx + R * 1.02, cy - R * 1.02, cx + R * 1.02, cy + R * 0.30);
-      g.quadraticCurveTo(cx + R * 0.72, cy - R * 0.30, cx, cy - R * 0.34);
-      g.quadraticCurveTo(cx - R * 0.72, cy - R * 0.30, cx - R * 1.02, cy + R * 0.30);
+      g.arc(cx, cy, R * 1.10, Math.PI * 1.12, Math.PI * 1.88);          // outer edge
+      g.arc(cx, cy, R * 0.84, Math.PI * 1.88, Math.PI * 1.12, true);    // inner edge
+      g.closePath();
       g.fill();
-      g.strokeStyle = alpha(shade(c, 0.40), 0.55); g.lineWidth = R * 0.05;
-      g.beginPath(); g.arc(cx, cy - R * 0.06, R * 0.92, Math.PI * 1.08, Math.PI * 1.92); g.stroke();
+      g.strokeStyle = INK; g.lineWidth = R * 0.05;
+      g.beginPath(); g.arc(cx, cy, R * 1.10, Math.PI * 1.12, Math.PI * 1.88); g.stroke();
+      g.strokeStyle = alpha(shade(c, 0.45), 0.50); g.lineWidth = R * 0.04;
+      g.beginPath(); g.arc(cx, cy, R * 0.90, Math.PI * 1.18, Math.PI * 1.82); g.stroke();
     },
   },
 
