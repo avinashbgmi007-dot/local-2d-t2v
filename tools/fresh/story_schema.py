@@ -55,10 +55,11 @@ SHOT_KEYS = frozenset("""id size line hold dur start end who who2 who3 x x2 x3 y
 pose pose2 pose3 expr exprTo expr2 exprTo2 expr3 exprTo3 at atWord look look2 look3
 facing facing2 facing3 scale scale2 scale3 talk2 talk3 bg camZ0 camZ1 camX0 camX1
 camY0 camY1 gesture gesture2 walk prop freeze set insertKind subject in sfx amb scene
+render3d
 acting notes cut_intent""".split())
 
 STORY_KEYS = frozenset("""title aspect resolution fps style set chars cast shots
-music fadeIn fadeOut derive subject palette""".split())
+music fadeIn fadeOut derive subject palette stage3d""".split())
 
 # --- derive block (owner spec, 2026-11-12) --------------------------------
 # "If I name a location, use it. Otherwise derive location/cast/audio from the

@@ -17,6 +17,7 @@ from .location import (derive_location, derive_top, derive_roles,
 from .acting import (derive_pose, derive_gesture, derive_walk,
                      derive_transition)
 from .subject import derive_subject, ANIMAL_KINDS
+from .stage3d import mark
 
 
 def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None):
@@ -397,9 +398,16 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
             accent_done = True
         shots.append(s)
 
+    # Which beats are staged in 3D. Only line-less wides: three-kit's figure3D
+    # draws eyes and no mouth, so a talking beat cannot be 3D without losing the
+    # lip-sync the 2D pipeline spent this session getting right.
+    stage3d_ids = mark(shots)
+
     story = {"title": title, "aspect": "9:16", "resolution": "1080p", "fps": 24,
              "style": style_used, "set": set_used, "chars": "inkbean",
              "cast": cast, "shots": shots, "music": music}
+    if stage3d_ids:
+        story["stage3d"] = list(stage3d_ids)
     if _wall:
         # The story now carries the colours it will be painted with, so a
         # readability check needs no second derivation, and the series pin has

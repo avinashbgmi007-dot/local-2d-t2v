@@ -62,6 +62,7 @@ import scene_coverage          # noqa: E402  (committed; hard import so a break 
 import approval_gate           # noqa: E402
 import record_approval         # noqa: E402
 import render_gate             # noqa: E402
+import re                      # noqa: E402
 
 try:
     import numpy as np
@@ -73,6 +74,12 @@ try:
     import grade as _grade    # noqa: E402
 except ImportError:
     _grade = None
+
+_stage3d = None
+try:
+    import fresh.stage3d as _stage3d    # noqa: E402
+except ImportError:
+    _stage3d = None
 import review_frames           # noqa: E402
 try:
     import project                # noqa: E402
@@ -3189,6 +3196,114 @@ class DerivedSubjectTests(unittest.TestCase):
                 continue
             self.assertEqual(len(set(closes)), len(closes),
                              "%s repeats a close-up on %s" % (ordered[ep - 1], closes))
+
+
+class Stage3DTests(unittest.TestCase):
+    """The 3D path: which beats go 3D, and how the cast survives the trip.
+
+    three-kit is complete and proven, but `figure3D` draws eyes and NO MOUTH,
+    so a 3D shot cannot lip-sync. It also has a closed head vocabulary whose
+    if-chain has no else, so an unknown name renders a bare head silently.
+    """
+
+    def setUp(self):
+        global _stage3d
+        if _stage3d is None:
+            import fresh.stage3d as _s3
+            _stage3d = _s3
+        self.S3 = _stage3d
+        self.assertIsNotNone(_fresh_story, "fresh.story is not importable")
+
+    def _kit(self):
+        return open(os.path.join(STUDIO, "engine", "three-kit.js"),
+                    encoding="utf-8").read()
+
+    def test_the_3d_head_vocabulary_matches_the_renderer(self):
+        """Read from three-kit.js, not trusted: figure3D's if-chain has no else,
+        so an advertised head that is not drawn is a BARE HEAD, silently."""
+        js = self._kit()
+        names = set(re.findall(r"outfit\.head === '(\w+)'", js))
+        m = re.search(r"\['([^']+)', '([^']+)', '([^']+)'\]\.includes\(outfit\.head\)", js)
+        self.assertIsNotNone(m, "the cap/capBack/visor group is not where it was")
+        names.update(m.groups())
+        self.assertEqual(set(self.S3.THREE_HEADS), names,
+                         "fresh/stage3d.THREE_HEADS drifted from three-kit.js")
+
+    def test_mapping_covers_every_marker_we_can_emit(self):
+        """Every 2D marker must resolve, even if it resolves to None."""
+        for m in _fresh_cast.HEAD_MARKERS:
+            self.assertIn(m, self.S3._HEAD_3D,
+                          "%s has no 3D mapping -> silently bare" % m)
+            got = self.S3.heads3d([m])[0]
+            self.assertTrue(got is None or got in self.S3.THREE_HEADS, got)
+
+    def test_a_cast_never_shares_a_3d_head(self):
+        """Two characters on one head is the 'they all look alike' defect."""
+        for c in ("a fairy tale about three kids who find a dragon",
+                  "a crowd gathers at the market",
+                  "a chef burns the sauce",
+                  "a guard walks the wall at night"):
+            d = _fresh_story.concept_to_story(c)
+            heads = self.S3.heads3d([v.get("head") for v in d["cast"].values()])
+            real = [h for h in heads if h]
+            self.assertEqual(len(set(real)), len(real), "%s -> %s" % (c, heads))
+
+    def test_the_mapping_is_deterministic(self):
+        marks = ["toque", "glasses", "helmet"]
+        self.assertEqual(self.S3.heads3d(marks), self.S3.heads3d(marks))
+
+    def test_only_a_line_less_wide_goes_3d(self):
+        """3D has no mouth, so a talking beat must stay 2D."""
+        d = _fresh_story.concept_to_story(
+            "a fairy tale about three kids who find a dragon", episode=5)
+        ids = self.S3.pick_3d(d["shots"])
+        self.assertTrue(ids, "no beat was picked -- 3D would never run")
+        for sid in ids:
+            shot = next(s for s in d["shots"] if s["id"] == sid)
+            self.assertFalse(shot.get("line"), "%s talks but is 3D" % sid)
+            self.assertIsNone(shot.get("insertKind"), "%s is an insert" % sid)
+            self.assertIn(shot["size"], ("wide", "med"), shot["size"])
+
+    def test_the_pick_is_capped_and_stable(self):
+        d = _fresh_story.concept_to_story("a crowd gathers at the market")
+        a = self.S3.pick_3d(d["shots"])
+        b = self.S3.pick_3d(d["shots"])
+        self.assertEqual(a, b)
+        self.assertLessEqual(len(a), 2, a)
+
+    def test_a_marked_beat_carries_the_flag(self):
+        d = _fresh_story.concept_to_story(
+            "a fairy tale about three kids who find a dragon", episode=5)
+        marked = [s["id"] for s in d["shots"] if s.get("render3d")]
+        self.assertEqual(marked, d.get("stage3d"))
+        self.assertTrue(marked)
+
+    def test_every_generated_film_has_a_valid_3d_beat(self):
+        """The flag must never land on an insert or a talking close-up."""
+        for ep in range(1, 13):
+            d = _fresh_story.concept_to_story(
+                "a fairy tale about three kids who find a dragon", episode=ep)
+            for s in d["shots"]:
+                if not s.get("render3d"):
+                    continue
+                self.assertFalse(s.get("line"), "ep %d %s" % (ep, s["id"]))
+                self.assertIsNone(s.get("insertKind"), "ep %d %s" % (ep, s["id"]))
+
+    def test_every_pose_we_emit_exists_in_the_3d_rig(self):
+        """figure3D does POSES[pose] and falls back to stand, so a typo is a
+        silent T-pose rather than an error."""
+        rig = open(os.path.join(STUDIO, "engine", "rig2d.js"), encoding="utf-8").read()
+        keys = set(re.findall(r"^  (\w+):\s+P\(", rig, re.M))
+        self.assertGreaterEqual(len(keys), 10, keys)
+        for ep in range(1, 13):
+            d = _fresh_story.concept_to_story(
+                "a fairy tale about three kids who find a dragon", episode=ep)
+            for s in d["shots"]:
+                for k in ("pose", "pose2", "pose3"):
+                    if s.get(k):
+                        self.assertIn(s[k], keys,
+                                      "ep %d %s pose %r is not in POSES"
+                                      % (ep, s["id"], s[k]))
 
 
 class GradeTests(unittest.TestCase):
