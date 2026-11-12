@@ -1730,7 +1730,10 @@ class FrameQaWiringTests(unittest.TestCase):
         with open(os.path.join(TOOLS, "generate.py"), encoding="utf-8") as fh:
             src = fh.read()
         self.assertIn('"--frame-qa"', src)
-        self.assertIn("if a.frame_qa:", src)
+        # The gate is now driven by gate_activation(), because --strict must
+        # switch it on too; asserting `if a.frame_qa:` pinned the old wiring
+        # that left render_report's --fail-on-issues unreachable.
+        self.assertIn('if act["frame_qa"]:', src)
         self.assertIn("frame_qa_cmd(here, out, a.strict)", src)
 
 
