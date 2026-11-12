@@ -88,8 +88,8 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
                                        count=derive_cast_size(concept)))
     # Wardrobe follows the role the story names, then the room. `theme` again,
     # so a series does not re-dress its cast between episodes.
-    tops = [derive_top(set_used, r, i)
-            for i, r in enumerate(derive_roles(theme, len(names)))]
+    roles = derive_roles(theme, len(names))
+    tops = [derive_top(set_used, r, i) for i, r in enumerate(roles)]
     # A cast is a set of DIFFERENT people, not one person recoloured. Until
     # 2026-11-13 the body was colors[i] and the legs colors[(i+1)%2], so the
     # second character was the first with the two colours swapped, and heads
@@ -100,8 +100,12 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
     # episode seed here made the same two people grow and shrink between
     # episodes, which FreshStoryTests caught.
     cast_seed = series_seed if series_id else ident["seed"]
+    # The head follows the ROLE, not a three-item draw: a chef gets a toque,
+    # a guard a helmet. This is what stops every cast looking like the same
+    # three people in caps.
     cast_heads = derive_heads(cast_seed, len(names),
-                             allow_none=(len(names) == 1))
+                              allow_none=(len(names) == 1),
+                              roles=roles, set_name=set_used)
     cast = {}
     for i, nm in enumerate(names):
         entry = {"color": colors[i % len(colors)], "top": tops[i % len(tops)],

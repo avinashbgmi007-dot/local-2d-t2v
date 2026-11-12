@@ -74,21 +74,55 @@ def derive_cast_size(concept):
 # advertise twelve (capBack, fedora, headband, visor, hood, ponytail, curly,
 # spiky...) of which exactly TWO existed, and the renderer THROWS on an unknown
 # kind — so those names were a crash waiting for a cast to pick one.
-HEAD_MARKERS = ("bob", "glasses", "cap", "beanie", "bun")
+HEAD_MARKERS = ("bob", "glasses", "cap", "beanie", "bun",
+                "hat", "helmet", "hood", "headband", "toque")
 
 # Markers that read from the FRONT. `bun` and `bob` sit behind the skull, and
 # inkbean draws heads as flat ink, so in a two-hander they are invisible: the
 # first end-to-end film gave three characters glasses/bun/bob and all three
 # heads rendered as the same black circle. A cast of 2+ draws from here first.
-FRONT_MARKERS = ("glasses", "cap", "beanie")
+FRONT_MARKERS = ("glasses", "cap", "beanie", "hat", "helmet", "headband",
+                 "toque", "hood")
+
+# What the character DOES picks the hat. Before this, a three-hander always drew
+# glasses + cap + beanie because the front-readable pool held exactly three, so
+# every film looked like the same three people in different colours. A role fit
+# is a meaning, not a draw.
+_ROLE_HEAD = (
+    ("toque", ("chef", "cook", "baker", "barista", "waiter", "kitchen")),
+    ("helmet", ("guard", "soldier", "knight", "worker", "mechanic", "courier",
+                "pilot", "miner", "builder")),
+    ("hat", ("detective", "inspector", "traveller", "traveler", "commuter",
+             "stranger", "spy", "farmer", "explorer")),
+    ("headband", ("athlete", "player", "runner", "coach", "dancer", "singer")),
+    ("hood", ("rain", "storm", "cold", "winter", "snow", "thief", "shadow")),
+    ("cap", ("student", "kid", "teen", "child", "boy", "girl", "school")),
+)
 
 
-def derive_heads(seed, count, allow_none=True):
+def head_for_role(role, set_name=None):
+    """A marker implied by the role, or None. Set is a weak second signal."""
+    low = str(role or "").lower()
+    for marker, words in _ROLE_HEAD:
+        if any(w in low for w in words):
+            return marker
+    # No set-based fallback: a toque appeared on a runner because the seeded
+    # location happened to be a kitchen. A hat must MEAN something, so only an
+    # explicit role grants one.
+    return None
+
+
+def derive_heads(seed, count, allow_none=True, roles=None, set_name=None):
     """Return `count` distinct head markers, deterministic per seed.
 
     Distinct is the point: two characters with the same marker read as twins,
     which is the defect this replaces (`heads[i % len(heads)]` could repeat and
     could pick "none" for everybody).
+
+    `roles` makes the marker follow what the character DOES: a chef gets a
+    toque, a guard a helmet, a runner a headband. Whatever is left over is
+    drawn from the front-readable pool, so a cast of three is no longer
+    glasses + cap + beanie every single film.
     """
     rng = Rng(str(seed) + "|heads")
     # A group needs markers you can SEE. Only fall back to the full vocabulary
@@ -98,7 +132,25 @@ def derive_heads(seed, count, allow_none=True):
         pool = list(HEAD_MARKERS)
     if allow_none and count == 1:
         pool.append("none")
-    return tuple(rng.sample(pool, min(count, len(pool))))
+
+    out = [None] * count
+    used = set()
+    for i, role in enumerate((roles or [])[:count]):
+        k = head_for_role(role, set_name)
+        if k and k not in used:
+            out[i] = k
+            used.add(k)
+    rest = [m for m in pool if m not in used]
+    for i in range(count):
+        if out[i] is None and rest:
+            m = rng.pick(rest)
+            rest.remove(m)
+            out[i] = m
+            used.add(m)
+    for i in range(count):
+        if out[i] is None:
+            out[i] = "none" if allow_none else pool[0]
+    return tuple(out)
 
 
 def derive_body(seed, index):

@@ -3142,6 +3142,57 @@ class DerivedSubjectTests(unittest.TestCase):
                              "%s repeats a close-up on %s" % (ordered[ep - 1], closes))
 
 
+class HeadwearTests(unittest.TestCase):
+    """Headwear must follow the character, and every name must be drawable.
+
+    The cast drew from THREE front-readable marks (glasses, cap, beanie), so
+    every three-hander was the same three people in different colours and the
+    owner asked why it was "cap alone".
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_cast, "fresh.cast is not importable")
+
+    def test_every_advertised_marker_exists_in_the_renderer(self):
+        """drawMarker THROWS on an unknown kind, and inkbean DROPS it silently
+        -- both are worse than a failing test."""
+        import re
+        js = open(os.path.join(STUDIO, "chars", "markers.js"), encoding="utf-8").read()
+        keys = set(re.findall(r"^  (\w+): \{", js, re.M))
+        self.assertGreaterEqual(len(keys), 5, keys)
+        for m in _fresh_cast.HEAD_MARKERS:
+            self.assertIn(m, keys, "%s is advertised but not drawn" % m)
+
+    def test_the_front_pool_is_bigger_than_three(self):
+        self.assertGreaterEqual(len(_fresh_cast.FRONT_MARKERS), 5)
+
+    def test_a_role_picks_the_hat(self):
+        H = _fresh_cast.head_for_role
+        self.assertEqual(H("chef"), "toque")
+        self.assertEqual(H("guard"), "helmet")
+        self.assertEqual(H("detective"), "hat")
+        self.assertEqual(H("runner"), "headband")
+        self.assertIsNone(H(None))
+        self.assertIsNone(H("nobody in particular"))
+
+    def test_a_chef_wears_a_toque_in_a_chef_story(self):
+        d = _fresh_story.concept_to_story("a chef burns the sauce")
+        heads = [v.get("head") for v in d["cast"].values()]
+        self.assertIn("toque", heads, heads)
+
+    def test_a_cast_never_shares_a_marker(self):
+        for c in ("a fairy tale about three kids who find a dragon",
+                  "a crowd gathers at the market", "a chef burns the sauce"):
+            d = _fresh_story.concept_to_story(c)
+            heads = [v.get("head") for v in d["cast"].values()]
+            self.assertEqual(len(set(heads)), len(heads), heads)
+
+    def test_headwear_is_deterministic(self):
+        a = _fresh_story.concept_to_story("a guard walks the wall")["cast"]
+        b = _fresh_story.concept_to_story("a guard walks the wall")["cast"]
+        self.assertEqual(a, b)
+
+
 class SeriesPinFileTests(unittest.TestCase):
     """A series keeps what episode 1 RESOLVED, not what its ID string implies."""
 

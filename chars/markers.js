@@ -107,6 +107,103 @@ const MARKERS = {
     },
   },
 
+  // ---- role headwear ------------------------------------------------------
+  // The cast used to draw from THREE front-readable marks (glasses, cap,
+  // beanie), so a three-hander was always glasses + cap + beanie and every
+  // film looked like the same three people. These five are chosen by what the
+  // character DOES (fresh/cast.py _ROLE_HEAD), not by a random pick.
+  // Every one stays above the brow line at cy - 0.50R: a brim at eye level
+  // deletes the eyes, and the eyes carry the acting.
+
+  // A brimmed hat: a low crown and a wide brim. Detective, traveller, farmer.
+  hat: {
+    over: (g, cx, cy, R, col, back) => {
+      const c = shade(col, -0.22), bandY = cy - R * 0.62, dir = -back;
+      g.save();
+      g.beginPath(); g.arc(cx, cy, R * 1.02, 0, 7); g.clip();
+      g.fillStyle = c;
+      g.beginPath(); g.ellipse(cx, bandY - R * 0.10, R * 0.74, R * 0.46, 0, Math.PI, 0);
+      g.fill();
+      g.restore();
+      g.strokeStyle = INK; g.lineWidth = R * 0.06;
+      g.beginPath(); g.ellipse(cx, bandY - R * 0.10, R * 0.74, R * 0.46, 0, Math.PI, 0); g.stroke();
+      g.fillStyle = shade(c, -0.10);
+      g.beginPath(); g.ellipse(cx, bandY, R * 1.16, R * 0.15, 0, 0, 7); g.fill();
+      g.strokeStyle = INK; g.lineWidth = R * 0.055; g.stroke();
+      g.fillStyle = shade(c, 0.22);                    // band, so it is not a flat disc
+      rr(g, cx - R * 0.72, bandY - R * 0.16, R * 1.44, R * 0.11, R * 0.04); g.fill();
+      void dir;
+    },
+  },
+
+  // A hard helmet: dome to just above the brow, a rim and a crest.
+  helmet: {
+    over: (g, cx, cy, R, col, back) => {
+      const c = shade(col, 0.04), bandY = cy - R * 0.58;
+      g.save();
+      g.beginPath(); g.arc(cx, cy, R * 1.02, 0, 7); g.clip();
+      g.fillStyle = c;
+      g.beginPath(); g.arc(cx, bandY + R * 0.06, R * 1.00, Math.PI, 0); g.fill();
+      g.restore();
+      g.strokeStyle = INK; g.lineWidth = R * 0.07;
+      g.beginPath(); g.moveTo(cx - R * 1.00, bandY); g.lineTo(cx + R * 1.00, bandY); g.stroke();
+      g.fillStyle = shade(c, -0.28);
+      g.beginPath(); g.ellipse(cx, bandY - R * 0.52, R * 0.13, R * 0.30, 0, 0, 7); g.fill();
+      g.fillStyle = shade(c, 0.26);
+      rr(g, cx - R * 0.90, bandY - R * 0.02, R * 1.80, R * 0.13, R * 0.05); g.fill();
+      void back;
+    },
+  },
+
+  // A hood: fabric BEHIND the skull and a rim OVER it. Reads at any size.
+  hood: {
+    behind: (g, cx, cy, R, col, back) => {
+      const c = shade(col, -0.34);
+      g.fillStyle = c;
+      g.beginPath(); g.ellipse(cx + back * R * 0.10, cy + R * 0.30, R * 1.24, R * 1.36, 0, 0, 7);
+      g.fill();
+    },
+    over: (g, cx, cy, R, col) => {
+      const c = shade(col, -0.26);
+      g.fillStyle = c;
+      g.beginPath();
+      g.moveTo(cx - R * 1.02, cy + R * 0.30);
+      g.quadraticCurveTo(cx - R * 1.02, cy - R * 1.02, cx, cy - R * 1.02);
+      g.quadraticCurveTo(cx + R * 1.02, cy - R * 1.02, cx + R * 1.02, cy + R * 0.30);
+      g.quadraticCurveTo(cx + R * 0.72, cy - R * 0.30, cx, cy - R * 0.34);
+      g.quadraticCurveTo(cx - R * 0.72, cy - R * 0.30, cx - R * 1.02, cy + R * 0.30);
+      g.fill();
+      g.strokeStyle = alpha(shade(c, 0.40), 0.55); g.lineWidth = R * 0.05;
+      g.beginPath(); g.arc(cx, cy - R * 0.06, R * 0.92, Math.PI * 1.08, Math.PI * 1.92); g.stroke();
+    },
+  },
+
+  // A headband across the forehead: the cheapest "athlete / dancer" signal.
+  headband: {
+    over: (g, cx, cy, R, col) => {
+      const c = shade(col, 0.18), bandY = cy - R * 0.54;
+      g.fillStyle = c;
+      rr(g, cx - R * 0.99, bandY - R * 0.10, R * 1.98, R * 0.22, R * 0.09); g.fill();
+      g.strokeStyle = INK; g.lineWidth = R * 0.05; g.stroke();
+      g.fillStyle = alpha('#ffffff', 0.35);
+      rr(g, cx - R * 0.90, bandY - R * 0.06, R * 1.80, R * 0.05, R * 0.02); g.fill();
+    },
+  },
+
+  // A chef's toque: a band plus a tall puffy crown. Reads instantly in a kitchen.
+  toque: {
+    over: (g, cx, cy, R, col) => {
+      const c = shade(col, 0.10), bandY = cy - R * 0.66;
+      g.fillStyle = shade(c, 0.30);
+      g.beginPath(); g.ellipse(cx, bandY - R * 0.46, R * 0.86, R * 0.50, 0, 0, 7); g.fill();
+      g.strokeStyle = INK; g.lineWidth = R * 0.055;
+      g.beginPath(); g.ellipse(cx, bandY - R * 0.46, R * 0.86, R * 0.50, 0, 0, 7); g.stroke();
+      g.fillStyle = c;
+      rr(g, cx - R * 0.80, bandY - R * 0.16, R * 1.60, R * 0.30, R * 0.06); g.fill();
+      g.strokeStyle = INK; g.lineWidth = R * 0.055; g.stroke();
+    },
+  },
+
   bun: {
     behind: (g, cx, cy, R, col, back) => {
       const c = shade(col, -0.46);
