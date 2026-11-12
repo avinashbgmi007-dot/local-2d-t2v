@@ -195,7 +195,11 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
         # Three bodies plus a creature do not fit on a 9:16 axis at the old
         # spacing: measured on the first dragon still, the third figure stood
         # inside the first. A subject shifts the cast right and opens a slot.
-        xs = {"a": 0.34, "b": 0.58, "ab": (0.34, 0.58)} if subject_blk else \
+        # With a subject, the frame is SPLIT: the creature owns the right third
+        # and the cast compresses into the left two-thirds. Sharing the axis put
+        # the creature's head directly behind a person's head -- on the
+        # delivered wide its horns read as growing out of the green figure.
+        xs = {"a": 0.16, "b": 0.34, "ab": (0.16, 0.34)} if subject_blk else \
              {"a": 0.40, "b": 0.62, "ab": (0.36, 0.68)}
         if b["who"] == "A":
             # A shape may put two or three `close` beats on role A (countdown:
@@ -239,7 +243,7 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
             # standing inside the creature.
             if len(names) > 2 and b["size"] == "wide":
                 if subject_blk:
-                    s.update(who3=names[2], x3=0.12, pose3="stand", facing3=1,
+                    s.update(who3=names[2], x3=0.52, pose3="stand", facing3=1,
                              scale3=0.94)
                 else:
                     s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
@@ -285,12 +289,15 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
             # An animal looms at the edge and may be cropped; an object must sit
             # fully inside the frame or it reads as scenery.
             s["subject"] = {"kind": subject_blk["kind"],
-                            "x": (0.95 if loom else 0.80) if wide else 0.86,
+                            "x": (0.90 if loom else 0.82) if wide else 0.86,
                             "facing": -1,
                             "scale": subject_blk["scale"] * (1.0 if wide else 0.8),
                             "color": creature_color}
             if loom:
-                s["subject"]["front"] = True
+                # Staged BEHIND the cast: `front` put a 2.3x quadruped on top of
+                # three people. Kept as a marker so the intent is still readable
+                # in the JSON, but the renderer no longer honours it for depth.
+                s["subject"]["behind"] = True
             if mirror:
                 # The cast was flipped for this shot, so the subject flips too:
                 # it must stay on the side the camera is looking from. Clamped:
@@ -298,7 +305,7 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
                 # body falls outside the frame and only the neck and one leg
                 # remain (measured on the mirrored wide). 0.14 keeps the mass.
                 s["subject"]["x"] = round(
-                    min(0.88, max(0.14, 1.0 - float(s["subject"]["x"]))), 3)
+                    min(0.88, max(0.12, 1.0 - float(s["subject"]["x"]))), 3)
                 s["subject"]["facing"] = 1
         if walk and b["who"] in ("A", "AB"):
             # A walk's from/to were absolute (0.13 -> 0.40) and ignored the

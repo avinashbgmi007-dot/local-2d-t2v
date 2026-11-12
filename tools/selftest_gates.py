@@ -3239,6 +3239,65 @@ class CastSetReadabilityTests(unittest.TestCase):
         self.assertLessEqual(len(bad), 1, bad)
 
 
+class SubjectStagingTests(unittest.TestCase):
+    """A wide with a creature must fit BOTH the creature and the cast.
+
+    Measured on delivered frames, in order: at 3.4x in front the creature's
+    body left the frame (a giraffe); at 2.3x in front its neck crossed three
+    faces; at 2.3x behind on the shared axis its horns read as growing out of
+    a person's head. The frame is now split, and the cast span is mirrored
+    inward so no body is clipped at 0.90.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_story, "fresh.story is not importable")
+
+    def _wides(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        return [s for s in d["shots"] if s["size"] == "wide"]
+
+    def test_the_creature_is_staged_behind_the_cast(self):
+        for s in self._wides():
+            sub = s.get("subject")
+            if not sub:
+                continue
+            self.assertFalse(sub.get("front"),
+                             "%s puts the creature in front of the bodies" % s["id"])
+            self.assertTrue(sub.get("behind"), s["id"])
+
+    def test_no_body_is_clipped_at_the_frame_edge(self):
+        for s in self._wides():
+            for k in ("x", "x2", "x3"):
+                if s.get(k) is None:
+                    continue
+                self.assertGreaterEqual(float(s[k]), 0.06, "%s/%s clipped left" % (s["id"], k))
+                self.assertLessEqual(float(s[k]), 0.94, "%s/%s clipped right" % (s["id"], k))
+
+    def test_the_subject_keeps_its_own_third(self):
+        for s in self._wides():
+            sub = s.get("subject")
+            if not sub:
+                continue
+            xs = [float(s[k]) for k in ("x", "x2", "x3") if s.get(k) is not None]
+            self.assertGreater(min(abs(x - float(sub["x"])) for x in xs), 0.28,
+                               "%s: the cast stands in the creature's third" % s["id"])
+
+    def test_the_hood_collar_hugs_the_neck(self):
+        """The collar sat at cy + 1.34R with a 1.34R half-width: detached from
+        the crescent, it rendered as a tan lozenge across the chest."""
+        import re
+        js = open(os.path.join(STUDIO, "chars", "markers.js"), encoding="utf-8").read()
+        i = js.find("  hood: {")
+        self.assertGreater(i, 0)
+        block = js[i:i + 1400]
+        m = re.search(r"ellipse\([^)]*?cy \+ R \* ([\d.]+)[^)]*?R \* ([\d.]+), R \* ([\d.]+)", block)
+        self.assertIsNotNone(m, "hood collar ellipse not found")
+        drop, rx, ry = (float(g) for g in m.groups())
+        self.assertLessEqual(drop, 1.15, "the collar floats %.2fR below the head" % drop)
+        self.assertLessEqual(rx, 1.00, "the collar is %.2fR wide -- wider than the head" % rx)
+
+
 class CuePositionTests(unittest.TestCase):
     """A cue authored as a fraction of its shot must land on that fraction.
 

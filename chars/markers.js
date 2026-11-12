@@ -164,10 +164,15 @@ const MARKERS = {
     // near the head pokes out as a ring and reads as a porthole (measured on the
     // first two renders). The hood's volume is the crescent over the crown plus
     // this collar falling to the shoulders.
+    // The collar hugs the NECK. At cy + 1.34R with a 1.34R half-width it
+    // spanned from below the chin to past the shoulders, detached from the
+    // crescent, and read as a tan lozenge floating across the chest (measured
+    // on the delivered wide). Narrower and higher: it is drawn BEHIND the head,
+    // so the skull hides the part that would cover the mouth.
     behind: (g, cx, cy, R, col, back) => {
       const c = shade(col, -0.34);
       g.fillStyle = c;
-      g.beginPath(); g.ellipse(cx + back * R * 0.05, cy + R * 1.34, R * 1.34, R * 0.40, 0, 0, 7);
+      g.beginPath(); g.ellipse(cx + back * R * 0.05, cy + R * 1.06, R * 0.92, R * 0.66, 0, 0, 7);
       g.fill();
     },
     over: (g, cx, cy, R, col) => {

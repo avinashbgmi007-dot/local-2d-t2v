@@ -1055,7 +1055,12 @@ registerShot('__ID__', { draw(g, t, info) {
       drawCreature(g, {
         kind: p.subject.kind,
         x: E.W * (p.subject.x ?? 0.84), y: GY + V(8, 6),
-        s: FS * 1.35 * (p.subject.scale || 1),
+        // Size is what stops a dragon reading as a pet; depth is what stops it
+        // reading as a cut-out. It stands BEHIND the cast at 2.3x -- in front,
+        // its neck crossed the faces of a three-hander (measured on the
+        // delivered wide), and a 9:16 frame cannot hold three bodies plus a
+        // foreground quadruped.
+        s: FS * 2.3 * (p.subject.scale || 1),
         facing: p.subject.facing ?? -1, t: tv,
         color: sc, dark: shade(sc, -0.45),
       });
@@ -1108,7 +1113,10 @@ registerShot('__ID__', { draw(g, t, info) {
         kind: p.subject.kind,
         x: E.W * (p.subject.x ?? 0.95),
         y: GY + E.H * 0.04,
-        s: FS * 3.4 * (p.subject.scale || 1),
+        // 3.4x pushed the BODY past the frame edge, leaving a neck and a head:
+        // a 9:16 frame of a giraffe. 2.3x keeps head, neck and torso inside
+        // while still reading as nearer than the cast.
+        s: FS * 2.3 * (p.subject.scale || 1),
         facing: p.subject.facing ?? -1, t: tv,
         color: sc, dark: shade(sc, -0.45),
       });
