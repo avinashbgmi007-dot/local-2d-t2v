@@ -155,6 +155,7 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
 
     shots = []
     close_n = 0
+    wide_seen = {}
     for i, b in enumerate(beats):
         s = {"id": "s%03d" % (i + 1), "size": b["size"], "hold": b["hold"],
              "line": b["line"] or "", "bg": mood_used, "set": set_used,
@@ -223,6 +224,26 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
                 else:
                     s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
                              scale3=0.94)
+        # A SECOND wide with the same bodies is a shot/reverse-shot, not a
+        # repeat. Both wides used the same fixed marks (0.34 / 0.58 / 0.12 and
+        # the subject at 0.95), so the film cut wide -> close -> THE SAME WIDE
+        # 1.2s later, which reads as the earlier shot resuming. Mirroring the
+        # composition on a repeat turns it into a reverse angle for free.
+        sig = (b["size"], b["who"])
+        # Alternate, do not blanket-mirror: mirroring EVERY repeat made the two
+        # later wides identical to each other instead of identical to the first.
+        # Odd occurrences keep the master shot, even ones are the reverse.
+        mirror = b["size"] == "wide" and wide_seen.get(sig, 0) % 2 == 1
+        if b["size"] == "wide":
+            wide_seen[sig] = wide_seen.get(sig, 0) + 1
+        if mirror:
+            for k in ("x", "x2", "x3"):
+                if k in s:
+                    s[k] = round(1.0 - float(s[k]), 3)
+            for k in ("facing", "facing2", "facing3"):
+                if k in s:
+                    s[k] = -int(s[k])
+
         # The subject stands in the wide shot, facing the cast. At `med` it is
         # only added when the LINE NAMES IT: "It's only a dragon, COLE" over a
         # frame with no dragon is the exact defect script_frame_check.py now
@@ -250,6 +271,15 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
                             "color": creature_color}
             if loom:
                 s["subject"]["front"] = True
+            if mirror:
+                # The cast was flipped for this shot, so the subject flips too:
+                # it must stay on the side the camera is looking from. Clamped:
+                # a literal 1-x put the foreground creature at x=0.05, where the
+                # body falls outside the frame and only the neck and one leg
+                # remain (measured on the mirrored wide). 0.14 keeps the mass.
+                s["subject"]["x"] = round(
+                    min(0.88, max(0.14, 1.0 - float(s["subject"]["x"]))), 3)
+                s["subject"]["facing"] = 1
         if walk and b["who"] in ("A", "AB"):
             # A walk's from/to were absolute (0.13 -> 0.40) and ignored the
             # blocking, so a figure assigned x=0.34 walked to 0.40 and landed on
@@ -261,8 +291,15 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
             w = dict(walk)
             end = float(s.get("x", 0.40))
             d = abs(float(w["to"]) - float(w["from"])) or 0.18
-            w["to"] = round(min(0.92, max(0.08, end)), 3)
-            w["from"] = round(min(0.92, max(0.08, w["to"] - d)), 3)
+            # Direction follows FACING. A mirrored shot faces -1, so anchoring
+            # `from` below `to` made the figure walk right while facing left --
+            # a moonwalk, which the mirror introduced.
+            if int(s.get("facing", 1)) < 0:
+                w["to"] = round(min(0.92, max(0.08, end)), 3)
+                w["from"] = round(min(0.92, max(0.08, w["to"] + d)), 3)
+            else:
+                w["to"] = round(min(0.92, max(0.08, end)), 3)
+                w["from"] = round(min(0.92, max(0.08, w["to"] - d)), 3)
             s["walk"] = w
         if b.get("expr"):
             s["expr"] = b["expr"]
@@ -286,9 +323,22 @@ def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None
         if b.get("prop"):
             s["prop"] = {"kind": prop_kind}
         if b.get("freeze"):
-            s["freeze"] = {"at": round(b["hold"] * 0.4, 2)}
+            # The freeze is a PUNCTUATION device: the picture holds on the hit.
+            # It used to sit at `hold * 0.4` = 0.6s of a 1.5s shot, so 60% of the
+            # shot was a held frame -- and the walk (u1=0.82) had not landed yet,
+            # so the figure stopped mid-stride and the shot died. Measured on the
+            # delivered film: motion 1.45 at 7.9-9.0s, the flattest passage in
+            # the whole video, immediately after a cut.
+            #
+            # Now: u-based (survives retiming), placed AFTER the walk lands, so
+            # the hold is the last ~15% of the shot and it lands on a completed
+            # action instead of interrupting one.
+            fz = 0.86
+            if isinstance(walk, dict):
+                fz = max(fz, round(min(0.92, float(walk["u1"]) + 0.04), 3))
+            s["freeze"] = {"u": fz}
             s["sfx"] = [{"at": 0.0, "name": "hit", "gain": -10},
-                        {"at": round(b["hold"] * 0.4, 2), "name": "freeze", "gain": -18}]
+                        {"u": fz, "name": "freeze", "gain": -18}]
         elif i == 0:
             s["sfx"] = [{"at": 0.05, "name": "whoosh", "gain": -26}]
         if accent and not accent_done and "set" in s:

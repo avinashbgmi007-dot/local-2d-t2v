@@ -211,6 +211,90 @@ def validate_subject(d, e, w):
     return kind
 
 
+def validate_freeze(d, e, w):
+    """A freeze is punctuation, not filler.
+
+    It used to be placed at `hold * 0.4`, which on a 1.5s shot held 60% of it --
+    and the walk had not landed yet, so the figure stopped mid-stride. The
+    delivered film measured motion 1.45 (the flattest passage in the video)
+    right after a cut. Rules:
+      * u-based only (a fraction survives retiming; `at` in seconds does not);
+      * never before 70% of the shot, so the hold is the tail, not the body;
+      * and never before the walk lands.
+    """
+    for s in d.get("shots") or []:
+        if not isinstance(s, dict):
+            continue
+        fz = s.get("freeze")
+        if fz is None:
+            continue
+        sid = s.get("id")
+        if not isinstance(fz, dict):
+            e.append("%s: freeze must be an object" % sid)
+            continue
+        u = fz.get("u")
+        if u is None:
+            e.append("%s: freeze must be u-based (fraction of the shot); "
+                     "`at` in seconds does not survive retiming" % sid)
+            continue
+        try:
+            u = float(u)
+        except (TypeError, ValueError):
+            e.append("%s: freeze.u=%r is not a number" % (sid, fz.get("u")))
+            continue
+        if not (0.70 <= u <= 0.97):
+            e.append("%s: freeze.u=%.2f holds %.0f%% of the shot -- a freeze is "
+                     "punctuation, it belongs in the last third"
+                     % (sid, u, (1.0 - u) * 100))
+        walk = s.get("walk")
+        if isinstance(walk, dict) and walk.get("u1") is not None:
+            try:
+                if u < float(walk["u1"]):
+                    e.append("%s: freeze at u=%.2f interrupts a walk that lands "
+                             "at u=%.2f -> the figure stops mid-stride"
+                             % (sid, u, float(walk["u1"])))
+            except (TypeError, ValueError):
+                pass
+    return None
+
+
+def validate_repeat_framing(d, e, w):
+    """Two shots with the same composition too close together read as one shot.
+
+    The delivered film cut wide -> close -> the SAME wide 1.2s later, which the
+    owner reported as "continuity happened at 10-11". A repeat is only
+    acceptable as a deliberate bookend, so the window is measured in SECONDS of
+    story time, not in shot index.
+    """
+    # WIDES only. Two singles of the same character alternating IS the grammar
+    # of a two-hander; a wide is the whole composition, so a repeat there reads
+    # as the same shot coming back. The owner reported exactly that: a wide at
+    # 7.6s and the SAME wide at 10.3s.
+    # Keep the REAL shot index: comparing positions inside the filtered list
+    # made a closing wide 7 shots later look like "1 shot between".
+    shots = [(i, s) for i, s in enumerate(d.get("shots") or [])
+             if isinstance(s, dict) and s.get("size") == "wide"]
+    seen = []
+    for i, s in shots:
+        sig = (s.get("size"), s.get("who"), s.get("who2"), s.get("who3"),
+               round(float(s.get("x") or 0), 2), round(float(s.get("x2") or 0), 2),
+               round(float(s.get("x3") or 0), 2),
+               round(float((s.get("subject") or {}).get("x") or 0), 2))
+        for j, prev in enumerate(seen):
+            if prev[0] != sig:
+                continue
+            gap = i - prev[1]
+            if gap <= 2:
+                e.append("%s: same framing as %s (%s, x=%s/%s/%s) with only %d "
+                         "shot(s) between -> it reads as the earlier shot "
+                         "resuming, not a new one"
+                         % (s.get("id"), dict(shots)[prev[1]].get("id"), sig[0],
+                            sig[4], sig[5], sig[6], gap - 1))
+                break
+        seen.append((sig, i))
+    return None
+
+
 def validate_story(d):
     """Return (errors, warnings). Errors block a --fresh film; warnings inform."""
     e, w = [], []
@@ -221,6 +305,8 @@ def validate_story(d):
             e.append("story: unknown key '%s'" % k)
     validate_derive(d, e, w)
     validate_subject(d, e, w)
+    validate_freeze(d, e, w)
+    validate_repeat_framing(d, e, w)
 
     shots = d.get("shots")
     if not isinstance(shots, list) or not shots:

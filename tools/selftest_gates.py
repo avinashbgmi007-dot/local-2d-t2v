@@ -3060,11 +3060,25 @@ class DerivedSubjectTests(unittest.TestCase):
                             "a fairy tale with a dragon landed in an office")
 
     def test_the_cast_leaves_room_for_the_subject(self):
+        """The invariant is a GAP, not a direction.
+
+        Asserting `x2 < subject.x` encoded the master layout and broke the
+        moment a repeated wide was mirrored (subject on the left instead). What
+        matters is that no body stands inside the creature.
+        """
         d = _fresh_story.concept_to_story(self.DRAGON)
+        checked = 0
         for s in d["shots"]:
-            if s.get("subject") and s.get("who2"):
-                self.assertLess(s["x2"], s["subject"]["x"],
-                                "%s: the second figure stands inside the creature" % s["id"])
+            sub = s.get("subject")
+            if not sub or not s.get("who2"):
+                continue
+            xs = [float(s[k]) for k in ("x", "x2", "x3") if s.get(k) is not None]
+            nearest = min(abs(x - float(sub["x"])) for x in xs)
+            self.assertGreater(nearest, 0.20,
+                               "%s: a figure stands %.2f from the creature"
+                               % (s["id"], nearest))
+            checked += 1
+        self.assertGreater(checked, 0, "no shot was checked")
 
     def test_a_plain_story_declares_no_subject(self):
         d = _fresh_story.concept_to_story("a commuter misses the last bus")
@@ -3123,7 +3137,10 @@ class DerivedSubjectTests(unittest.TestCase):
             if not isinstance(w, dict):
                 continue
             self.assertAlmostEqual(float(w["to"]), float(s["x"]), places=2, msg=s["id"])
-            self.assertLess(float(w["from"]), float(w["to"]))
+            # Direction follows FACING: a mirrored figure walks leftward.
+            self.assertEqual(float(w["to"]) > float(w["from"]),
+                             int(s.get("facing", 1)) > 0,
+                             "%s walks against its facing" % s["id"])
 
     def test_two_close_ups_are_not_the_same_character(self):
         """s004 and s007 were both COLE's giant face 8s apart: one shot reused.
@@ -3140,6 +3157,91 @@ class DerivedSubjectTests(unittest.TestCase):
                 continue
             self.assertEqual(len(set(closes)), len(closes),
                              "%s repeats a close-up on %s" % (ordered[ep - 1], closes))
+
+
+class FreezeAndRepeatTests(unittest.TestCase):
+    """Owner: "from 7-8 frame freezed and that continuity happened at 10-11".
+
+    Two defects, both visible only in the delivered film: the freeze sat at
+    40% of the shot and cut a walk off mid-stride, and the closing wide reused
+    the opening wide's exact marks 1.2s after a close-up.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_story, "fresh.story is not importable")
+        self.SC = _fresh_story_schema
+
+    def _errs(self, d):
+        e, w = self.SC.validate_story(d)
+        return e
+
+    def test_a_mid_shot_freeze_is_rejected(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        shot = next(s for s in d["shots"] if s.get("freeze"))
+        shot["freeze"] = {"at": 0.6}
+        self.assertTrue(any("u-based" in x for x in self._errs(d)), self._errs(d))
+
+    def test_a_freeze_that_holds_most_of_the_shot_is_rejected(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        shot = next(s for s in d["shots"] if s.get("freeze"))
+        shot["freeze"] = {"u": 0.30}
+        self.assertTrue(any("punctuation" in x for x in self._errs(d)), self._errs(d))
+
+    def test_a_freeze_may_not_interrupt_a_walk(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        shot = next(s for s in d["shots"] if s.get("freeze"))
+        shot["walk"] = {"from": 0.1, "to": 0.4, "u0": 0.0, "u1": 0.95,
+                        "stride": 30, "lift": 13, "bob": 3, "arm": 18,
+                        "step_u": [0.5], "steps": 1}
+        self.assertTrue(any("mid-stride" in x for x in self._errs(d)), self._errs(d))
+
+    def test_two_identical_framings_apart_by_one_shot_are_rejected(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        wide = next(s for s in d["shots"] if s["size"] == "wide")
+        later = [s for s in d["shots"] if s["size"] == "wide"][1]
+        for k in ("who", "who2", "who3", "x", "x2", "x3"):
+            if k in wide:
+                later[k] = wide[k]
+            else:
+                later.pop(k, None)
+        if wide.get("subject"):
+            later["subject"] = dict(wide["subject"])
+        self.assertTrue(any("same framing" in x for x in self._errs(d)), self._errs(d))
+
+    def test_a_bookend_return_is_allowed(self):
+        """The opening and closing wides MAY match: that is a deliberate return."""
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        self.assertEqual(self._errs(d), [])
+
+    def test_every_shape_generates_a_valid_film(self):
+        for ep in range(1, 13):
+            d = _fresh_story.concept_to_story(
+                "a fairy tale about three kids who find a dragon", episode=ep)
+            self.assertEqual(self._errs(d), [], "episode %d" % ep)
+
+    def test_a_repeated_wide_is_mirrored(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        wides = [s for s in d["shots"] if s["size"] == "wide"]
+        self.assertGreaterEqual(len(wides), 3, len(wides))
+        self.assertNotEqual(wides[0].get("x"), wides[1].get("x"),
+                            "the second wide reuses the first one's marks")
+
+    def test_a_mirrored_figure_walks_the_way_it_faces(self):
+        d = _fresh_story.concept_to_story("a fairy tale about three kids who find a dragon",
+                                          episode=5)
+        for s in d["shots"]:
+            w = s.get("walk")
+            if not isinstance(w, dict):
+                continue
+            right = float(w["to"]) > float(w["from"])
+            self.assertEqual(right, int(s.get("facing", 1)) > 0,
+                             "%s walks against its facing" % s["id"])
 
 
 class HeadwearTests(unittest.TestCase):
