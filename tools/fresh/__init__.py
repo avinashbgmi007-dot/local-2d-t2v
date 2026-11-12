@@ -1,0 +1,1 @@
+"""fresh - deterministic palette generation + spec validators for the stickman studio."""

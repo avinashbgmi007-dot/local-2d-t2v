@@ -11,6 +11,16 @@ engine; nothing in engine/ was modified.
 
 Writes projects/<slug>/build/report.json and prints a one-screen summary.
 
+CHANGED 2026-11-12 (Phase A, motion gate can now fail):
+  * main() used to print motion ISSUES and fall off the end, so it ALWAYS
+    exited 0 -- while generate.py:169 treats a non-zero as fatal. Added the
+    pure helper motion_exit_code(mo, fail_on_issues), an opt-in
+    --fail-on-issues flag, and sys.exit(main()) so the exit code is real.
+  * Default behaviour is UNCHANGED (exit 0). 'NOT RUN' never blocks: an absent
+    audit tool is not a failed film. Activation is deliberately not wired into
+    generate.py --strict yet; the motion metric counts camera drift as motion
+    and needs calibration against real clips first.
+
 CHANGED 2026-11-10 (independent falsifier):
   * `--approved-by` is REFUSED. The old flag let any generation run forge a
     passing approval. Only tools/record_approval.py may set approval state.
@@ -137,9 +147,25 @@ def prior_approval(dst, new_hash):
     return {}
 
 
+def motion_exit_code(mo, fail_on_issues):
+    """Return 1 only when motion issues should block the calling pipeline.
+
+    Pure and side-effect free so the decision can be unit-tested without a
+    video. 'NOT RUN' means the audit tool was unavailable, not that the film
+    failed -- it must never masquerade as a failure. Activation is opt-in:
+    the motion metric counts camera drift as motion and is not yet calibrated,
+    so callers must ask for enforcement explicitly.
+    """
+    if fail_on_issues and mo.get('verdict') not in (None, 'NOT RUN') and mo.get('issues'):
+        return 1
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--project', required=True)
+    ap.add_argument('--fail-on-issues', action='store_true',
+                    help='exit 1 when motion_audit reports issues (opt-in; metric not calibrated)')
     ap.add_argument('--video', help='defaults to the single mp4 in <project>/out')
     ap.add_argument('--character', default='')
     ap.add_argument('--approved-by', default='',
@@ -224,7 +250,8 @@ def main():
     if mo['issues']:
         for i in mo['issues'][:6]:
             print('  ISSUE ' + i)
+    return motion_exit_code(mo, a.fail_on_issues)
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

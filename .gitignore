@@ -19,3 +19,11 @@ __pycache__/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# generated project outputs — rebuilt by director.py + render.mjs, never authored.
+# Only the approved reference film stays tracked (its style-lock is a record).
+projects/*/
+!projects/cine_release/
+
+# scratch
+tmp/

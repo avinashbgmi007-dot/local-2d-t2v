@@ -1,0 +1,123 @@
+{
+ "title": "The Last Clue",
+ "aspect": "9:16",
+ "style": "midnight",
+ "resolution": "1080p",
+ "fps": 24,
+ "set": "kitchen",
+ "chars": "inkbean",
+ "cast": {
+  "MAX": {
+   "color": "#c2553d",
+   "top": "trench",
+   "legs": "#2a2433",
+   "head": "none"
+  },
+  "JAKE": {
+   "color": "#2f9e8f",
+   "top": "tshirt",
+   "legs": "#243244",
+   "head": "cap",
+   "headColor": "#f2c21a"
+  }
+ },
+ "shots": [
+  {
+   "id": "s001",
+   "size": "wide",
+   "line": "The room was empty. Except for one thing.",
+   "hold": 0.5,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "neutral",
+   "facing": 1,
+   "prop": {"kind": "book"},
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "stand",
+   "expr2": "worried",
+   "facing2": -1,
+   "in": {"type": "fade", "dur": 0.5},
+   "sfx": [{"at": 0.05, "name": "whoosh", "gain": -26}]
+  },
+  {
+   "id": "s002",
+   "size": "insert",
+   "line": "",
+   "hold": 1.5,
+   "in": {"type": "cut"},
+   "insertKind": "card",
+   "notes": "close-up of a single playing card on the floor",
+   "sfx": [{"at": 0.0, "name": "tick", "gain": -20}]
+  },
+  {
+   "id": "s003",
+   "size": "med",
+   "line": "A card. At a crime scene.",
+   "hold": 1.0,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "worried",
+   "facing": 1,
+   "prop": {"kind": "book"},
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "stand",
+   "expr2": "neutral",
+   "facing2": -1,
+   "in": {"type": "cut"}
+  },
+  {
+   "id": "s004",
+   "size": "med",
+   "line": "Could be nothing. Could be everything.",
+   "hold": 1.2,
+   "who": "JAKE",
+   "x": 0.68,
+   "pose": "think",
+   "expr": "neutral",
+   "facing": -1,
+   "who2": "MAX",
+   "x2": 0.36,
+   "pose2": "stand",
+   "expr2": "neutral",
+   "facing2": 1,
+   "in": {"type": "cut"}
+  },
+  {
+   "id": "s005",
+   "size": "close",
+   "line": "The dealer left it. On purpose.",
+   "hold": 1.0,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "neutral",
+   "facing": 1,
+   "in": {"type": "cut"},
+   "sfx": [{"at": 0.1, "name": "whoosh", "gain": -24}]
+  },
+  {
+   "id": "s006",
+   "size": "wide",
+   "line": "He wanted us to find it.",
+   "hold": 1.5,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "smirk",
+   "facing": 1,
+   "prop": {"kind": "book"},
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "stand",
+   "expr2": "shocked",
+   "facing2": -1,
+   "in": {"type": "fade", "dur": 0.4},
+   "sfx": [{"at": 0.0, "name": "ding", "gain": -18}]
+  }
+ ],
+ "music": []
+}

@@ -1,0 +1,116 @@
+{
+ "title": "Too Much Effort",
+ "aspect": "9:16",
+ "resolution": "1080p",
+ "fps": 24,
+ "style": "midnight",
+ "set": "room",
+ "chars": "inkbean",
+ "cast": {
+  "MAX": {
+   "color": "#c2553d",
+   "top": "trench",
+   "legs": "#2a2433",
+   "head": "cap",
+   "headColor": "#f2c21a",
+   "marker": "glasses"
+  },
+  "PIP": {
+   "color": "#2f9e8f",
+   "top": "hoodie",
+   "legs": "#243244",
+   "head": "ponytail",
+   "headColor": "#8fd8cc",
+   "marker": "bob"
+  },
+  "BO": {
+   "color": "#e0b64a",
+   "top": "jersey",
+   "legs": "#3a2f18",
+   "head": "spiky",
+   "headColor": "#b06ad8"
+  }
+ },
+ "shots": [
+  {
+   "id": "s001",
+   "size": "wide",
+   "line": "Three friends argued about who was laziest.",
+   "hold": 0.45,
+   "who": "MAX", "x": 0.24, "pose": "stand", "expr": "determined", "facing": 1,
+   "who2": "PIP", "x2": 0.50, "pose2": "crossArms", "expr2": "tired", "facing2": -1,
+   "who3": "BO", "x3": 0.76, "pose3": "stand", "expr3": "neutral", "facing3": -1,
+   "scale3": 0.90,
+   "bg": "night",
+   "in": {"type": "fade", "dur": 0.5},
+   "amb": {"name": "roomtone", "gain": -32},
+   "sfx": [{"at": 0.05, "name": "whoosh", "gain": -26}]
+  },
+  {
+   "id": "s002",
+   "size": "med",
+   "line": "I once skipped breathing for a minute.",
+   "hold": 0.50,
+   "who": "MAX", "x": 0.36, "pose": "talk", "expr": "hopeful", "facing": 1,
+   "who2": "PIP", "x2": 0.68, "pose2": "crossArms", "expr2": "tired", "facing2": -1,
+   "bg": "night",
+   "in": {"type": "cut"},
+   "cut_intent": "eyeline",
+   "sfx": [{"at": 0.0, "name": "pop", "gain": -20}]
+  },
+  {
+   "id": "s003",
+   "size": "med",
+   "line": "I let my phone die mid-reply.",
+   "hold": 0.50,
+   "who": "PIP", "x": 0.36, "pose": "phone", "expr": "relieved", "facing": 1,
+   "who2": "MAX", "x2": 0.68, "pose2": "shrug", "expr2": "surprised", "facing2": -1,
+   "prop": {"kind": "phone"},
+   "bg": "night",
+   "in": {"type": "cut"},
+   "cut_intent": "eyeline",
+   "sfx": [{"at": 0.10, "name": "phonebuzz", "gain": -22}]
+  },
+  {
+   "id": "s004",
+   "size": "med",
+   "line": "I had a great comeback.",
+   "hold": 0.50,
+   "who": "BO", "x": 0.36, "pose": "think", "expr": "curious", "facing": 1,
+   "who2": "MAX", "x2": 0.68, "pose2": "stand", "expr2": "worried", "facing2": -1,
+   "bg": "night",
+   "in": {"type": "cut"},
+   "cut_intent": "eyeline",
+   "sfx": [{"at": 0.0, "name": "blip", "gain": -24}]
+  },
+  {
+   "id": "s005",
+   "size": "wide",
+   "line": "",
+   "hold": 0.90,
+   "who": "MAX", "x": 0.24, "pose": "stand", "expr": "surprised", "facing": 1,
+   "who2": "PIP", "x2": 0.50, "pose2": "crossArms", "expr2": "tired", "facing2": -1,
+   "who3": "BO", "x3": 0.76, "pose3": "stand", "expr3": "neutral", "facing3": -1,
+   "scale3": 0.90,
+   "bg": "night",
+   "in": {"type": "cut"},
+   "cut_intent": "eyeline",
+   "sfx": [{"at": 0.0, "name": "tick", "gain": -24}]
+  },
+  {
+   "id": "s006",
+   "size": "close",
+   "line": "Too much effort.",
+   "hold": 1.40,
+   "who": "BO", "x": 0.50, "pose": "shrug", "expr": "tired", "facing": 1,
+   "bg": "night",
+   "in": {"type": "cut"},
+   "cut_intent": "eyeline",
+   "freeze": {"u": 0.62},
+   "sfx": [{"at": 0.0, "name": "ding", "gain": -14}]
+  }
+ ],
+ "music": [
+  {"start": 0, "end": 40, "mood": "playful", "intensity": 0.30}
+ ]
+}

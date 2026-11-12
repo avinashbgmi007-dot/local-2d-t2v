@@ -1,0 +1,36 @@
+{
+ "schema": "aitrends-style-lock-v1",
+ "status": "approved",
+ "character": "inkbean",
+ "project": "cine_release",
+ "style": "midnight",
+ "resolution": "1080p",
+ "aspect": "9:16",
+ "required": 3,
+ "approved_by": "I watched the whole film. Publish it.",
+ "note": "",
+ "snapshotted_at": "2026-11-10T17:40:52",
+ "references": [
+  {
+   "time": 1.0,
+   "path": "story/style-lock/1.00s.png",
+   "sha256": "216f8e74b6376d43b9fa8bf83d3cf6e30fbbb3849e3b039d02148c2e80d63277",
+   "width": 1080,
+   "height": 1920
+  },
+  {
+   "time": 4.2,
+   "path": "story/style-lock/4.20s.png",
+   "sha256": "6f01260682bb8f34060f48bc0dba840c704a918def09a26a225953005047e186",
+   "width": 1080,
+   "height": 1920
+  },
+  {
+   "time": 7.2,
+   "path": "story/style-lock/7.20s.png",
+   "sha256": "a2a12809f4ce3485177d15e5c09df0435a8b6193481c02bd26e9807a5df72546",
+   "width": 1080,
+   "height": 1920
+  }
+ ]
+}

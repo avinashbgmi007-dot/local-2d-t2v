@@ -1,0 +1,123 @@
+{
+ "title": "The Prompt",
+ "aspect": "9:16",
+ "style": "midnight",
+ "resolution": "1080p",
+ "fps": 24,
+ "set": "room",
+ "chars": "inkbean",
+ "cast": {
+  "MAX": {
+   "color": "#4a6fa5",
+   "top": "hoodie",
+   "legs": "#1a2a40",
+   "head": "none"
+  },
+  "JAKE": {
+   "color": "#8a5fa5",
+   "top": "tshirt",
+   "legs": "#2a1a3a",
+   "head": "cap",
+   "headColor": "#e0c060"
+  }
+ },
+ "shots": [
+  {
+   "id": "s001",
+   "size": "wide",
+   "line": "You won't believe what this AI just did.",
+   "hold": 0.5,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "excited",
+   "facing": 1,
+   "prop": {"kind": "phone"},
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "stand",
+   "expr2": "neutral",
+   "facing2": -1,
+   "in": {"type": "fade", "dur": 0.5},
+   "sfx": [{"at": 0.05, "name": "whoosh", "gain": -26}]
+  },
+  {
+   "id": "s002",
+   "size": "med",
+   "line": "It's just a chatbot, Max.",
+   "hold": 0.8,
+   "who": "JAKE",
+   "x": 0.68,
+   "pose": "shrug",
+   "expr": "smirk",
+   "facing": -1,
+   "who2": "MAX",
+   "x2": 0.36,
+   "pose2": "stand",
+   "expr2": "excited",
+   "facing2": 1,
+   "in": {"type": "cut"}
+  },
+  {
+   "id": "s003",
+   "size": "close",
+   "line": "Watch. I typed one sentence.",
+   "hold": 1.0,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "neutral",
+   "facing": 1,
+   "prop": {"kind": "phone"},
+   "in": {"type": "cut"},
+   "sfx": [{"at": 0.1, "name": "tick", "gain": -20}]
+  },
+  {
+   "id": "s004",
+   "size": "insert",
+   "line": "",
+   "hold": 1.5,
+   "in": {"type": "cut"},
+   "insertKind": "screen",
+   "notes": "screen showing AI-generated image",
+   "sfx": [{"at": 0.0, "name": "ding", "gain": -18}]
+  },
+  {
+   "id": "s005",
+   "size": "med",
+   "line": "That's... that's not possible.",
+   "hold": 1.2,
+   "who": "JAKE",
+   "x": 0.68,
+   "pose": "stand",
+   "expr": "shocked",
+   "facing": -1,
+   "who2": "MAX",
+   "x2": 0.36,
+   "pose2": "stand",
+   "expr2": "smirk",
+   "facing2": 1,
+   "in": {"type": "cut"}
+  },
+  {
+   "id": "s006",
+   "size": "wide",
+   "line": "One sentence. Zero artists.",
+   "hold": 1.5,
+   "who": "MAX",
+   "x": 0.36,
+   "pose": "stand",
+   "expr": "smirk",
+   "facing": 1,
+   "prop": {"kind": "phone"},
+   "who2": "JAKE",
+   "x2": 0.68,
+   "pose2": "stand",
+   "expr2": "worried",
+   "facing2": -1,
+   "in": {"type": "fade", "dur": 0.4},
+   "sfx": [{"at": 0.0, "name": "whoosh", "gain": -28}]
+  }
+ ],
+ "music": []
+}

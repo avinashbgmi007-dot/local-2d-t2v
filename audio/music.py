@@ -146,7 +146,7 @@ def render_score(plan, total, seed=1, key=None):
         cut = secs(en - st + xf); y = y[:cut]
         if i < len(plan) - 1: y[-fo:] *= (np.cos(np.linspace(0, np.pi / 2, fo)) ** 2)[:, None]
         place(out, y, secs(st - (xf * 0.5 if i else 0)))
-    k = secs(3.0); out[-k:] *= np.linspace(1, 0, k)[:, None]
+    k = min(secs(3.0), len(out)); out[-k:] *= np.linspace(1, 0, k)[:, None]
     return (out * db(-20 - rms_db(out))).astype(np.float32)
 
 
