@@ -285,6 +285,17 @@ def main():
         sys.exit("GENERATE: visual review gate failed "
                  "(black/white frame, aspect mismatch, or ambiguous deliverable)")
 
+    # 5b. script vs frames -- the only gate that reads BOTH sides. It asks
+    #     "the line says dragon: is there a dragon in this frame?", using the
+    #     per-shot stills when present and frames pulled from the delivered
+    #     video otherwise. Hard failure: a film that talks about something it
+    #     never shows is not a QC warning, it is the wrong film.
+    sfc = run([py, os.path.join(here, "script_frame_check.py"), "--project", out]
+              + (["--strict"] if a.strict else []), studio)
+    if sfc:
+        sys.exit("GENERATE: script/frame alignment failed -- the frames do not "
+                 "show what the script says (exit %d)" % sfc)
+
     # 6. QC gates. EVERY non-zero exit is fatal, including seam_gate hard errors.
     sg = run([py, os.path.join(here, "seam_gate.py"), "--project", out, "--auto"]
              + (["--strict"] if a.strict else []), studio)

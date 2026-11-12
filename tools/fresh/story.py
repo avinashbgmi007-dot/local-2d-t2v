@@ -3,7 +3,7 @@
 Produces a director.py-compatible story dict with deterministic visual
 distinctness derived from the concept string.
 """
-import os, sys, json
+import os, re, sys, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from .palette import generate_palette
@@ -138,6 +138,7 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     accent_done = False
 
     shots = []
+    close_a_used = False
     for i, b in enumerate(beats):
         s = {"id": "s%03d" % (i + 1), "size": b["size"], "hold": b["hold"],
              "line": b["line"] or "", "bg": mood_used, "set": set_used,
@@ -160,7 +161,16 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
         xs = {"a": 0.30, "b": 0.52, "ab": (0.30, 0.52)} if subject_blk else \
              {"a": 0.40, "b": 0.62, "ab": (0.36, 0.68)}
         if b["who"] == "A":
-            s.update(who=names[0], x=xs["a"], pose=pose_a, facing=1)
+            # A shape may put two `close` beats on role A (mystery_beat: turn
+            # and payoff). Two giant faces of the same character 8 seconds apart
+            # read as the SAME SHOT reused; the second one lands on the other
+            # character, which also gives the scene a listener.
+            if b["size"] == "close" and close_a_used and len(names) > 1:
+                s.update(who=names[1], x=xs["b"], pose=pose_b, facing=-1)
+            else:
+                s.update(who=names[0], x=xs["a"], pose=pose_a, facing=1)
+            if b["size"] == "close":
+                close_a_used = True
             g = derive_gesture(b["role"], b["line"], seed=ident["seed"],
                                size=b["size"])
             # A gesture whose pose IS the base pose animates nothing.
@@ -193,12 +203,19 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
                 else:
                     s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
                              scale3=0.94)
-        # The subject stands in the wide shot, facing the cast. Wide only: at
-        # med it would sit behind a single face, and at close it would be a
-        # texture rather than a character.
-        if subject_blk and b["size"] == "wide":
-            s["subject"] = {"kind": subject_blk["kind"], "x": 0.84,
-                            "facing": -1, "scale": subject_blk["scale"],
+        # The subject stands in the wide shot, facing the cast. At `med` it is
+        # only added when the LINE NAMES IT: "It's only a dragon, COLE" over a
+        # frame with no dragon is the exact defect script_frame_check.py now
+        # fails on. A pronoun ("Don't touch it") stays on the face, because that
+        # is a reaction, not a reference.
+        names_it = bool(subject_blk) and re.search(
+            r"\b" + re.escape(subject_blk["noun"]) + r"\b",
+            (b["line"] or "").lower()) is not None
+        if subject_blk and (b["size"] == "wide" or (b["size"] == "med" and names_it)):
+            s["subject"] = {"kind": subject_blk["kind"],
+                            "x": 0.84 if b["size"] == "wide" else 0.86,
+                            "facing": -1,
+                            "scale": subject_blk["scale"] * (1.0 if b["size"] == "wide" else 0.8),
                             "color": creature_color}
         if walk and b["who"] in ("A", "AB"):
             s["walk"] = walk

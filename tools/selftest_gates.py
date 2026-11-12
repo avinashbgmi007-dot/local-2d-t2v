@@ -3066,5 +3066,77 @@ class DerivedSubjectTests(unittest.TestCase):
         self.assertEqual(a, b)
 
 
+class ScriptFrameAlignmentTests(unittest.TestCase):
+    """The only gate that reads BOTH the script and the frames.
+
+    Owner question 2026-11-13: "can you review the script against the video
+    frames generated and review if it is aligned". Every earlier gate read one
+    side: the contract read JSON, the frame review read pixels.
+    """
+
+    def setUp(self):
+        self.path = os.path.join(TOOLS, "script_frame_check.py")
+        self.assertTrue(os.path.exists(self.path), "script_frame_check.py missing")
+
+    def _tool(self):
+        spec = _ilu.spec_from_file_location("sfc", self.path)
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_an_undeclared_creature_in_the_dialogue_fails(self):
+        """The original dragon film: 8 shots say dragon, no subject declared."""
+        M = self._tool()
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(d, "story"))
+            story = {"cast": {"A": {"color": "#ff0000"}},
+                     "shots": [{"id": "s001", "size": "wide", "start": 0, "end": 1,
+                                "line": "Nobody expected the dragon.", "params": {}}]}
+            json.dump(story, open(os.path.join(d, "story", "shots.json"), "w"))
+            errs, _ = M.check(d)
+            self.assertTrue(any("never draws it" in e for e in errs), errs)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_a_named_but_absent_subject_fails(self):
+        M = self._tool()
+        errs, warns = [], []
+        # no pixels exist here, so the pure-JSON rule must catch it first
+        story = {"cast": {"A": {"color": "#ff0000"}},
+                 "shots": [{"id": "s001", "size": "med", "line": "It is a dragon.",
+                            "params": {"subject": {"kind": "dragon", "color": "#0000ff"}}},
+                           {"id": "s002", "size": "med", "line": "Only a dragon.",
+                            "params": {}}]}
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(d, "story"))
+            json.dump(story, open(os.path.join(d, "story", "shots.json"), "w"))
+            errs, warns = M.check(d)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+        joined = " | ".join(errs)
+        self.assertIn("names something the viewer cannot see", joined)
+
+    def test_colour_fraction_finds_a_body_and_rejects_a_wrong_one(self):
+        M = self._tool()
+        from PIL import Image
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            p = os.path.join(d, "f.png")
+            im = Image.new("RGB", (100, 100), (10, 10, 10))
+            for x in range(0, 40):
+                for y in range(0, 40):
+                    im.putpixel((x, y), (73, 89, 217))
+            im.save(p)
+            self.assertGreater(M.colour_fraction(p, (73, 89, 217)), 0.1)
+            self.assertLess(M.colour_fraction(p, (200, 30, 30)), 0.01)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
