@@ -791,6 +791,11 @@ export function build3d(T, o = {}) {
   const name = LAYOUT[o.set] ? o.set : 'room';
   const L = LAYOUT[name], outdoor = name === 'outdoor';
   const dark = shade(M.dark, -0.10);
+  const mixHex = (a, b, k) => {
+    const pa = parseInt(String(a).slice(1), 16), pb = parseInt(String(b).slice(1), 16);
+    const ch = (sh) => Math.round(((pa >> sh) & 255) * (1 - k) + ((pb >> sh) & 255) * k);
+    return '#' + [16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, '0')).join('');
+  };
 
   const st = stage({
     mood: o.mood || 'dusk', fov: outdoor ? 52 : 44,
@@ -801,11 +806,25 @@ export function build3d(T, o = {}) {
     // An interior needs its key INSIDE. At [-7, 9.5, -6] the sun sat behind the
     // back wall, which shadowed the whole room -- measured on the kitchen still,
     // where the wall rendered almost black.
+    // LIGHTING, from open-3d-skills lighting.md (MIT), which names our defect:
+    // "exposure is per preset. Night needs more exposure, not brighter lights.
+    // Raising light intensities at night lifts the whole scene to a grey day."
+    // We had 2.9 sun at night (a daylight intensity) and had pushed interior
+    // ambient to 1.45 to fight darkness -- which is what blew a figure to white
+    // and flattened the kitchen. Sun is now a NIGHT intensity, ambient is a
+    // bounce term, and exposure carries the level.
     keyPos: outdoor ? [-7, 9.5, -6] : [-3.5, 5.2, 3.0],
-    keyIntensity: outdoor ? 2.9 : 2.0,
-    keyColor: M.key, ambient: outdoor ? 1.2 : 1.45, ambientSky: M.ambient,
-    sky: M.sky, bloom: 0.42,
+    keyIntensity: outdoor ? 1.15 : 1.55,
+    keyColor: outdoor ? mixHex(M.key, '#9fb4ff', 0.55) : M.key,
+    // HEMI carries the shadow side. At 0.85 the unlit half of every head went
+    // to pure black -- lighting.md's own diagnostic, "crushed blacks in shadow
+    // -> raise hemiI". The earlier washout was not hemi being high, it was hemi
+    // high AND key high AND exposure at 1.0 all at once.
+    ambient: outdoor ? 1.45 : 1.30, ambientSky: M.ambient,
+    sky: M.sky, bloom: outdoor ? 0.62 : 0.42,
   });
+  // Per-preset exposure: night lifts the level, it does not add light.
+  const exposure = outdoor ? 1.06 : 1.16;
 
   // A flat palette floor at this exposure reads black; +0.12 keeps the
   // surface a colour while staying darker than the wall.
@@ -850,7 +869,7 @@ export function build3d(T, o = {}) {
     trees: () => {}, lamps: () => {},
   };
   for (const f of L.furniture) (F[f] || (() => {}))();
-  return { stage: st, layout: L, outdoor };
+  return { stage: st, layout: L, outdoor, exposure };
 }
 """
 
@@ -907,6 +926,9 @@ registerShot('__ID__', {
       pl.position.set(SUBJECT.x, h * 0.5, SUBJECT.z);
       st.add(pl);
     }
+    // EffectComposer holds the renderer, so exposure is settable without
+    // touching the pinned engine.
+    st.composer.renderer.toneMappingExposure = built.exposure;
     return { stage: st, figs, outdoor: built.outdoor };
   },
   draw(s, t, info, T) {

@@ -28,10 +28,14 @@ THREE_HEADS = ("cap", "capBack", "visor", "beanie", "fedora", "headband", "hood"
 # shows a bare head, which is correct for hair (bob, bun) and for glasses,
 # because figure3D draws the eyes as separate spheres and a 3D glasses mesh
 # would cover them.
+# `hood` maps to a BEANIE, not three-kit's hood. three-kit draws its hood as a
+# 0.23-radius sphere pushed 0.04 INTO the skull (three-kit.js:93), so it renders
+# as a dark crescent across the face -- measured on the kitchen still. Our 2D
+# hood is correct and unaffected; only the 3D stand-in changes.
 _HEAD_3D = {
     "cap": "cap",
     "beanie": "beanie",
-    "hood": "hood",
+    "hood": "beanie",
     "headband": "headband",
     "hat": "fedora",        # a brimmed hat is a fedora at this level of detail
     "helmet": "cap",        # dome + rim; the closest hard hat three-kit has
@@ -48,7 +52,7 @@ _HEAD_3D = {
 _HEAD_3D_ALT = {
     "cap": ("visor", "capBack"),
     "beanie": ("beanie", "cap"),
-    "hood": ("hood", "beanie"),
+    "hood": ("beanie", "cap"),
     "headband": ("headband", "beanie"),
     "fedora": ("fedora", "cap"),
     "visor": ("visor", "cap"),
