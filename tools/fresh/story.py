@@ -7,9 +7,10 @@ import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from .palette import generate_palette
-from .core import Rng
+from .core import Rng, shade_hex
 from .audio import derive_music, derive_amb, derive_accent_sfx, mood_for
-from .cast import derive_cast_names, derive_cast_size, SERIES_CAST
+from .cast import (derive_cast_names, derive_cast_size, derive_heads,
+                   derive_body, SERIES_CAST)
 from .location import (derive_location, derive_top, derive_roles,
                         derive_prop)
 
@@ -71,12 +72,26 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     # so a series does not re-dress its cast between episodes.
     tops = [derive_top(set_used, r, i)
             for i, r in enumerate(derive_roles(theme, len(names)))]
+    # A cast is a set of DIFFERENT people, not one person recoloured. Until
+    # 2026-11-13 the body was colors[i] and the legs colors[(i+1)%2], so the
+    # second character was the first with the two colours swapped, and heads
+    # could repeat or be "none" for everyone. Each member now gets its own hue,
+    # legs as a darker shade of its OWN body, a distinct marker and a silhouette.
+    # Seed the appearance from the SERIES when there is one: an episode may
+    # change its story, not its characters' faces or silhouettes. Using the
+    # episode seed here made the same two people grow and shrink between
+    # episodes, which FreshStoryTests caught.
+    cast_seed = series_seed if series_id else ident["seed"]
+    cast_heads = derive_heads(cast_seed, len(names),
+                             allow_none=(len(names) == 1))
     cast = {}
     for i, nm in enumerate(names):
         entry = {"color": colors[i % len(colors)], "top": tops[i % len(tops)],
-                 "legs": colors[(i + 1) % len(colors)], "head": heads[i % len(heads)]}
+                 "legs": shade_hex(colors[i % len(colors)], -0.42),
+                 "head": cast_heads[i % len(cast_heads)]}
         if entry["head"] != "none":
             entry["headColor"] = colors[(i + 1) % len(colors)]
+        entry.update(derive_body(cast_seed, i))
         cast[nm] = entry
 
     # Round-robin by episode: consecutive episodes of a series are GUARANTEED to

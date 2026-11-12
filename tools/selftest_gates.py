@@ -2466,5 +2466,102 @@ class DressingTests(unittest.TestCase):
         self.assertIn("null", DR.render_set_js("const D = __PROJECT_DRESSING__;", None, None))
 
 
+class CastVarietyTests(unittest.TestCase):
+    """Every character must be a DIFFERENT person, not a hue-swapped twin.
+
+    Measured before this: the body was `colors[i]` and the legs
+    `colors[(i+1)%2]`, so character B was character A with the two colours
+    inverted. A two-hander read as one colour family, `head:"none"` was legal
+    so casts rendered bald, and chars/inkbean.js had no build parameter at all,
+    so every figure shared one silhouette.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_story, "fresh.story is not importable")
+        self.assertIsNotNone(_fresh_palette, "fresh.palette is not importable")
+        self.assertIsNotNone(_fresh_core, "fresh.core is not importable")
+        self.ST = _fresh_story
+
+    def _casts(self):
+        for c in ("a chef opens a tiny restaurant", "a crowd gathers for the wedding",
+                  "the last bus never comes", "she cannot sleep in her bed",
+                  "a boss sends an email", "rain at school", "a lost dog"):
+            yield c, self.ST.concept_to_story(c)
+
+    def test_every_character_has_its_own_hue(self):
+        for c, d in self._casts():
+            cols = [v["color"] for v in d["cast"].values()]
+            for i in range(len(cols)):
+                for j in range(i + 1, len(cols)):
+                    self.assertGreaterEqual(
+                        _fresh_core.delta_e(cols[i], cols[j]), 20,
+                        "%s: two characters share a hue %s/%s" % (c, cols[i], cols[j]))
+
+    def test_legs_are_a_darker_shade_of_the_same_person(self):
+        for c, d in self._casts():
+            for nm, v in d["cast"].items():
+                self.assertLess(_fresh_core.rel_luminance(v["legs"]),
+                                _fresh_core.rel_luminance(v["color"]),
+                                "%s/%s: legs are not darker than the body" % (c, nm))
+
+    def test_a_multi_character_cast_is_never_bald(self):
+        for c, d in self._casts():
+            if len(d["cast"]) < 2:
+                continue
+            heads = [v.get("head") for v in d["cast"].values()]
+            self.assertNotIn("none", heads, "%s: bald in a two-hander: %s" % (c, heads))
+
+    def test_head_markers_are_pairwise_distinct(self):
+        for c, d in self._casts():
+            heads = [v.get("head") for v in d["cast"].values()]
+            self.assertEqual(len(set(heads)), len(heads),
+                             "%s: duplicate head markers %s" % (c, heads))
+
+    def test_every_character_has_a_body_build(self):
+        for c, d in self._casts():
+            shapes = []
+            for nm, v in d["cast"].items():
+                self.assertIn("build", v, "%s/%s has no build" % (c, nm))
+                self.assertIn("height", v, "%s/%s has no height" % (c, nm))
+                self.assertGreaterEqual(v["build"], 0.85)
+                self.assertLessEqual(v["build"], 1.15)
+                self.assertGreaterEqual(v["height"], 0.88)
+                self.assertLessEqual(v["height"], 1.12)
+                shapes.append((v["build"], v["height"]))
+            if len(shapes) > 1:
+                self.assertEqual(len(set(shapes)), len(shapes),
+                                 "%s: two characters share a silhouette %s" % (c, shapes))
+
+    def test_cast_appearance_is_deterministic(self):
+        a = self.ST.concept_to_story("a chef opens a tiny restaurant")["cast"]
+        b = self.ST.concept_to_story("a chef opens a tiny restaurant")["cast"]
+        self.assertEqual(a, b)
+
+    def test_head_vocabulary_only_names_real_markers(self):
+        """chars/markers.js THROWS on an unknown kind, so a vocabulary entry
+        that does not exist is a crash waiting for a cast to pick it."""
+        with open(os.path.join(STUDIO, "chars", "markers.js"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIsNotNone(_fresh_cast, "fresh.cast is not importable")
+        for k in _fresh_cast.HEAD_MARKERS:
+            self.assertIn("  %s: {" % k, src,
+                          "cast.HEAD_MARKERS names a marker that does not exist: %s" % k)
+
+    def test_cast_head_reaches_the_marker_system(self):
+        """`head` in cast.js is only drawn if inkbean reads it. It read
+        `outfit.marker`, which cast.js never writes — every character was bald."""
+        with open(os.path.join(STUDIO, "chars", "inkbean.js"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("src.head", src)
+        self.assertIn("MARKER_NAMES()", src)
+
+    def test_inkbean_honours_build_and_defaults_to_one(self):
+        with open(os.path.join(STUDIO, "chars", "inkbean.js"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("outfit.build", src)
+        self.assertIn("outfit.height", src)
+        self.assertIn("=== undefined ? 1", src)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

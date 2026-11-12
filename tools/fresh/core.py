@@ -74,6 +74,19 @@ def hsl_to_hex(h, s, l):
     return rgb_to_hex(r * 255, g * 255, b * 255)
 
 
+def shade_hex(h, amount):
+    """Darken (amount<0) or lighten (amount>0) a hex colour. Clamped."""
+    r, g, b = hex_to_rgb(h)
+    if amount < 0:
+        k = 1.0 + amount
+        r, g, b = r * k, g * k, b * k
+    else:
+        r = r + (255 - r) * amount
+        g = g + (255 - g) * amount
+        b = b + (255 - b) * amount
+    return rgb_to_hex(int(round(r)), int(round(g)), int(round(b)))
+
+
 def rel_luminance(h):
     def lin(v):
         v /= 255.0

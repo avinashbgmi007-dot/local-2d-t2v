@@ -16,13 +16,14 @@
 import { E, V, mood, S, rr, seg, circle, ring, alpha, shade, mix, rng } from '/engine/core.js';
 import { POSES } from '/engine/rig2d.js';
 import { sketchSeg, sketchCircle } from '/chars/sketch.js';
-import { drawMarker } from '/chars/markers.js';
+import { drawMarker, MARKER_NAMES } from '/chars/markers.js';
 
 const P = (pose, k) => pose[k] || [0, 0];
 const INK = '#15131a';
 const HEAD_INK = '#1d1a24';   // lifted from #101018: warm-dark so it separates from cool navy
 
-// body geometry — fixed numbers, so the silhouette is identical everywhere
+// body geometry — fixed numbers, so the base silhouette is identical everywhere.
+// Per-character build/height (cast.js) multiply these at draw time.
 const BW = 64;
 const HEAD_R = 47;
 
@@ -30,9 +31,20 @@ const HEAD_R = 47;
 // render of that character gets it, in wide shots and close-ups alike. A shot may still override
 // `back` when it knows which way the character is turned.
 function markerOf(o) {
-  const m = (o.outfit && o.outfit.marker) || o.marker;
-  if (!m) return null;
-  return typeof m === 'string' ? { kind: m } : m;
+  // cast.js declares the mark as `head` (plus optional `headColor`). This used to
+  // read `outfit.marker` ONLY, which cast.js never writes — so every generated
+  // character rendered BALD no matter what the palette had chosen. The palette's
+  // whole HEADS vocabulary was dead data.
+  const src = o.outfit || {};
+  const m = src.marker || src.head || o.marker;
+  if (!m || m === 'none') return null;
+  const out = typeof m === 'string' ? { kind: m } : m;
+  // Unknown kinds are dropped, not thrown: the vocabulary is data from
+  // fresh/cast.py, and one bad entry must not kill a whole shot. The suite pins
+  // that the vocabulary and chars/markers.js agree, so a typo is caught there.
+  if (MARKER_NAMES().indexOf(out.kind) < 0) return null;
+  if (out.col === undefined && src.headColor) out.col = src.headColor;
+  return out;
 }
 
 function faceOf(o) {
@@ -58,7 +70,9 @@ function faceOf(o) {
 function drawHead(g, cx, cy, R, f, M, seed, rimSide, marker, col) {
   // A marker is either BEHIND the skull (a bun, which the head must occlude) or OVER the face
   // (spectacles, which sit on it). Ordering is the marker's business, not the shot's.
-  const mk = marker ? { back: marker.back === undefined ? -1 : marker.back, kind: marker.kind, col } : null;
+  // A marker may carry its own colour (cast.headColor); otherwise it inherits the body.
+  const mk = marker ? { back: marker.back === undefined ? -1 : marker.back, kind: marker.kind,
+                        col: marker.col || col } : null;
   if (mk) drawMarker(g, mk.kind, cx, cy, R, mk.col, mk.back, 'behind');
   sketchCircle(g, cx, cy, R, R * 0.13, INK, seed, HEAD_INK);
   g.save(); g.strokeStyle = M.rim; g.lineWidth = R * 0.11; g.lineCap = 'round';
@@ -121,7 +135,12 @@ export function drawInkBean(g, o) {
   const M = mood(o.moodName || 'dusk'), col = (o.outfit && o.outfit.color) || '#2f9e8f';
   const seed = Math.round((o.seedBase || 0) * 131 + (o.x || 0) * 7 + (o.y || 0) * 3 + 11);
   const face = faceOf(o);
-  g.save(); g.translate(o.x, o.y); g.scale(f * s * yx, s);
+  // Silhouette: build = torso/limb width, height = vertical stretch. Both come
+  // from cast.js (fresh/cast.derive_body), so two characters in one film are not
+  // the same bean. A missing value is 1, which reproduces the old drawing exactly.
+  const bld = (o.outfit && o.outfit.build) === undefined ? 1 : o.outfit.build;
+  const hgt = (o.outfit && o.outfit.height) === undefined ? 1 : o.outfit.height;
+  g.save(); g.translate(o.x, o.y); g.scale(f * s * yx * bld, s * hgt);
   const head = P(pose, 'head'), sh = P(pose, 'sh'), hip = P(pose, 'hip');
   const BH = Math.abs(hip[1] - sh[1]) + 80, cy = (sh[1] + hip[1]) / 2 - 8;
 

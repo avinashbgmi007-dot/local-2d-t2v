@@ -65,3 +65,48 @@ def derive_cast_size(concept):
     """2 by default, 3 when the concept implies a group."""
     low = str(concept or "").lower()
     return 3 if any(w in low for w in _GROUP_WORDS) else 2
+
+
+# Marker vocabulary copied from palette.HEADS. "none" is a legal look, but it
+# is a BALD look: in a two-hander it makes the cast read as unfinished, so it
+# is only offered to a solo character.
+# ONLY markers that chars/markers.js can actually draw. The palette used to
+# advertise twelve (capBack, fedora, headband, visor, hood, ponytail, curly,
+# spiky...) of which exactly TWO existed, and the renderer THROWS on an unknown
+# kind — so those names were a crash waiting for a cast to pick one.
+HEAD_MARKERS = ("bob", "glasses", "cap", "beanie", "bun")
+
+
+def derive_heads(seed, count, allow_none=True):
+    """Return `count` distinct head markers, deterministic per seed.
+
+    Distinct is the point: two characters with the same marker read as twins,
+    which is the defect this replaces (`heads[i % len(heads)]` could repeat and
+    could pick "none" for everybody).
+    """
+    rng = Rng(str(seed) + "|heads")
+    pool = list(HEAD_MARKERS)
+    if allow_none and count == 1:
+        pool.append("none")
+    rng.shuffle(pool) if hasattr(rng, "shuffle") else None
+    return tuple(rng.sample(pool, min(count, len(pool))))
+
+
+def derive_body(seed, index):
+    """Return a silhouette for character `index`: torso width and height.
+
+    `chars/inkbean.js` had no build parameter, so every figure in every film was
+    the same stick bean. These two numbers are multiplied into the character's
+    draw scale; 1.0/1.0 is the old silhouette, so anything missing still draws
+    exactly as before.
+
+    The bands are offset per index and never overlap, so two characters in the
+    same film cannot share a silhouette.
+    """
+    rng = Rng(str(seed) + "|body|%d" % int(index))
+    bands = ((0.88, 0.97), (1.00, 1.09), (0.94, 1.02))
+    hbands = ((0.98, 1.10), (0.90, 0.97), (0.99, 1.06))
+    blo, bhi = bands[int(index) % len(bands)]
+    hlo, hhi = hbands[int(index) % len(hbands)]
+    return {"build": round(rng.range(blo, bhi), 3),
+            "height": round(rng.range(hlo, hhi), 3)}

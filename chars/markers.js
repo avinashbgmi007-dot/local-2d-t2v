@@ -71,4 +71,48 @@ const MARKERS = {
       seg(g, [[cx - sep + er, ey - R * 0.03], [cx + sep - er, ey - R * 0.03]], R * 0.055, cream);
     },
   },
+
+  // A baseball cap: dome over the skull with a brim toward the facing side.
+  cap: {
+    over: (g, cx, cy, R, col, back) => {
+      // The brow sits at cy - R*(0.30 + 0.20*brow), i.e. as high as cy - 0.50R.
+      // A brim at eye level deletes the eyes; everything here stays above -0.62R.
+      const c = shade(col, -0.10), bandY = cy - R * 0.68;
+      g.save();
+      g.beginPath(); g.arc(cx, cy, R * 1.02, 0, 7); g.clip();
+      g.fillStyle = c;
+      g.beginPath(); g.arc(cx, bandY + R * 0.10, R * 0.99, Math.PI, 0); g.fill();
+      g.restore();
+      g.strokeStyle = INK; g.lineWidth = R * 0.07;
+      g.beginPath(); g.moveTo(cx - R * 0.98, bandY); g.lineTo(cx + R * 0.98, bandY); g.stroke();
+      const dir = -back;   // brim points the way the character faces
+      g.fillStyle = shade(c, -0.20);
+      g.beginPath(); g.ellipse(cx + dir * R * 0.56, bandY, R * 0.58, R * 0.11, 0, 0, 7); g.fill();
+      g.strokeStyle = INK; g.lineWidth = R * 0.06; g.stroke();
+    },
+  },
+
+  beanie: {
+    over: (g, cx, cy, R, col) => {
+      const c = shade(col, -0.08), bandY = cy - R * 0.74;
+      g.save();
+      g.beginPath(); g.arc(cx, cy, R * 1.02, 0, 7); g.clip();
+      g.fillStyle = c;
+      g.beginPath(); g.arc(cx, bandY + R * 0.22, R * 0.98, Math.PI, 0); g.fill();
+      g.restore();
+      g.fillStyle = shade(c, 0.16);
+      rr(g, cx - R * 0.96, bandY, R * 1.92, R * 0.22, R * 0.09); g.fill();
+      g.strokeStyle = INK; g.lineWidth = R * 0.055; g.stroke();
+      circle(g, cx, bandY - R * 0.26, R * 0.15, shade(c, 0.30));
+    },
+  },
+
+  bun: {
+    behind: (g, cx, cy, R, col, back) => {
+      const c = shade(col, -0.46);
+      circle(g, cx + back * R * 0.30, cy - R * 0.98, R * 0.34, c);
+      g.strokeStyle = INK; g.lineWidth = R * 0.06;
+      g.beginPath(); g.arc(cx + back * R * 0.30, cy - R * 0.98, R * 0.34, 0, 7); g.stroke();
+    },
+  },
 };

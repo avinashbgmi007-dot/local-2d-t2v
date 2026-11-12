@@ -15,7 +15,9 @@ MOODS = ["day", "golden", "dusk", "night", "storm", "interiorWarm", "interiorCoo
 SETS = ["room", "kitchen", "outdoor", "office"]
 INSERT_KINDS = ["card", "screen", "phone", "document", "photo"]
 TOPS = ["hoodie", "labcoat", "trench", "jersey", "tshirt", "suit", "dress", "tracksuit"]
-HEADS = ["cap", "capBack", "beanie", "fedora", "headband", "visor", "hood", "ponytail", "bun", "curly", "spiky", "none"]
+# Only markers chars/markers.js can draw. The old twelve-name list was a trap:/n# eight of them threw in drawMarker and none of them reached a head anyway.
+# fresh/cast.py owns the vocabulary; this is kept in sync for the style pack.
+HEADS = ["bob", "glasses", "cap", "beanie", "bun", "none"]
 FACES = ["glasses", "sunglasses", "none"]
 
 
@@ -57,12 +59,21 @@ def generate_palette(concept, series_id=None, episode=None,
         drawn_set = set_name
     set_name = drawn_set
 
-    # Character colors: two distinct, readable colors
+    # Character colors: FOUR distinct, readable colors, one per cast member.
+    # It used to be two, and story.py used colors[(i+1)%2] for the legs — so
+    # character B was character A with the palette inverted, and a two-hander
+    # read as a single colour family. The first two draws are unchanged, so
+    # existing per-concept colours do not shift.
     c1 = _readable_color(rng)
     c2 = _readable_color(rng)
     # ensure distinct
     while delta_e(c1, c2) < 20:
         c2 = _readable_color(rng)
+    colors = [c1, c2]
+    while len(colors) < 4:
+        cand = _readable_color(rng)
+        if all(delta_e(cand, c) >= 20 for c in colors):
+            colors.append(cand)
 
     # Build style pack for validation
     hues = [[rng.range(0, 60), rng.range(60, 120)] for _ in range(2)]
@@ -109,7 +120,7 @@ def generate_palette(concept, series_id=None, episode=None,
         "mood": mood,
         "set": set_name,
         "insert_kind": insert_kind,
-        "colors": [c1, c2],
+        "colors": colors,
         "tops": [rng.pick(TOPS), rng.pick(TOPS)],
         "heads": [rng.pick(HEADS), rng.pick(HEADS)],
         "faces": [rng.pick(FACES), rng.pick(FACES)],

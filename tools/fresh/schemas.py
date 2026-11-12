@@ -10,8 +10,9 @@ from .core import is_hex
 # changes, update these (Phase 0c asks the agent to diff them against source).
 TOPS = {"hoodie", "labcoat", "trench", "jersey", "tshirt", "suit", "dress",
         "tracksuit", "none"}
-HEADS = {"cap", "capBack", "beanie", "fedora", "headband", "visor", "hood",
-         "ponytail", "bun", "curly", "spiky", "none"}
+# Mirrors chars/markers.js. The old twelve-name set advertised markers that do
+# not exist; drawMarker throws on an unknown kind, so those names were a crash.
+HEADS = {"bob", "glasses", "cap", "beanie", "bun", "none"}
 FACES = {"glasses", "sunglasses", "none"}
 
 BACKGROUNDS = {"light", "mid", "dark"}
