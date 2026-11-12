@@ -939,6 +939,29 @@ function board(T, spr, o) {
   return { plane: p, w, h };
 }
 
+// A CONTACT shadow. castShadow alone does not put a body on the ground: the key
+// comes from behind-left, so the cast shadow lands away from camera and is
+// hidden BY the body -- measured on the dragon, which read as floating. This is
+// a soft ellipse decal under each figure, which reads as contact whatever the
+// light does.
+function contactBlob(T, w) {
+  const tex = T.canvasTex(128, 128, (g) => {
+    const r = g.createRadialGradient(64, 64, 3, 64, 64, 62);
+    r.addColorStop(0, 'rgba(0,0,0,0.50)');
+    r.addColorStop(0.55, 'rgba(0,0,0,0.24)');
+    r.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = r;
+    g.fillRect(0, 0, 128, 128);
+  });
+  const m = T.basic('#ffffff');
+  m.map = tex; m.transparent = true; m.depthWrite = false;
+  const pl = T.plane(w, w * 0.52, m);
+  pl.rotation.x = -Math.PI / 2;
+  pl.castShadow = false; pl.receiveShadow = false;
+  pl.renderOrder = 1;
+  return pl;
+}
+
 registerShot('__ID__', {
   kind: '3d',
   init(T, info) {
@@ -966,6 +989,9 @@ registerShot('__ID__', {
       const bd = board(T, spr, { h: CAST_H });
       bd.plane.position.set(b.x, bd.h / 2, b.z);
       st.add(bd.plane);
+      const blob = contactBlob(T, bd.w * 1.5);
+      blob.position.set(b.x, 0.012, b.z + 0.04);
+      st.add(blob);
       figs.push({ plane: bd.plane, i: figs.length, y0: bd.h / 2 });
     }
     if (SUBJECT) {
@@ -980,6 +1006,9 @@ registerShot('__ID__', {
         const bd = board(T, spr, { w: SUBJECT.w });
         bd.plane.position.set(SUBJECT.x, bd.h / 2, SUBJECT.z);
         st.add(bd.plane);
+        const blob = contactBlob(T, bd.w * 0.9);
+        blob.position.set(SUBJECT.x, 0.012, SUBJECT.z + 0.05);
+        st.add(blob);
         figs.push({ plane: bd.plane, i: figs.length, y0: bd.h / 2, still: true });
       }
     }
