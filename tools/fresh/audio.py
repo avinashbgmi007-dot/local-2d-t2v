@@ -124,7 +124,9 @@ def derive_music(concept, total, bg_mood=None, seed=None, series_mood=None):
 
 
 _AMB_RAIN = _matcher(("rain", "storm", "thunder", "monsoon"))
-_AMB_WIND = _matcher(("sea", "ocean", "wind", "mountain", "desert", "beach"))
+_AMB_WIND = _matcher(("sea", "ocean", "wind", "mountain", "desert", "beach",
+                        "garden", "park", "forest", "woods", "meadow", "field",
+                        "countryside", "hill", "hills"))
 _AMB_CROWD = _matcher(("crowd", "party", "market", "school", "stadium"))
 
 

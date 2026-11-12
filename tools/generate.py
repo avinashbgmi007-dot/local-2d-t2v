@@ -207,8 +207,24 @@ def main():
             sys.path.insert(0, here)
             from fresh.sets import write_set_spec
             ss_path = os.path.join(out, "set_spec.json")
-            write_set_spec(a.fresh, ss_path, series_id=a.series, episode=a.episode)
-            print("GENERATE: set spec ->", ss_path)
+            # The set spec must describe the room the STORY is in. Deriving it
+            # again from the concept alone let the two disagree: a film set
+            # `outdoor` got a `kitchen` spec, so a kitchen's wall art and tiled
+            # floor were injected into a garden and a framed picture floated in
+            # the sky. The story file is the single source of truth.
+            story_set, story_bg = None, None
+            try:
+                with open(story, encoding="utf-8") as fh:
+                    _st = json.load(fh)
+                story_set = _st.get("set")
+                _p0 = ((_st.get("shots") or [{}])[0].get("params") or {})
+                story_bg = _p0.get("bg") or _st.get("bg")
+            except Exception:
+                pass
+            write_set_spec(a.fresh, ss_path, series_id=a.series, episode=a.episode,
+                           set_name=story_set, mood=story_bg)
+            print("GENERATE: set spec ->", ss_path,
+                  "(set=%s bg=%s)" % (story_set, story_bg))
         except Exception as e:
             report_stage_failure("set spec", e, a.strict)
 

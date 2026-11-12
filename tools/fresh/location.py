@@ -256,11 +256,17 @@ def derive_dressing(set_name, concept, seed=None):
     # Floor material follows the room, not the dice.
     d["floor"] = "tiles" if set_name in ("kitchen", "office") else "planks"
 
+    # An exterior has no wall, so wall dressing would float in mid-air. The
+    # first end-to-end film drew a framed picture over the sky because the
+    # fallback below picked art=1 for an outdoor set.
+    if set_name == "outdoor":
+        d["art"], d["shelf"], d["rug"], d["blinds"] = 0, False, False, 0
+
     # Only fill what the story did not decide, and only from the seeded stream,
     # so an unrelated concept does not silently dress like a garden.
-    if not d["art"]:
+    if not d["art"] and set_name != "outdoor":
         d["art"] = rng.pick([0, 0, 1])
-    if not d["rug"]:
+    if not d["rug"] and set_name != "outdoor":
         d["rug"] = rng.pick([False, False, True]) if set_name == "room" else False
     return d
 

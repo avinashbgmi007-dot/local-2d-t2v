@@ -76,6 +76,12 @@ def derive_cast_size(concept):
 # kind — so those names were a crash waiting for a cast to pick one.
 HEAD_MARKERS = ("bob", "glasses", "cap", "beanie", "bun")
 
+# Markers that read from the FRONT. `bun` and `bob` sit behind the skull, and
+# inkbean draws heads as flat ink, so in a two-hander they are invisible: the
+# first end-to-end film gave three characters glasses/bun/bob and all three
+# heads rendered as the same black circle. A cast of 2+ draws from here first.
+FRONT_MARKERS = ("glasses", "cap", "beanie")
+
 
 def derive_heads(seed, count, allow_none=True):
     """Return `count` distinct head markers, deterministic per seed.
@@ -85,10 +91,13 @@ def derive_heads(seed, count, allow_none=True):
     could pick "none" for everybody).
     """
     rng = Rng(str(seed) + "|heads")
-    pool = list(HEAD_MARKERS)
+    # A group needs markers you can SEE. Only fall back to the full vocabulary
+    # when there are more bodies than front-visible markers.
+    pool = list(FRONT_MARKERS) if count >= 2 else list(HEAD_MARKERS)
+    if len(pool) < count:
+        pool = list(HEAD_MARKERS)
     if allow_none and count == 1:
         pool.append("none")
-    rng.shuffle(pool) if hasattr(rng, "shuffle") else None
     return tuple(rng.sample(pool, min(count, len(pool))))
 
 

@@ -2734,5 +2734,123 @@ class GateActivationTests(unittest.TestCase):
         self.assertIn("activates every gate", src)
 
 
+class CastReadabilityTests(unittest.TestCase):
+    """A marker that only exists at the BACK of the head reads as no marker.
+
+    The end-to-end film gave glasses/bun/bob to three characters. Rendered, all
+    three heads were the same black circle, because `bun` and `bob` sit behind
+    the skull and inkbean draws heads in flat ink. In a cast of two or more the
+    vocabulary must prefer markers that are visible from the front.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_cast, "fresh.cast is not importable")
+        self.C = _fresh_cast
+
+    def test_a_multi_character_cast_prefers_front_visible_markers(self):
+        heads = self.C.derive_heads("seed-x", 3, allow_none=False)
+        self.assertTrue(set(heads) <= set(self.C.FRONT_MARKERS),
+                        "a cast got a back-of-head marker: %s" % (heads,))
+
+    def test_a_solo_character_may_use_any_marker(self):
+        heads = self.C.derive_heads("seed-y", 1, allow_none=False)
+        self.assertEqual(len(heads), 1)
+        self.assertIn(heads[0], self.C.HEAD_MARKERS)
+
+    def test_front_markers_are_a_subset_of_the_vocabulary(self):
+        self.assertTrue(set(self.C.FRONT_MARKERS) <= set(self.C.HEAD_MARKERS))
+
+    def test_there_are_enough_front_markers_for_a_group(self):
+        self.assertGreaterEqual(len(self.C.FRONT_MARKERS), 3)
+
+
+class SceneAudioTests(unittest.TestCase):
+    """Ambience must follow the room, not just the time of day."""
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_audio, "fresh.audio is not importable")
+        self.A = _fresh_audio
+
+    def test_a_garden_is_not_a_city_street(self):
+        self.assertEqual(self.A.derive_amb("a dragon in the garden", "outdoor", "dusk"), "wind")
+
+    def test_a_storm_still_wins(self):
+        self.assertEqual(self.A.derive_amb("a storm in the garden", "outdoor", "night"), "rain")
+
+
+class ExteriorDressingTests(unittest.TestCase):
+    """There is no wall outdoors, so wall dressing must not be drawn outdoors.
+
+    The first end-to-end film put a framed picture in mid-air over the sky: the
+    dressing fallback picked art=1 for an exterior set, and dressing.js draws
+    art at E.H*0.115 regardless of whether a wall exists.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(LOC, "fresh.location is not importable")
+
+    def test_an_exterior_never_gets_wall_dressing(self):
+        for c in ("a dragon in the garden", "the last bus never comes",
+                  "a wedding on the beach", "rain at school"):
+            d = LOC.derive_dressing("outdoor", c)
+            self.assertEqual(d["art"], 0, "%s got wall art outdoors: %s" % (c, d))
+            self.assertFalse(d["shelf"], "%s got a bookcase outdoors" % c)
+            self.assertFalse(d["rug"], "%s got a rug outdoors" % c)
+
+    def test_an_interior_may_still_get_wall_dressing(self):
+        seen = False
+        for c in ("a library full of books and paintings", "a cozy home",
+                  "a gallery of posters"):
+            d = LOC.derive_dressing("room", c)
+            if d["art"] or d["shelf"]:
+                seen = True
+        self.assertTrue(seen, "interiors lost their wall dressing entirely")
+
+    def test_an_interior_still_draws_art(self):
+        d = LOC.derive_dressing("kitchen", "a cozy home with paintings")
+        self.assertGreaterEqual(d["art"], 1, d)
+
+
+class SetSpecAgreementTests(unittest.TestCase):
+    """The set spec must describe the room the STORY is in, not a second guess.
+
+    generate.py derived the location twice: fresh/story.py from the concept plus
+    the beats, and fresh/sets.py from the concept alone. They disagreed — the
+    end-to-end film was set `outdoor` while its set_spec said `kitchen`, so a
+    kitchen's wall art, tiled floor and plant were injected into a garden and a
+    framed picture hung in mid-air over the sky.
+    """
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_sets, "fresh.sets is not importable")
+        self.assertIsNotNone(_gen, "tools/generate.py is not importable")
+
+    def test_a_supplied_set_name_wins(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = os.path.join(td, "set_spec.json")
+            _fresh_sets.write_set_spec("a fairy tale in the garden", p,
+                                       set_name="outdoor", mood="dusk")
+            with open(p, encoding="utf-8") as fh:
+                spec = json.load(fh)
+            self.assertEqual(spec["set"], "outdoor", spec)
+            self.assertEqual(spec["bg"], "dusk", spec)
+
+    def test_dressing_matches_the_supplied_set(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = os.path.join(td, "set_spec.json")
+            _fresh_sets.write_set_spec("a fairy tale in the garden", p,
+                                       set_name="outdoor", mood="dusk")
+            with open(p, encoding="utf-8") as fh:
+                spec = json.load(fh)
+            self.assertEqual(spec["dressing"]["art"], 0, spec["dressing"])
+            self.assertNotEqual(spec["dressing"]["floor"], "tiles", spec["dressing"])
+
+    def test_generate_passes_the_storys_set_to_the_writer(self):
+        with open(os.path.join(TOOLS, "generate.py"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("set_name=", src)
+        self.assertIn("story_set", src)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
