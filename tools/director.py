@@ -1050,7 +1050,7 @@ registerShot('__ID__', { draw(g, t, info) {
     // THE SUBJECT stands in the scene. Drawn before the cast so the people read
     // in front of it, and only when the story declares one: an undeclared
     // subject must not appear, or every film gains a random animal.
-    if (p.subject) {
+    if (p.subject && !p.subject.front) {
       const sc = p.subject.color || '#4a4458';
       drawCreature(g, {
         kind: p.subject.kind,
@@ -1098,6 +1098,21 @@ registerShot('__ID__', { draw(g, t, info) {
       rim: { color: '#ffd9a8', dir: [0.7, -0.6], w: 6 },
       shadow: true,
     });
+    // FOREGROUND subject. Scale is the whole point: a creature drawn between
+    // two people at character size reads as a pet. Nearer the camera means
+    // LARGER, lower on the frame, and cropped by the edge -- which is how a
+    // wide 9:16 frame shows something big without pushing the cast off screen.
+    if (p.subject && p.subject.front) {
+      const sc = p.subject.color || '#4a4458';
+      drawCreature(g, {
+        kind: p.subject.kind,
+        x: E.W * (p.subject.x ?? 0.95),
+        y: GY + E.H * 0.04,
+        s: FS * 3.4 * (p.subject.scale || 1),
+        facing: p.subject.facing ?? -1, t: tv,
+        color: sc, dark: shade(sc, -0.45),
+      });
+    }
   });
 
   FX.dust(g, tv, { count: 16, color: '#ffe2bd', a: 0.15 });

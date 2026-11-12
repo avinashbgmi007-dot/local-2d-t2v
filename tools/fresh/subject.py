@@ -21,8 +21,18 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Must equal chars/creature.js KINDS, in the same order.
-CREATURE_KINDS = ("dragon", "wolf", "bird", "fish", "horse", "cat", "bear")
+# Must equal chars/creature.js KINDS, in the same order. The module draws the
+# SUBJECT, which is a creature OR a thing: "a jar that never empties" is a real
+# short, and the old pipeline answered it with a mug.
+CREATURE_KINDS = ("dragon", "wolf", "bird", "fish", "horse", "cat", "bear",
+                  "jar", "lantern", "chest", "sword")
+
+# Objects are subjects too, but they are not BODIES: a jar is a tabletop thing
+# and must not loom in the foreground the way a dragon does. Measured on
+# projects/jar_check: a 3.4x foreground jar cropped by the frame edge read as a
+# teal box, not a jar; the same jar at 1.35x beside the cast read correctly.
+OBJECT_KINDS = ("jar", "lantern", "chest", "sword")
+ANIMAL_KINDS = tuple(k for k in CREATURE_KINDS if k not in OBJECT_KINDS)
 
 # kind -> words. Matched on WORD BOUNDARIES (substring matching once made
 # "happens" match "app" in fresh/audio.py).
@@ -39,6 +49,12 @@ CREATURE_WORDS = (
              "lynx")),
     ("bear", ("bear", "bears", "monster", "beast", "creature", "giant", "troll",
               "ogre", "yeti", "elephant", "cow", "bull", "pig", "sheep", "goat")),
+    # Objects. A story about a jar, a lamp or a blade is a story about a THING,
+    # and the thing has to be in the picture.
+    ("jar", ("jar", "pot", "urn", "vase", "bottle", "flask")),
+    ("lantern", ("lantern", "lamp", "candle", "torch", "beacon")),
+    ("chest", ("chest", "trunk", "box", "crate", "suitcase", "coffer")),
+    ("sword", ("sword", "blade", "knife", "dagger", "axe", "spear")),
 )
 
 # Scale words. A "giant" that is the size of a dog is a wrong picture, and the

@@ -3,7 +3,7 @@
 Produces a schemas.validate_series-compatible dict: series_id, character, voice,
 sfx_palette, wardrobe. Deterministic per series_id.
 """
-import os, sys
+import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from .core import Rng, seed_from_concept
@@ -116,3 +116,41 @@ def write_series(series_id, out_path, concept=None, title=None):
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(series, fh, indent=1)
     return out_path
+
+
+# ── series pin ───────────────────────────────────────────────────────────────
+# A series must keep ONE location, style and mood across episodes. Until now
+# those were re-derived from the series ID string, so a series called "ep1"
+# (no location keyword in it) fell through to the seeded random draw and could
+# move house between episodes -- and a series called "dragon" only got `outdoor`
+# because a creature noun happens to be a location hint. The resolved story of
+# the FIRST episode is the only honest source, so it is written once and read
+# back. Stored per studio, not per project: each episode is its own --out.
+def pin_path(studio, series_id):
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(series_id or "series"))[:60]
+    return os.path.join(studio, "series", "%s.json" % safe)
+
+
+def read_pin(path):
+    try:
+        with open(path, encoding="utf-8") as fh:
+            d = json.load(fh)
+        return d if isinstance(d, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def write_pin(path, story, series_id=None):
+    """Persist what episode 1 RESOLVED, not what its ID happened to imply."""
+    shots = story.get("shots") or [{}]
+    mood = None
+    for sh in shots:
+        if sh.get("bg"):
+            mood = sh["bg"]
+            break
+    pin = {"series_id": series_id, "set": story.get("set"),
+           "style": story.get("style"), "mood": mood}
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(pin, fh, indent=1)
+    return pin

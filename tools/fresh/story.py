@@ -15,10 +15,10 @@ from .location import (derive_location, derive_top, derive_roles,
                         derive_prop, derive_style)
 from .acting import (derive_pose, derive_gesture, derive_walk,
                      derive_transition)
-from .subject import derive_subject
+from .subject import derive_subject, ANIMAL_KINDS
 
 
-def concept_to_story(concept, series_id=None, episode=None, title=None):
+def concept_to_story(concept, series_id=None, episode=None, title=None, pin=None):
     from .shapes import SHAPES, fill, subject_of, insert_for, prop_for
     from .story_schema import validate_story
 
@@ -34,8 +34,20 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     # cast, the wardrobe, the props and the sound are all consequences of it.
     # Derived from `theme`, so a series keeps one location across episodes
     # without a flag to forget.
-    loc = derive_location(theme)
-    look = derive_style(theme, loc["set"], loc["mood"])
+    # Episode 1 of a series is read from its OWN concept: the series ID is a
+    # label, and deriving a chef's kitchen from the string "S1" was how a series
+    # ended up in an arbitrary room. Later episodes follow the pin instead.
+    loc_theme = theme if (isinstance(pin, dict) and pin.get("set")) else concept
+    loc = derive_location(loc_theme)
+    # A series keeps what episode 1 RESOLVED. `pin` comes from
+    # series/<id>.json (fresh/series.pin_path). Without it, a series whose ID
+    # contains no location word moves house between episodes, because the ID
+    # string is the only thing being read.
+    if isinstance(pin, dict) and pin.get("set"):
+        loc = {"set": pin["set"], "time": loc.get("time"),
+               "mood": pin.get("mood") or loc["mood"], "source": "series"}
+    look = (pin.get("style") if isinstance(pin, dict) and pin.get("style")
+            else derive_style(loc_theme, loc["set"], loc["mood"]))
     series_pal = (generate_palette(series_seed, series_id, None,
                                    set_name=loc["set"], bg_mood=loc["mood"],
                                    style=look)
@@ -138,7 +150,7 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     accent_done = False
 
     shots = []
-    close_a_used = False
+    close_n = 0
     for i, b in enumerate(beats):
         s = {"id": "s%03d" % (i + 1), "size": b["size"], "hold": b["hold"],
              "line": b["line"] or "", "bg": mood_used, "set": set_used,
@@ -158,19 +170,23 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
         # Three bodies plus a creature do not fit on a 9:16 axis at the old
         # spacing: measured on the first dragon still, the third figure stood
         # inside the first. A subject shifts the cast right and opens a slot.
-        xs = {"a": 0.30, "b": 0.52, "ab": (0.30, 0.52)} if subject_blk else \
+        xs = {"a": 0.34, "b": 0.58, "ab": (0.34, 0.58)} if subject_blk else \
              {"a": 0.40, "b": 0.62, "ab": (0.36, 0.68)}
         if b["who"] == "A":
-            # A shape may put two `close` beats on role A (mystery_beat: turn
-            # and payoff). Two giant faces of the same character 8 seconds apart
-            # read as the SAME SHOT reused; the second one lands on the other
-            # character, which also gives the scene a listener.
-            if b["size"] == "close" and close_a_used and len(names) > 1:
-                s.update(who=names[1], x=xs["b"], pose=pose_b, facing=-1)
+            # A shape may put two or three `close` beats on role A (countdown:
+            # urgency, decision, payoff). Giant faces of the SAME character a
+            # few seconds apart read as one shot reused, so a repeated close-up
+            # rotates through the cast. With three people every close-up in the
+            # film is a different face.
+            if b["size"] == "close" and close_n and len(names) > 1:
+                who_i = close_n % len(names)
+                s.update(who=names[who_i],
+                         x=xs["a"] if who_i == 0 else xs["b"],
+                         pose=pose_b, facing=1 if who_i == 0 else -1)
             else:
                 s.update(who=names[0], x=xs["a"], pose=pose_a, facing=1)
             if b["size"] == "close":
-                close_a_used = True
+                close_n += 1
             g = derive_gesture(b["role"], b["line"], seed=ident["seed"],
                                size=b["size"])
             # A gesture whose pose IS the base pose animates nothing.
@@ -198,7 +214,7 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
             # standing inside the creature.
             if len(names) > 2 and b["size"] == "wide":
                 if subject_blk:
-                    s.update(who3=names[2], x3=0.10, pose3="stand", facing3=1,
+                    s.update(who3=names[2], x3=0.12, pose3="stand", facing3=1,
                              scale3=0.94)
                 else:
                     s.update(who3=names[2], x3=0.86, pose3="stand", facing3=-1,
@@ -212,13 +228,38 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
             r"\b" + re.escape(subject_blk["noun"]) + r"\b",
             (b["line"] or "").lower()) is not None
         if subject_blk and (b["size"] == "wide" or (b["size"] == "med" and names_it)):
+            # In a WIDE the subject is a FOREGROUND element: larger, lower and
+            # cropped by the right edge, drawn in front of the cast. Standing it
+            # between two people at character size made a dragon read as a pet
+            # (measured: 90px tall next to 300px people). In a MED it stays a
+            # background body, small, because the frame belongs to the face.
+            wide = b["size"] == "wide"
+            # Only an ANIMAL gets the foreground treatment; an object keeps
+            # character scale, because a jar the size of a wall is a wall.
+            loom = wide and subject_blk["kind"] in ANIMAL_KINDS
+            # An animal looms at the edge and may be cropped; an object must sit
+            # fully inside the frame or it reads as scenery.
             s["subject"] = {"kind": subject_blk["kind"],
-                            "x": 0.84 if b["size"] == "wide" else 0.86,
+                            "x": (0.95 if loom else 0.80) if wide else 0.86,
                             "facing": -1,
-                            "scale": subject_blk["scale"] * (1.0 if b["size"] == "wide" else 0.8),
+                            "scale": subject_blk["scale"] * (1.0 if wide else 0.8),
                             "color": creature_color}
+            if loom:
+                s["subject"]["front"] = True
         if walk and b["who"] in ("A", "AB"):
-            s["walk"] = walk
+            # A walk's from/to were absolute (0.13 -> 0.40) and ignored the
+            # blocking, so a figure assigned x=0.34 walked to 0.40 and landed on
+            # top of the character at 0.58. Measured: COLE's torso disappeared
+            # behind NORA and only one green leg showed, which is what
+            # script_frame_check.py reported as "COLE speaks but their colour is
+            # absent". Re-anchor the travel so it ENDS on the assigned mark and
+            # keeps its length.
+            w = dict(walk)
+            end = float(s.get("x", 0.40))
+            d = abs(float(w["to"]) - float(w["from"])) or 0.18
+            w["to"] = round(min(0.92, max(0.08, end)), 3)
+            w["from"] = round(min(0.92, max(0.08, w["to"] - d)), 3)
+            s["walk"] = w
         if b.get("expr"):
             s["expr"] = b["expr"]
         if b.get("exprTo"):
@@ -268,8 +309,8 @@ def concept_to_story(concept, series_id=None, episode=None, title=None):
     return story
 
 
-def write_story(concept, out_path, series_id=None, episode=None, title=None):
-    story = concept_to_story(concept, series_id, episode, title)
+def write_story(concept, out_path, series_id=None, episode=None, title=None, pin=None):
+    story = concept_to_story(concept, series_id, episode, title, pin=pin)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(story, fh, indent=1)

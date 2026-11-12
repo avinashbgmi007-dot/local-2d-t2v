@@ -180,8 +180,31 @@ def main():
         from fresh.story import write_story
         os.makedirs(os.path.join(studio, "tmp"), exist_ok=True)
         story_path = fresh_story_path(studio, out)
-        write_story(a.fresh, story_path, series_id=a.series, episode=a.episode)
+        # A series keeps the location/style/mood its FIRST episode resolved.
+        # Reading it here (not re-deriving from the ID string) is what stops a
+        # series moving house between episodes.
+        pin = None
+        pin_file = None
+        if a.series:
+            from fresh.series import pin_path, read_pin, write_pin
+            pin_file = pin_path(studio, a.series)
+            pin = read_pin(pin_file)
+            if pin:
+                print("GENERATE: series pin -> %s (set=%s style=%s)"
+                      % (os.path.basename(pin_file), pin.get("set"), pin.get("style")))
+        write_story(a.fresh, story_path, series_id=a.series, episode=a.episode,
+                    pin=pin)
         print("GENERATE: fresh story ->", story_path)
+        if pin_file and not pin:
+            # First episode of the series: record what it resolved.
+            try:
+                import json as _json
+                with open(story_path, encoding="utf-8") as fh:
+                    _st = _json.load(fh)
+                write_pin(pin_file, _st, series_id=a.series)
+                print("GENERATE: series pin written ->", pin_file)
+            except Exception as e:
+                report_stage_failure("series pin", e, a.strict)
         story = os.path.abspath(story_path)
     else:
         if a.story is None:

@@ -20,7 +20,8 @@
 // MUST be an array. Written as ('a','b','c') this is a comma EXPRESSION that
 // evaluates to 'c', so `KINDS.indexOf('dragon')` threw and every subject fell
 // back to the bear -- a bug a source-text test could not see.
-export const KINDS = ['dragon', 'wolf', 'bird', 'fish', 'horse', 'cat', 'bear'];
+export const KINDS = ['dragon', 'wolf', 'bird', 'fish', 'horse', 'cat', 'bear',
+                      'jar', 'lantern', 'chest', 'sword'];
 
 const TAU = Math.PI * 2;
 
@@ -217,6 +218,82 @@ const DRAW = {
     eye(g, 18 * k, -77 * k + bob, 2.2 * k, light);
   },
 
+  // ---- OBJECTS -----------------------------------------------------------
+  // Not every subject is an animal. "a jar that never empties" is a real short
+  // and the old pipeline drew a mug. These four stand on the ground line like
+  // a body does, so the same blocking works for them.
+  jar(g, k, col, dark, light, t) {
+    g.fillStyle = col;
+    g.beginPath();
+    g.moveTo(-30 * k, -2 * k);
+    g.quadraticCurveTo(-38 * k, -40 * k, -26 * k, -62 * k);
+    g.lineTo(26 * k, -62 * k);
+    g.quadraticCurveTo(38 * k, -40 * k, 30 * k, -2 * k);
+    g.fill();
+    g.fillStyle = dark;                       // lid
+    g.fillRect(-30 * k, -70 * k, 60 * k, 10 * k);
+    g.fillRect(-14 * k, -78 * k, 28 * k, 8 * k);
+    g.strokeStyle = dark;                     // rim + a lit highlight
+    g.lineWidth = 2 * k;
+    g.beginPath();
+    g.moveTo(-32 * k, -52 * k);
+    g.lineTo(32 * k, -52 * k);
+    g.stroke();
+    g.fillStyle = light;
+    g.globalAlpha = 0.28;
+    ell(g, -14 * k, -36 * k, 4 * k, 12 * k, 0.2);
+    g.globalAlpha = 1;
+  },
+
+  lantern(g, k, col, dark, light, t) {
+    const glowA = 0.55 + 0.12 * Math.sin(t * 2.4);
+    g.strokeStyle = dark;                     // handle
+    g.lineWidth = 4 * k;
+    g.beginPath();
+    g.arc(0, -86 * k, 16 * k, Math.PI, 0);
+    g.stroke();
+    g.fillStyle = dark;                       // cap and base
+    g.fillRect(-24 * k, -76 * k, 48 * k, 8 * k);
+    g.fillRect(-26 * k, -6 * k, 52 * k, 8 * k);
+    g.fillStyle = col;                        // glass body
+    g.fillRect(-20 * k, -68 * k, 40 * k, 62 * k);
+    g.fillStyle = light;                      // the flame, and it breathes
+    g.globalAlpha = glowA;
+    ell(g, 0, -38 * k, 11 * k, 17 * k, 0);
+    g.globalAlpha = 1;
+  },
+
+  chest(g, k, col, dark, light, t) {
+    g.fillStyle = col;
+    g.fillRect(-44 * k, -46 * k, 88 * k, 44 * k);
+    g.beginPath();                            // domed lid
+    g.moveTo(-44 * k, -46 * k);
+    g.quadraticCurveTo(0, -92 * k, 44 * k, -46 * k);
+    g.fill();
+    g.fillStyle = dark;
+    g.fillRect(-46 * k, -50 * k, 92 * k, 7 * k);   // lid seam
+    g.fillRect(-7 * k, -34 * k, 14 * k, 20 * k);   // lock plate
+    g.strokeStyle = dark;
+    g.lineWidth = 3 * k;
+    g.strokeRect(-44 * k, -46 * k, 88 * k, 44 * k);
+  },
+
+  sword(g, k, col, dark, light, t) {
+    g.fillStyle = light;                      // blade, planted point-down
+    g.beginPath();
+    g.moveTo(-6 * k, -8 * k);
+    g.lineTo(-6 * k, -96 * k);
+    g.lineTo(0, -112 * k);
+    g.lineTo(6 * k, -96 * k);
+    g.lineTo(6 * k, -8 * k);
+    g.fill();
+    g.fillStyle = dark;                       // guard and grip
+    g.fillRect(-26 * k, -102 * k, 52 * k, 8 * k);
+    g.fillRect(-5 * k, -128 * k, 10 * k, 26 * k);
+    g.fillStyle = col;
+    ell(g, 0, -132 * k, 7 * k, 7 * k, 0);
+  },
+
   fish(g, k, col, dark, light, t) {
     const sway = Math.sin(t * 2.2) * 0.12;
     g.save();
@@ -244,7 +321,8 @@ const DRAW = {
 // Horizontal centre of each drawing in its own units. The first render put the
 // anchor at the HIND FOOT, so a macro dragon's head landed 630px off-frame and
 // the insert read as a blue blob. Callers pass the visual centre.
-const CENTRE = { dragon: 20, wolf: 14, horse: 16, bear: 12, cat: 12, bird: 8, fish: 0 };
+const CENTRE = { dragon: 20, wolf: 14, horse: 16, bear: 12, cat: 12, bird: 8, fish: 0,
+                 jar: 0, lantern: 0, chest: 0, sword: 0 };
 
 // ---- public entry ------------------------------------------------------------
 // o = { x, y, s, kind, facing, t, color, ink, light, shadow }

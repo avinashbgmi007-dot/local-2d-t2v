@@ -1422,10 +1422,13 @@ class FreshShapesTests(unittest.TestCase):
             self.skipTest("fresh.shapes not importable")
         self.S = _fresh_shapes
 
-    def test_four_shapes_with_distinct_size_skeletons(self):
+    def test_every_shape_has_a_distinct_size_skeleton(self):
+        # Six shapes now. The rule is not "four", it is "no two episodes can be
+        # the same sequence of shot sizes", which is what a viewer perceives.
         sk = {k: tuple(b["size"] for b in v["beats"]) for k, v in self.S.SHAPES.items()}
-        self.assertEqual(len(sk), 4)
-        self.assertEqual(len(set(sk.values())), 4, "two shapes share a size skeleton")
+        self.assertGreaterEqual(len(sk), 4)
+        self.assertEqual(len(set(sk.values())), len(sk),
+                         "two shapes share a size skeleton")
 
     def test_every_shape_opens_inside_the_hook_window(self):
         # oleo17: the first 2 seconds are the price of admission.
@@ -1544,12 +1547,13 @@ class FreshStoryTests(unittest.TestCase):
         self.assertTrue(any("proposal" in x for x in la), la)
         self.assertTrue(any("code" in x for x in lb), lb)
 
-    def test_twelve_episodes_use_all_four_shapes(self):
+    def test_twelve_episodes_use_every_shape(self):
         sk = set()
         for ep, c in enumerate(self.EP_CONCEPTS, start=1):
             d = _fresh_story.concept_to_story(c, series_id="proposal_series", episode=ep)
             sk.add(tuple(s["size"] for s in d["shots"]))
-        self.assertEqual(len(sk), 4, "only %d distinct skeletons" % len(sk))
+        self.assertEqual(len(sk), len(_fresh_shapes.SHAPES),
+                         "only %d distinct skeletons" % len(sk))
 
     def test_no_episode_repeats_a_line_set(self):
         seen = []
@@ -2042,8 +2046,24 @@ class SeriesPinTests(unittest.TestCase):
         self.ST = _fresh_story
 
     def _eps(self, sid="s1", n=3):
-        return [self.ST.concept_to_story("episode %d" % i, series_id=sid, episode=i)
-                for i in range(1, n + 1)]
+        """Episodes 2..n follow the pin episode 1 wrote -- the same contract
+        generate.py enforces. Continuity used to come from the ID string, which
+        meant a series about a chef could be shot in an office because the ID
+        was "s1"; the location is now what episode 1 RESOLVED."""
+        import tempfile
+        d = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(d, ignore_errors=True))
+        pp = _fresh_series.pin_path(d, sid)
+        out = []
+        pin = None
+        for i in range(1, n + 1):
+            st = self.ST.concept_to_story("episode %d" % i, series_id=sid,
+                                          episode=i, pin=pin)
+            out.append(st)
+            if pin is None:
+                _fresh_series.write_pin(pp, st, sid)
+                pin = _fresh_series.read_pin(pp)
+        return out
 
     def test_series_pins_location(self):
         sets = {d["set"] for d in self._eps()}
@@ -2705,9 +2725,27 @@ class DerivedStyleTests(unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_a_series_pins_its_style(self):
-        styles = {self.ST.concept_to_story("episode %d" % e, series_id="s1",
-                                           episode=e)["style"] for e in (1, 2, 3)}
-        self.assertEqual(len(styles), 1, styles)
+        """Continuity now comes from the PIN, not from the ID string.
+
+        Episode 1 is styled by its own story; every later episode follows the
+        pin it wrote. Asserting that three ID-only calls agree was asserting the
+        OLD mechanism, which styled a series from the label "s1".
+        """
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            pp = _fresh_series.pin_path(d, "s1")
+            first = self.ST.concept_to_story("a chef burns the sauce",
+                                             series_id="s1", episode=1)
+            _fresh_series.write_pin(pp, first, "s1")
+            pin = _fresh_series.read_pin(pp)
+            styles = {self.ST.concept_to_story("episode %d" % e, series_id="s1",
+                                               episode=e, pin=pin)["style"]
+                      for e in (2, 3)}
+            styles.add(first["style"])
+            self.assertEqual(len(styles), 1, styles)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
 
 
 class GateActivationTests(unittest.TestCase):
@@ -3056,7 +3094,8 @@ class DerivedSubjectTests(unittest.TestCase):
 
     def test_gate_rejects_two_creatures_in_one_film(self):
         d = _fresh_story.concept_to_story(self.DRAGON)
-        d["shots"][0]["subject"]["kind"] = "wolf"
+        shot = next(s for s in d["shots"] if s.get("subject"))
+        shot["subject"]["kind"] = "wolf"
         errs, _ = _fresh_story_schema.validate_story(d)
         self.assertTrue(any("two " in e and "creatures" in e for e in errs), errs)
 
@@ -3064,6 +3103,94 @@ class DerivedSubjectTests(unittest.TestCase):
         a = _fresh_story.concept_to_story(self.DRAGON)["shots"]
         b = _fresh_story.concept_to_story(self.DRAGON)["shots"]
         self.assertEqual(a, b)
+
+    def test_an_object_subject_is_drawable_too(self):
+        """"a jar that never empties" is a short about a THING, not an animal."""
+        for concept, kind in (("a jar that never empties", "jar"),
+                              ("a lantern that will not go out", "lantern"),
+                              ("a chest under the stairs", "chest"),
+                              ("a sword in the stone", "sword")):
+            self.assertEqual(self.S.creature_kind(concept), kind, concept)
+            self.assertIn(kind, self.S.CREATURE_KINDS)
+
+    def test_a_walk_ends_where_the_blocking_puts_the_figure(self):
+        """The walk used to travel to an absolute mark and could land on
+        another character: COLE's torso vanished behind NORA and the frame
+        check reported "COLE speaks but their colour is absent"."""
+        d = _fresh_story.concept_to_story(self.DRAGON)
+        for s in d["shots"]:
+            w = s.get("walk")
+            if not isinstance(w, dict):
+                continue
+            self.assertAlmostEqual(float(w["to"]), float(s["x"]), places=2, msg=s["id"])
+            self.assertLess(float(w["from"]), float(w["to"]))
+
+    def test_two_close_ups_are_not_the_same_character(self):
+        """s004 and s007 were both COLE's giant face 8s apart: one shot reused.
+
+        Checked per SHAPE, because the episode number is what selects one.
+        """
+        ordered = sorted(_fresh_shapes.SHAPES)
+        for ep in range(1, len(ordered) + 1):
+            d = _fresh_story.concept_to_story(self.DRAGON, episode=ep)
+            # `who` is a shot-level key here; director.py nests it under
+            # params only when it writes story/shots.json.
+            closes = [s.get("who") for s in d["shots"] if s.get("size") == "close"]
+            if len(closes) < 2:
+                continue
+            self.assertEqual(len(set(closes)), len(closes),
+                             "%s repeats a close-up on %s" % (ordered[ep - 1], closes))
+
+
+class SeriesPinFileTests(unittest.TestCase):
+    """A series keeps what episode 1 RESOLVED, not what its ID string implies."""
+
+    def setUp(self):
+        self.assertIsNotNone(_fresh_story, "fresh.story is not importable")
+        self.assertIsNotNone(_fresh_series, "fresh.series is not importable")
+        self.ST = _fresh_story
+
+    def _dir(self):
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(d, ignore_errors=True))
+        return d
+
+    def test_the_pin_round_trips(self):
+        d = self._dir()
+        pp = _fresh_series.pin_path(d, "S1")
+        st = self.ST.concept_to_story("a chef burns the sauce", series_id="S1",
+                                      episode=1)
+        _fresh_series.write_pin(pp, st, "S1")
+        pin = _fresh_series.read_pin(pp)
+        self.assertEqual(pin["set"], st["set"])
+        self.assertEqual(pin["style"], st["style"])
+        self.assertTrue(pin.get("mood"), pin)
+
+    def test_a_missing_pin_is_not_an_error(self):
+        self.assertIsNone(_fresh_series.read_pin(
+            os.path.join(self._dir(), "nope.json")))
+
+    def test_episode_one_follows_its_own_story(self):
+        """The label "S1" must not decide where a chef cooks."""
+        st = self.ST.concept_to_story("a chef burns the sauce", series_id="S1",
+                                      episode=1)
+        self.assertEqual(st["set"], "kitchen")
+
+    def test_later_episodes_follow_the_pin_not_their_own_concept(self):
+        d = self._dir()
+        pp = _fresh_series.pin_path(d, "S1")
+        ep1 = self.ST.concept_to_story("a chef burns the sauce", series_id="S1",
+                                       episode=1)
+        _fresh_series.write_pin(pp, ep1, "S1")
+        pin = _fresh_series.read_pin(pp)
+        ep2 = self.ST.concept_to_story("a commuter misses the last bus",
+                                       series_id="S1", episode=2, pin=pin)
+        self.assertEqual(ep2["set"], ep1["set"], "the series moved house")
+        # and without the pin it would have followed the bus outdoors
+        loose = self.ST.concept_to_story("a commuter misses the last bus",
+                                         series_id="S1", episode=2)
+        self.assertNotEqual(loose["set"], ep1["set"])
 
 
 class ScriptFrameAlignmentTests(unittest.TestCase):
